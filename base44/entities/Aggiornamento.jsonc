@@ -21,6 +21,10 @@
       "default": "aggiornamento",
       "title": "Tipo"
     },
+    "titolo": {
+      "type": "string",
+      "title": "Titolo"
+    },
     "testo": {
       "type": "string",
       "title": "Testo"
@@ -37,6 +41,6 @@
   },
   "required": [
     "cantiere_id",
-    "testo"
+    "titolo"
   ]
 }

@@ -14,6 +14,14 @@
       "type": "string",
       "title": "Nome cliente"
     },
+    "responsabile_id": {
+      "type": "string",
+      "title": "Responsabile / Capo cantiere"
+    },
+    "responsabile_nome": {
+      "type": "string",
+      "title": "Nome responsabile"
+    },
     "indirizzo": {
       "type": "string",
       "title": "Indirizzo"
@@ -60,6 +68,10 @@
     "collaboratori_ids": {
       "type": "string",
       "title": "ID collaboratori (separati da virgola)"
+    },
+    "collaboratori_ruoli": {
+      "type": "string",
+      "title": "Ruoli collaboratori (JSON id->ruolo)"
     },
     "avanzamento_percentuale": {
       "type": "number",

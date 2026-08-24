@@ -110,6 +110,7 @@ export default function CantiereDetail() {
 
   const infoRows = [
     { icon: User, label: "Cliente", value: cantiere.cliente_nome },
+    { icon: HardHat, label: "Responsabile", value: cantiere.responsabile_nome },
     { icon: MapPin, label: "Indirizzo", value: cantiere.indirizzo },
     { icon: MapPin, label: "Città", value: cantiere.citta },
     {
