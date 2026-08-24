@@ -1,0 +1,35 @@
+{
+  "name": "Disponibilita",
+  "type": "object",
+  "properties": {
+    "giorno_settimana": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 6,
+      "title": "Giorno settimana (0=dom)"
+    },
+    "ora_inizio": {
+      "type": "string",
+      "title": "Ora inizio"
+    },
+    "ora_fine": {
+      "type": "string",
+      "title": "Ora fine"
+    },
+    "durata_slot": {
+      "type": "number",
+      "default": 60,
+      "title": "Durata slot (minuti)"
+    },
+    "attivo": {
+      "type": "boolean",
+      "default": true,
+      "title": "Attivo"
+    }
+  },
+  "required": [
+    "giorno_settimana",
+    "ora_inizio",
+    "ora_fine"
+  ]
+}

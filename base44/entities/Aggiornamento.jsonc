@@ -1,0 +1,42 @@
+{
+  "name": "Aggiornamento",
+  "type": "object",
+  "properties": {
+    "cantiere_id": {
+      "type": "string",
+      "title": "Cantiere"
+    },
+    "cantiere_nome": {
+      "type": "string",
+      "title": "Nome cantiere"
+    },
+    "tipo": {
+      "type": "string",
+      "enum": [
+        "aggiornamento",
+        "avviso",
+        "completamento",
+        "problema"
+      ],
+      "default": "aggiornamento",
+      "title": "Tipo"
+    },
+    "testo": {
+      "type": "string",
+      "title": "Testo"
+    },
+    "visibile_cliente": {
+      "type": "boolean",
+      "default": false,
+      "title": "Visibile al cliente"
+    },
+    "autore_nome": {
+      "type": "string",
+      "title": "Autore"
+    }
+  },
+  "required": [
+    "cantiere_id",
+    "testo"
+  ]
+}

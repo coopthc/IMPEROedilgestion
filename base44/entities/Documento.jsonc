@@ -1,0 +1,55 @@
+{
+  "name": "Documento",
+  "type": "object",
+  "properties": {
+    "cantiere_id": {
+      "type": "string",
+      "title": "Cantiere"
+    },
+    "cantiere_nome": {
+      "type": "string",
+      "title": "Nome cantiere"
+    },
+    "nome": {
+      "type": "string",
+      "title": "Nome file"
+    },
+    "file_url": {
+      "type": "string",
+      "format": "uri",
+      "title": "URL file"
+    },
+    "tipo_file": {
+      "type": "string",
+      "title": "Tipo file"
+    },
+    "categoria": {
+      "type": "string",
+      "enum": [
+        "contratto",
+        "planimetria",
+        "permesso",
+        "sicurezza",
+        "foto",
+        "video",
+        "altro"
+      ],
+      "default": "foto",
+      "title": "Categoria"
+    },
+    "visibile_cliente": {
+      "type": "boolean",
+      "default": false,
+      "title": "Visibile al cliente"
+    },
+    "note": {
+      "type": "string",
+      "title": "Note"
+    }
+  },
+  "required": [
+    "cantiere_id",
+    "nome",
+    "file_url"
+  ]
+}

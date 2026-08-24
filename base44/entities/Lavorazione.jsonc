@@ -1,0 +1,55 @@
+{
+  "name": "Lavorazione",
+  "type": "object",
+  "properties": {
+    "cantiere_id": {
+      "type": "string",
+      "title": "Cantiere"
+    },
+    "cantiere_nome": {
+      "type": "string",
+      "title": "Nome cantiere"
+    },
+    "titolo": {
+      "type": "string",
+      "title": "Titolo"
+    },
+    "descrizione": {
+      "type": "string",
+      "title": "Descrizione"
+    },
+    "stato": {
+      "type": "string",
+      "enum": [
+        "da_fare",
+        "in_corso",
+        "completata",
+        "bloccata",
+        "annullata"
+      ],
+      "default": "da_fare",
+      "title": "Stato"
+    },
+    "collaboratore_id": {
+      "type": "string",
+      "title": "Collaboratore assegnato"
+    },
+    "collaboratore_nome": {
+      "type": "string",
+      "title": "Nome collaboratore"
+    },
+    "ore_previste": {
+      "type": "number",
+      "title": "Ore previste"
+    },
+    "ordine": {
+      "type": "number",
+      "default": 0,
+      "title": "Ordine"
+    }
+  },
+  "required": [
+    "cantiere_id",
+    "titolo"
+  ]
+}

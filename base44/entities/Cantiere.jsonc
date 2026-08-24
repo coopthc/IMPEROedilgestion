@@ -57,6 +57,19 @@
       "format": "uri",
       "title": "Foto cantiere"
     },
+    "collaboratori_ids": {
+      "type": "string",
+      "title": "ID collaboratori (separati da virgola)"
+    },
+    "avanzamento_percentuale": {
+      "type": "number",
+      "default": 0,
+      "title": "Avanzamento %"
+    },
+    "note_interne": {
+      "type": "string",
+      "title": "Note interne (mai visibili al cliente)"
+    },
     "archiviato": {
       "type": "boolean",
       "default": false,

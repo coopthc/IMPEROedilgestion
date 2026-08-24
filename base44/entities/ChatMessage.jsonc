@@ -1,0 +1,43 @@
+{
+  "name": "ChatMessage",
+  "type": "object",
+  "properties": {
+    "canale": {
+      "type": "string",
+      "enum": [
+        "cliente",
+        "squadra"
+      ],
+      "title": "Canale"
+    },
+    "cantiere_id": {
+      "type": "string",
+      "title": "Cantiere"
+    },
+    "mittente_id": {
+      "type": "string",
+      "title": "Mittente"
+    },
+    "mittente_nome": {
+      "type": "string",
+      "title": "Nome mittente"
+    },
+    "mittente_ruolo": {
+      "type": "string",
+      "title": "Ruolo mittente"
+    },
+    "testo": {
+      "type": "string",
+      "title": "Testo"
+    },
+    "letto_da": {
+      "type": "string",
+      "title": "ID utenti che hanno letto"
+    }
+  },
+  "required": [
+    "canale",
+    "mittente_id",
+    "testo"
+  ]
+}

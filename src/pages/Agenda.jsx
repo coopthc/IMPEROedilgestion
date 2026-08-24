@@ -13,6 +13,7 @@ import {
   Clock,
   MapPin,
   User,
+  Users,
   Pencil,
   Trash2,
   Loader2,
@@ -293,6 +294,12 @@ export default function Agenda() {
                             <MapPin className="w-3 h-3" />
                             {a.cantiere_nome}
                           </Link>
+                        )}
+                        {a.partecipanti_nomi && (
+                          <span className="flex items-center gap-1 truncate" title={a.partecipanti_nomi}>
+                            <Users className="w-3 h-3" />
+                            {a.partecipanti_nomi}
+                          </span>
                         )}
                       </div>
 

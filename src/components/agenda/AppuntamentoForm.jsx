@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -16,12 +17,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2 } from "lucide-react";
+import { Loader2, User, HardHat, Check } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 
 const TIPI = [
   { value: "interno", label: "Interno" },
-  { value: "richiesta", label: "Richiesta" },
+  { value: "richiesta", label: "Richiesta (da confermare)" },
   { value: "confermato", label: "Confermato" },
   { value: "admin_fissato", label: "Fissato da admin" },
 ];
@@ -54,6 +55,8 @@ export default function AppuntamentoForm({
   const [loading, setLoading] = useState(false);
   const [clienti, setClienti] = useState([]);
   const [cantieri, setCantieri] = useState([]);
+  const [squadra, setSquadra] = useState([]);
+  const [partecipantiIds, setPartecipantiIds] = useState([]);
 
   useEffect(() => {
     if (appuntamento) {
@@ -68,8 +71,12 @@ export default function AppuntamentoForm({
         note: appuntamento.note || "",
         stato: appuntamento.stato || "programmato",
       });
+      setPartecipantiIds(
+        (appuntamento.partecipanti_ids || "").split(",").filter(Boolean)
+      );
     } else {
       setForm(emptyForm);
+      setPartecipantiIds([]);
     }
   }, [appuntamento, open]);
 
@@ -83,7 +90,31 @@ export default function AppuntamentoForm({
     }
   }, [open]);
 
+  // Quando cambia il cantiere, carica la squadra
+  useEffect(() => {
+    if (!form.cantiere_id) {
+      setSquadra([]);
+      return;
+    }
+    base44.entities.Cantiere.get(form.cantiere_id).then((c) => {
+      const ids = (c.collaboratori_ids || "").split(",").filter(Boolean);
+      if (ids.length === 0) {
+        setSquadra([]);
+        return;
+      }
+      base44.entities.Collaboratore.list().then((all) => {
+        setSquadra(all.filter((coll) => ids.includes(coll.id)));
+      });
+    });
+  }, [form.cantiere_id]);
+
   const update = (field, value) => setForm((f) => ({ ...f, [field]: value }));
+
+  const togglePartecipante = (id) => {
+    setPartecipantiIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -92,11 +123,21 @@ export default function AppuntamentoForm({
 
     const cliente = clienti.find((c) => c.id === form.cliente_id);
     const cantiere = cantieri.find((c) => c.id === form.cantiere_id);
+
+    // Costruisci nomi partecipanti
+    const nomi = [];
+    if (cliente) nomi.push(cliente.nome);
+    squadra.forEach((s) => {
+      if (partecipantiIds.includes(s.id)) nomi.push(s.nome);
+    });
+
     const payload = {
       ...form,
       durata_minuti: Number(form.durata_minuti) || 60,
       cliente_nome: cliente?.nome || "",
       cantiere_nome: cantiere?.nome || "",
+      partecipanti_ids: partecipantiIds.join(","),
+      partecipanti_nomi: nomi.join(", "),
     };
 
     try {
@@ -251,6 +292,65 @@ export default function AppuntamentoForm({
               </Select>
             </div>
           </div>
+
+          {/* Partecipanti — sezione critica 5.3 */}
+          {form.cantiere_id && squadra.length > 0 && (
+            <div className="rounded-lg border border-border p-3">
+              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2 block">
+                Partecipanti (squadra del cantiere)
+              </Label>
+              <div className="space-y-1.5">
+                {form.cliente_id && (
+                  <label className="flex items-center gap-2.5 p-2 rounded-md hover:bg-secondary/50 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={true}
+                      readOnly
+                      className="accent-primary"
+                    />
+                    <User className="w-3.5 h-3.5 text-primary" />
+                    <span className="text-sm">
+                      {clienti.find((c) => c.id === form.cliente_id)?.nome || "Cliente"}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground ml-auto">
+                      Cliente
+                    </span>
+                  </label>
+                )}
+                {squadra.map((s) => (
+                  <label
+                    key={s.id}
+                    className="flex items-center gap-2.5 p-2 rounded-md hover:bg-secondary/50 cursor-pointer"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={partecipantiIds.includes(s.id)}
+                      onChange={() => togglePartecipante(s.id)}
+                      className="accent-primary"
+                    />
+                    <HardHat className="w-3.5 h-3.5 text-muted-foreground" />
+                    <span className="text-sm">{s.nome}</span>
+                    <span className="text-[10px] text-muted-foreground ml-auto">
+                      Collaboratore
+                    </span>
+                  </label>
+                ))}
+              </div>
+              {partecipantiIds.length > 0 && (
+                <p className="text-[11px] text-green-500 mt-2 flex items-center gap-1">
+                  <Check className="w-3 h-3" />
+                  {partecipantiIds.length} collaboratore/i selezionato/i
+                </p>
+              )}
+            </div>
+          )}
+          {form.cantiere_id && squadra.length === 0 && (
+            <p className="text-xs text-muted-foreground">
+              Nessun collaboratore assegnato a questo cantiere. Assegna la
+              squadra dalla scheda cantiere per poterla invitare agli
+              appuntamenti.
+            </p>
+          )}
 
           <div className="space-y-1.5">
             <Label htmlFor="note">Note</Label>

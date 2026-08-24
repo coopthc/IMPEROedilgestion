@@ -63,7 +63,18 @@ export default function ClienteForm({ open, onOpenChange, cliente, onSaved }) {
       if (cliente) {
         await base44.entities.Cliente.update(cliente.id, form);
       } else {
-        await base44.entities.Cliente.create(form);
+        // Crea cliente + cantiere collegato (sono la stessa entità)
+        const nuovoCliente = await base44.entities.Cliente.create(form);
+        await base44.entities.Cantiere.create({
+          nome: form.is_azienda && form.azienda
+            ? form.azienda
+            : `Cantiere ${form.nome}`,
+          cliente_id: nuovoCliente.id,
+          cliente_nome: nuovoCliente.nome,
+          indirizzo: form.indirizzo || "",
+          citta: form.citta || "",
+          stato: "bozza",
+        });
       }
       onSaved();
       onOpenChange(false);

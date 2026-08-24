@@ -40,6 +40,7 @@ const emptyForm = {
   budget: "",
   descrizione: "",
   foto_url: "",
+  note_interne: "",
 };
 
 export default function CantiereForm({ open, onOpenChange, cantiere, clienti, onSaved }) {
@@ -60,6 +61,7 @@ export default function CantiereForm({ open, onOpenChange, cantiere, clienti, on
         budget: cantiere.budget ?? "",
         descrizione: cantiere.descrizione || "",
         foto_url: cantiere.foto_url || "",
+        note_interne: cantiere.note_interne || "",
       });
     } else {
       setForm(emptyForm);
@@ -273,6 +275,22 @@ export default function CantiereForm({ open, onOpenChange, cantiere, clienti, on
               rows={3}
               value={form.descrizione}
               onChange={(e) => update("descrizione", e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="note_interne" className="flex items-center gap-1.5">
+              Note interne
+              <span className="text-[10px] text-muted-foreground font-normal">
+                (mai visibili al cliente)
+              </span>
+            </Label>
+            <Textarea
+              id="note_interne"
+              rows={2}
+              value={form.note_interne}
+              onChange={(e) => update("note_interne", e.target.value)}
+              placeholder="Appunti privati del titolare..."
             />
           </div>
 

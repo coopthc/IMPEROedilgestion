@@ -1,0 +1,64 @@
+{
+  "name": "Pagamento",
+  "type": "object",
+  "properties": {
+    "cantiere_id": {
+      "type": "string",
+      "title": "Cantiere"
+    },
+    "cantiere_nome": {
+      "type": "string",
+      "title": "Nome cantiere"
+    },
+    "titolo": {
+      "type": "string",
+      "title": "Titolo"
+    },
+    "tipo": {
+      "type": "string",
+      "enum": [
+        "acconto",
+        "avanzamento",
+        "saldo"
+      ],
+      "default": "acconto",
+      "title": "Tipo"
+    },
+    "percentuale": {
+      "type": "number",
+      "title": "Percentuale"
+    },
+    "importo": {
+      "type": "number",
+      "title": "Importo"
+    },
+    "data_scadenza": {
+      "type": "string",
+      "format": "date",
+      "title": "Data scadenza"
+    },
+    "data_pagamento": {
+      "type": "string",
+      "format": "date",
+      "title": "Data pagamento"
+    },
+    "stato": {
+      "type": "string",
+      "enum": [
+        "non_pagato",
+        "pagato",
+        "parziale"
+      ],
+      "default": "non_pagato",
+      "title": "Stato"
+    },
+    "note": {
+      "type": "string",
+      "title": "Note"
+    }
+  },
+  "required": [
+    "cantiere_id",
+    "titolo"
+  ]
+}

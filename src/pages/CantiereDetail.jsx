@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   ArrowLeft,
   Building2,
@@ -13,8 +14,16 @@ import {
   Trash2,
   Loader2,
   FileText,
+  HardHat,
+  Images,
+  TrendingUp,
+  Wallet,
 } from "lucide-react";
 import CantiereForm from "@/components/cantieri/CantiereForm";
+import CantiereSquadra from "@/components/cantiere/CantiereSquadra";
+import CantiereDocumenti from "@/components/cantiere/CantiereDocumenti";
+import CantiereAvanzamento from "@/components/cantiere/CantiereAvanzamento";
+import CantierePagamenti from "@/components/cantiere/CantierePagamenti";
 import { useToast } from "@/components/ui/use-toast";
 import { Image as UIImage } from "@/components/ui/image";
 
@@ -184,26 +193,77 @@ export default function CantiereDetail() {
         )}
       </div>
 
-      {/* Info grid */}
-      <div className="bg-card border border-border rounded-[14px] p-5">
-        <h2 className="text-sm font-semibold mb-4 flex items-center gap-2">
-          <FileText className="w-4 h-4 text-primary" />
-          Dettagli
-        </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {infoRows.map((row, i) => (
-            <div key={i} className="flex items-start gap-2.5">
-              <row.icon className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-              <div>
-                <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
-                  {row.label}
+      {/* Tabs */}
+      <Tabs defaultValue="panoramica">
+        <TabsList className="w-full justify-start flex-wrap h-auto mb-4">
+          <TabsTrigger value="panoramica" className="text-xs gap-1.5">
+            <FileText className="w-3.5 h-3.5" />
+            Panoramica
+          </TabsTrigger>
+          <TabsTrigger value="squadra" className="text-xs gap-1.5">
+            <HardHat className="w-3.5 h-3.5" />
+            Squadra
+          </TabsTrigger>
+          <TabsTrigger value="documenti" className="text-xs gap-1.5">
+            <Images className="w-3.5 h-3.5" />
+            Documenti
+          </TabsTrigger>
+          <TabsTrigger value="avanzamento" className="text-xs gap-1.5">
+            <TrendingUp className="w-3.5 h-3.5" />
+            Avanzamento
+          </TabsTrigger>
+          <TabsTrigger value="pagamenti" className="text-xs gap-1.5">
+            <Wallet className="w-3.5 h-3.5" />
+            Pagamenti
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="panoramica">
+          <div className="bg-card border border-border rounded-[14px] p-5">
+            <h2 className="text-sm font-semibold mb-4 flex items-center gap-2">
+              <FileText className="w-4 h-4 text-primary" />
+              Dettagli
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {infoRows.map((row, i) => (
+                <div key={i} className="flex items-start gap-2.5">
+                  <row.icon className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                  <div>
+                    <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                      {row.label}
+                    </div>
+                    <div className="text-sm">{row.value}</div>
+                  </div>
                 </div>
-                <div className="text-sm">{row.value}</div>
-              </div>
+              ))}
             </div>
-          ))}
-        </div>
-      </div>
+            {cantiere.note_interne && (
+              <div className="mt-4 pt-4 border-t border-border">
+                <div className="text-[11px] uppercase tracking-wider text-muted-foreground mb-1">
+                  Note interne (non visibili al cliente)
+                </div>
+                <p className="text-sm">{cantiere.note_interne}</p>
+              </div>
+            )}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="squadra">
+          <CantiereSquadra cantiere={cantiere} onSaved={load} />
+        </TabsContent>
+
+        <TabsContent value="documenti">
+          <CantiereDocumenti cantiere={cantiere} />
+        </TabsContent>
+
+        <TabsContent value="avanzamento">
+          <CantiereAvanzamento cantiere={cantiere} onCantiereUpdate={load} />
+        </TabsContent>
+
+        <TabsContent value="pagamenti">
+          <CantierePagamenti cantiere={cantiere} />
+        </TabsContent>
+      </Tabs>
 
       <CantiereForm
         open={formOpen}

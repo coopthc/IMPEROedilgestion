@@ -1,0 +1,42 @@
+{
+  "name": "Promemoria",
+  "type": "object",
+  "properties": {
+    "titolo": {
+      "type": "string",
+      "title": "Titolo"
+    },
+    "nota": {
+      "type": "string",
+      "title": "Nota"
+    },
+    "data": {
+      "type": "string",
+      "format": "date",
+      "title": "Data"
+    },
+    "ora": {
+      "type": "string",
+      "title": "Ora"
+    },
+    "avviso_email": {
+      "type": "boolean",
+      "default": false,
+      "title": "Avvisami prima via email"
+    },
+    "minuti_prima": {
+      "type": "number",
+      "default": 60,
+      "title": "Minuti prima"
+    },
+    "completato": {
+      "type": "boolean",
+      "default": false,
+      "title": "Completato"
+    }
+  },
+  "required": [
+    "titolo",
+    "data"
+  ]
+}

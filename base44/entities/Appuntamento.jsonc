@@ -47,6 +47,14 @@
       "type": "string",
       "title": "Nome cantiere"
     },
+    "partecipanti_ids": {
+      "type": "string",
+      "title": "ID partecipanti (separati da virgola)"
+    },
+    "partecipanti_nomi": {
+      "type": "string",
+      "title": "Nomi partecipanti (separati da virgola)"
+    },
     "note": {
       "type": "string",
       "title": "Note"

@@ -18,6 +18,14 @@
       "type": "string",
       "title": "Nome cantiere"
     },
+    "lavorazione_id": {
+      "type": "string",
+      "title": "Lavorazione"
+    },
+    "lavorazione_nome": {
+      "type": "string",
+      "title": "Nome lavorazione"
+    },
     "data": {
       "type": "string",
       "format": "date",
@@ -34,6 +42,11 @@
     "ore_totali": {
       "type": "number",
       "title": "Ore totali"
+    },
+    "ore_straordinarie": {
+      "type": "number",
+      "default": 0,
+      "title": "Ore straordinarie"
     },
     "note": {
       "type": "string",
