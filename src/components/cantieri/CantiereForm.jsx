@@ -16,8 +16,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2 } from "lucide-react";
+import { Loader2, Upload, X, ImagePlus } from "lucide-react";
 import { base44 } from "@/api/base44Client";
+import { Image as UIImage } from "@/components/ui/image";
 
 const STATI = [
   { value: "bozza", label: "Bozza" },
@@ -38,6 +39,7 @@ const emptyForm = {
   data_fine: "",
   budget: "",
   descrizione: "",
+  foto_url: "",
 };
 
 export default function CantiereForm({ open, onOpenChange, cantiere, clienti, onSaved }) {
@@ -57,6 +59,7 @@ export default function CantiereForm({ open, onOpenChange, cantiere, clienti, on
         data_fine: cantiere.data_fine || "",
         budget: cantiere.budget ?? "",
         descrizione: cantiere.descrizione || "",
+        foto_url: cantiere.foto_url || "",
       });
     } else {
       setForm(emptyForm);
@@ -64,6 +67,24 @@ export default function CantiereForm({ open, onOpenChange, cantiere, clienti, on
   }, [cantiere, open]);
 
   const update = (field, value) => setForm((f) => ({ ...f, [field]: value }));
+
+  const [uploading, setUploading] = useState(false);
+
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      update("foto_url", file_url);
+    } catch (err) {
+      console.error("Errore upload foto:", err);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const removePhoto = () => update("foto_url", "");
 
   const handleClienteChange = (clienteId) => {
     const cliente = clienti.find((c) => c.id === clienteId);
@@ -201,6 +222,48 @@ export default function CantiereForm({ open, onOpenChange, cantiere, clienti, on
                 onChange={(e) => update("data_fine", e.target.value)}
               />
             </div>
+          </div>
+
+          {/* Foto cantiere */}
+          <div className="space-y-1.5">
+            <Label>Foto cantiere</Label>
+            {form.foto_url ? (
+              <div className="relative w-full h-32 rounded-lg overflow-hidden border border-border bg-secondary">
+                <UIImage
+                  src={form.foto_url}
+                  alt="Anteprima cantiere"
+                  className="w-full h-full"
+                  fittingType="cover"
+                />
+                <button
+                  type="button"
+                  onClick={removePhoto}
+                  className="absolute top-1.5 right-1.5 w-7 h-7 rounded-full bg-background/80 hover:bg-background flex items-center justify-center transition-colors"
+                >
+                  <X className="w-4 h-4 text-destructive" />
+                </button>
+              </div>
+            ) : (
+              <label className="flex flex-col items-center justify-center gap-1.5 w-full h-32 rounded-lg border-2 border-dashed border-border hover:border-primary/50 cursor-pointer transition-colors bg-secondary/30">
+                {uploading ? (
+                  <Loader2 className="w-5 h-5 text-primary animate-spin" />
+                ) : (
+                  <>
+                    <ImagePlus className="w-6 h-6 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">
+                      Carica una foto
+                    </span>
+                  </>
+                )}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handlePhotoUpload}
+                  disabled={uploading}
+                />
+              </label>
+            )}
           </div>
 
           <div className="space-y-1.5">

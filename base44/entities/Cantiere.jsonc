@@ -52,6 +52,11 @@
       "type": "string",
       "title": "Descrizione"
     },
+    "foto_url": {
+      "type": "string",
+      "format": "uri",
+      "title": "Foto cantiere"
+    },
     "archiviato": {
       "type": "boolean",
       "default": false,

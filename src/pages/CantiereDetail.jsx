@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import CantiereForm from "@/components/cantieri/CantiereForm";
 import { useToast } from "@/components/ui/use-toast";
+import { Image as UIImage } from "@/components/ui/image";
 
 const STATO_STILI = {
   bozza: "bg-gray-500/15 text-gray-400",
@@ -154,7 +155,17 @@ export default function CantiereDetail() {
       </div>
 
       {/* Titolo + stato */}
-      <div className="bg-card border border-border rounded-[14px] p-5 mb-4">
+      <div className="bg-card border border-border rounded-[14px] p-5 mb-4 overflow-hidden">
+        {cantiere.foto_url && (
+          <div className="relative -mx-5 -mt-5 mb-4 h-44 sm:h-56 overflow-hidden bg-secondary">
+            <UIImage
+              src={cantiere.foto_url}
+              alt={cantiere.nome}
+              className="w-full h-full"
+              fittingType="cover"
+            />
+          </div>
+        )}
         <div className="flex items-start justify-between gap-3 mb-1">
           <h1 className="text-xl font-bold flex items-center gap-2">
             <Building2 className="w-5 h-5 text-primary" />
