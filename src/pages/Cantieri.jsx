@@ -35,6 +35,7 @@ const STATO_LABEL = {
 
 const FILTRI = [
   { value: "tutti", label: "Tutti" },
+  { value: "bozza", label: "Bozza" },
   { value: "attivo", label: "Attivi" },
   { value: "sospeso", label: "Sospesi" },
   { value: "completato", label: "Completati" },
