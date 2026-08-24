@@ -4,7 +4,12 @@
   "properties": {
     "nome": {
       "type": "string",
-      "title": "Nome"
+      "title": "Nome / Referente"
+    },
+    "is_azienda": {
+      "type": "boolean",
+      "default": false,
+      "title": "\u00c8 un'azienda"
     },
     "azienda": {
       "type": "string",

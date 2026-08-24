@@ -13,7 +13,11 @@ import {
   Trash2,
   Loader2,
   Building,
+  MessageCircle,
 } from "lucide-react";
+
+const waLink = (phone) =>
+  "https://wa.me/" + (phone || "").replace(/[^0-9]/g, "");
 import ClienteForm from "@/components/clienti/ClienteForm";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -130,6 +134,11 @@ export default function Clienti() {
                   <h3 className="font-semibold text-sm leading-tight truncate">
                     {c.nome}
                   </h3>
+                  {c.is_azienda && (
+                    <span className="inline-block mt-1 text-[10px] font-medium text-primary bg-primary/15 px-1.5 py-0.5 rounded">
+                      Azienda
+                    </span>
+                  )}
                   {c.azienda && (
                     <p className="text-xs text-muted-foreground truncate flex items-center gap-1 mt-0.5">
                       <Building className="w-3 h-3" />
@@ -141,15 +150,33 @@ export default function Clienti() {
 
               <div className="space-y-1.5 mb-3">
                 {c.email && (
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground truncate">
+                  <a
+                    href={`mailto:${c.email}`}
+                    className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors truncate"
+                  >
                     <Mail className="w-3 h-3 flex-shrink-0" />
                     {c.email}
-                  </div>
+                  </a>
                 )}
                 {c.telefono && (
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <Phone className="w-3 h-3 flex-shrink-0" />
-                    {c.telefono}
+                  <div className="flex items-center gap-2 text-xs">
+                    <a
+                      href={`tel:${c.telefono}`}
+                      className="flex items-center gap-1.5 text-muted-foreground hover:text-primary transition-colors"
+                    >
+                      <Phone className="w-3 h-3 flex-shrink-0" />
+                      {c.telefono}
+                    </a>
+                    <a
+                      href={waLink(c.telefono)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1 text-green-500 hover:text-green-400 transition-colors"
+                      title="Scrivi su WhatsApp"
+                    >
+                      <MessageCircle className="w-3.5 h-3.5" />
+                      <span className="text-[11px]">WhatsApp</span>
+                    </a>
                   </div>
                 )}
                 {c.citta && (
