@@ -1,0 +1,21 @@
+{
+  "properties": {
+    "role": {
+      "type": "string",
+      "description": "Il ruolo dell'utente nel gestionale",
+      "enum": [
+        "admin",
+        "mssg_admin",
+        "mssg_capo",
+        "mssg_operaio",
+        "mssg_cliente",
+        "user"
+      ]
+    }
+  },
+  "required": [
+    "role"
+  ],
+  "name": "User",
+  "type": "object"
+}

@@ -1,0 +1,54 @@
+{
+  "name": "Cliente",
+  "type": "object",
+  "properties": {
+    "nome": {
+      "type": "string",
+      "title": "Nome"
+    },
+    "azienda": {
+      "type": "string",
+      "title": "Ragione sociale"
+    },
+    "email": {
+      "type": "string",
+      "format": "email",
+      "title": "Email"
+    },
+    "telefono": {
+      "type": "string",
+      "title": "Telefono"
+    },
+    "indirizzo": {
+      "type": "string",
+      "title": "Indirizzo"
+    },
+    "citta": {
+      "type": "string",
+      "title": "Citt\u00e0"
+    },
+    "cap": {
+      "type": "string",
+      "title": "CAP"
+    },
+    "provincia": {
+      "type": "string",
+      "title": "Provincia"
+    },
+    "piva": {
+      "type": "string",
+      "title": "Partita IVA"
+    },
+    "codice_fiscale": {
+      "type": "string",
+      "title": "Codice fiscale"
+    },
+    "note": {
+      "type": "string",
+      "title": "Note"
+    }
+  },
+  "required": [
+    "nome"
+  ]
+}

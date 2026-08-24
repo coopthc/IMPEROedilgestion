@@ -1,0 +1,64 @@
+{
+  "name": "Cantiere",
+  "type": "object",
+  "properties": {
+    "nome": {
+      "type": "string",
+      "title": "Nome cantiere"
+    },
+    "cliente_id": {
+      "type": "string",
+      "title": "Cliente"
+    },
+    "cliente_nome": {
+      "type": "string",
+      "title": "Nome cliente"
+    },
+    "indirizzo": {
+      "type": "string",
+      "title": "Indirizzo"
+    },
+    "citta": {
+      "type": "string",
+      "title": "Citt\u00e0"
+    },
+    "stato": {
+      "type": "string",
+      "enum": [
+        "bozza",
+        "attivo",
+        "sospeso",
+        "completato",
+        "chiuso"
+      ],
+      "default": "attivo",
+      "title": "Stato"
+    },
+    "data_inizio": {
+      "type": "string",
+      "format": "date",
+      "title": "Data inizio"
+    },
+    "data_fine": {
+      "type": "string",
+      "format": "date",
+      "title": "Data fine"
+    },
+    "budget": {
+      "type": "number",
+      "title": "Budget"
+    },
+    "descrizione": {
+      "type": "string",
+      "title": "Descrizione"
+    },
+    "archiviato": {
+      "type": "boolean",
+      "default": false,
+      "title": "Archiviato"
+    }
+  },
+  "required": [
+    "nome"
+  ]
+}

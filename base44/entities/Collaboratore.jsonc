@@ -1,0 +1,47 @@
+{
+  "name": "Collaboratore",
+  "type": "object",
+  "properties": {
+    "nome": {
+      "type": "string",
+      "title": "Nome"
+    },
+    "qualifica": {
+      "type": "string",
+      "enum": [
+        "capo_cantiere",
+        "operaio",
+        "tecnico",
+        "amministrazione",
+        "altro"
+      ],
+      "default": "operaio",
+      "title": "Qualifica"
+    },
+    "costo_orario": {
+      "type": "number",
+      "title": "Costo orario"
+    },
+    "telefono": {
+      "type": "string",
+      "title": "Telefono"
+    },
+    "email": {
+      "type": "string",
+      "format": "email",
+      "title": "Email"
+    },
+    "attivo": {
+      "type": "boolean",
+      "default": true,
+      "title": "Attivo"
+    },
+    "user_id": {
+      "type": "string",
+      "title": "Utente collegato"
+    }
+  },
+  "required": [
+    "nome"
+  ]
+}

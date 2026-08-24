@@ -1,0 +1,70 @@
+{
+  "name": "Appuntamento",
+  "type": "object",
+  "properties": {
+    "titolo": {
+      "type": "string",
+      "title": "Titolo"
+    },
+    "data": {
+      "type": "string",
+      "format": "date",
+      "title": "Data"
+    },
+    "ora": {
+      "type": "string",
+      "title": "Ora"
+    },
+    "durata_minuti": {
+      "type": "number",
+      "default": 60,
+      "title": "Durata (minuti)"
+    },
+    "tipo": {
+      "type": "string",
+      "enum": [
+        "interno",
+        "richiesta",
+        "confermato",
+        "admin_fissato"
+      ],
+      "default": "interno",
+      "title": "Tipo"
+    },
+    "cliente_id": {
+      "type": "string",
+      "title": "Cliente"
+    },
+    "cliente_nome": {
+      "type": "string",
+      "title": "Nome cliente"
+    },
+    "cantiere_id": {
+      "type": "string",
+      "title": "Cantiere"
+    },
+    "cantiere_nome": {
+      "type": "string",
+      "title": "Nome cantiere"
+    },
+    "note": {
+      "type": "string",
+      "title": "Note"
+    },
+    "stato": {
+      "type": "string",
+      "enum": [
+        "programmato",
+        "completato",
+        "annullato"
+      ],
+      "default": "programmato",
+      "title": "Stato"
+    }
+  },
+  "required": [
+    "titolo",
+    "data",
+    "ora"
+  ]
+}

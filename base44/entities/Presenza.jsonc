@@ -1,0 +1,47 @@
+{
+  "name": "Presenza",
+  "type": "object",
+  "properties": {
+    "collaboratore_id": {
+      "type": "string",
+      "title": "Collaboratore"
+    },
+    "collaboratore_nome": {
+      "type": "string",
+      "title": "Nome collaboratore"
+    },
+    "cantiere_id": {
+      "type": "string",
+      "title": "Cantiere"
+    },
+    "cantiere_nome": {
+      "type": "string",
+      "title": "Nome cantiere"
+    },
+    "data": {
+      "type": "string",
+      "format": "date",
+      "title": "Data"
+    },
+    "ora_ingresso": {
+      "type": "string",
+      "title": "Ora ingresso"
+    },
+    "ora_uscita": {
+      "type": "string",
+      "title": "Ora uscita"
+    },
+    "ore_totali": {
+      "type": "number",
+      "title": "Ore totali"
+    },
+    "note": {
+      "type": "string",
+      "title": "Note"
+    }
+  },
+  "required": [
+    "collaboratore_id",
+    "data"
+  ]
+}
