@@ -13,6 +13,7 @@ import Cantieri from '@/pages/Cantieri';
 import CantiereDetail from '@/pages/CantiereDetail';
 import Clienti from '@/pages/Clienti';
 import Collaboratori from '@/pages/Collaboratori';
+import Agenda from '@/pages/Agenda';
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
 import ForgotPassword from '@/pages/ForgotPassword';
@@ -58,6 +59,7 @@ const AuthenticatedApp = () => {
           <Route path="/cantieri/:id" element={<CantiereDetail />} />
           <Route path="/clienti" element={<Clienti />} />
           <Route path="/collaboratori" element={<Collaboratori />} />
+          <Route path="/agenda" element={<Agenda />} />
         </Route>
       </Route>
       <Route path="*" element={<PageNotFound />} />
