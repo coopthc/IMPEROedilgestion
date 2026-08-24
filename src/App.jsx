@@ -11,6 +11,7 @@ import GestionaleLayout from '@/components/GestionaleLayout';
 import Dashboard from '@/pages/Dashboard';
 import Cantieri from '@/pages/Cantieri';
 import CantiereDetail from '@/pages/CantiereDetail';
+import Clienti from '@/pages/Clienti';
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
 import ForgotPassword from '@/pages/ForgotPassword';
@@ -54,6 +55,7 @@ const AuthenticatedApp = () => {
           <Route path="/" element={<Dashboard />} />
           <Route path="/cantieri" element={<Cantieri />} />
           <Route path="/cantieri/:id" element={<CantiereDetail />} />
+          <Route path="/clienti" element={<Clienti />} />
         </Route>
       </Route>
       <Route path="*" element={<PageNotFound />} />

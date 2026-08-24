@@ -1,0 +1,205 @@
+import React, { useEffect, useState, useCallback } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Loader2 } from "lucide-react";
+import { base44 } from "@/api/base44Client";
+
+const emptyForm = {
+  nome: "",
+  azienda: "",
+  email: "",
+  telefono: "",
+  indirizzo: "",
+  citta: "",
+  cap: "",
+  provincia: "",
+  piva: "",
+  codice_fiscale: "",
+  note: "",
+};
+
+export default function ClienteForm({ open, onOpenChange, cliente, onSaved }) {
+  const [form, setForm] = useState(emptyForm);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (cliente) {
+      setForm({
+        nome: cliente.nome || "",
+        azienda: cliente.azienda || "",
+        email: cliente.email || "",
+        telefono: cliente.telefono || "",
+        indirizzo: cliente.indirizzo || "",
+        citta: cliente.citta || "",
+        cap: cliente.cap || "",
+        provincia: cliente.provincia || "",
+        piva: cliente.piva || "",
+        codice_fiscale: cliente.codice_fiscale || "",
+        note: cliente.note || "",
+      });
+    } else {
+      setForm(emptyForm);
+    }
+  }, [cliente, open]);
+
+  const update = (field, value) => setForm((f) => ({ ...f, [field]: value }));
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!form.nome.trim()) return;
+    setLoading(true);
+    try {
+      if (cliente) {
+        await base44.entities.Cliente.update(cliente.id, form);
+      } else {
+        await base44.entities.Cliente.create(form);
+      }
+      onSaved();
+      onOpenChange(false);
+    } catch (err) {
+      console.error("Errore salvataggio cliente:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="bg-card border-border max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{cliente ? "Modifica cliente" : "Nuovo cliente"}</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4 pt-2">
+          <div className="space-y-1.5">
+            <Label htmlFor="nome">Nome / Referente *</Label>
+            <Input
+              id="nome"
+              value={form.nome}
+              onChange={(e) => update("nome", e.target.value)}
+              placeholder="es. Mario Rossi"
+              required
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="azienda">Ragione sociale</Label>
+            <Input
+              id="azienda"
+              value={form.azienda}
+              onChange={(e) => update("azienda", e.target.value)}
+              placeholder="es. Rossi Costruzioni Srl"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={form.email}
+                onChange={(e) => update("email", e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="telefono">Telefono</Label>
+              <Input
+                id="telefono"
+                value={form.telefono}
+                onChange={(e) => update("telefono", e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="indirizzo">Indirizzo</Label>
+            <Input
+              id="indirizzo"
+              value={form.indirizzo}
+              onChange={(e) => update("indirizzo", e.target.value)}
+            />
+          </div>
+
+          <div className="grid grid-cols-3 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="citta">Città</Label>
+              <Input
+                id="citta"
+                value={form.citta}
+                onChange={(e) => update("citta", e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="cap">CAP</Label>
+              <Input
+                id="cap"
+                value={form.cap}
+                onChange={(e) => update("cap", e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="provincia">Provincia</Label>
+              <Input
+                id="provincia"
+                value={form.provincia}
+                onChange={(e) => update("provincia", e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="piva">Partita IVA</Label>
+              <Input
+                id="piva"
+                value={form.piva}
+                onChange={(e) => update("piva", e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="codice_fiscale">Codice fiscale</Label>
+              <Input
+                id="codice_fiscale"
+                value={form.codice_fiscale}
+                onChange={(e) => update("codice_fiscale", e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="note">Note</Label>
+            <Textarea
+              id="note"
+              rows={2}
+              value={form.note}
+              onChange={(e) => update("note", e.target.value)}
+            />
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={loading}
+            >
+              Annulla
+            </Button>
+            <Button type="submit" disabled={loading}>
+              {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              {cliente ? "Salva" : "Crea cliente"}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}

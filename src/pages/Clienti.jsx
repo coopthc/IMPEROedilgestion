@@ -1,0 +1,195 @@
+import React, { useEffect, useState, useCallback } from "react";
+import { base44 } from "@/api/base44Client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Plus,
+  Search,
+  Users,
+  Mail,
+  Phone,
+  MapPin,
+  Pencil,
+  Trash2,
+  Loader2,
+  Building,
+} from "lucide-react";
+import ClienteForm from "@/components/clienti/ClienteForm";
+import { useToast } from "@/components/ui/use-toast";
+
+export default function Clienti() {
+  const { toast } = useToast();
+  const [clienti, setClienti] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [formOpen, setFormOpen] = useState(false);
+  const [editing, setEditing] = useState(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await base44.entities.Cliente.list("-created_date");
+      setClienti(data);
+    } catch (err) {
+      console.error("Errore caricamento clienti:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const clientiFiltrati = clienti.filter((c) => {
+    if (!search) return true;
+    const q = search.toLowerCase();
+    return (
+      c.nome?.toLowerCase().includes(q) ||
+      c.azienda?.toLowerCase().includes(q) ||
+      c.email?.toLowerCase().includes(q) ||
+      c.citta?.toLowerCase().includes(q)
+    );
+  });
+
+  const handleNew = () => {
+    setEditing(null);
+    setFormOpen(true);
+  };
+
+  const handleEdit = (cliente) => {
+    setEditing(cliente);
+    setFormOpen(true);
+  };
+
+  const handleDelete = async (cliente) => {
+    if (!confirm(`Eliminare il cliente "${cliente.nome}"?`)) return;
+    try {
+      await base44.entities.Cliente.delete(cliente.id);
+      toast({ title: "Cliente eliminato" });
+      load();
+    } catch (err) {
+      toast({ title: "Errore durante l'eliminazione", variant: "destructive" });
+    }
+  };
+
+  return (
+    <div>
+      {/* Header */}
+      <div className="flex items-center justify-between gap-3 mb-5 pb-4 border-b border-border">
+        <div>
+          <h1 className="text-xl font-bold flex items-center gap-2">
+            <Users className="w-5 h-5 text-primary" />
+            Clienti
+          </h1>
+          <p className="text-[13px] text-muted-foreground mt-0.5">
+            {clienti.length} clienti registrati
+          </p>
+        </div>
+        <Button onClick={handleNew} size="sm">
+          <Plus className="w-4 h-4 mr-1" />
+          Nuovo
+        </Button>
+      </div>
+
+      {/* Ricerca */}
+      <div className="relative mb-4">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <Input
+          placeholder="Cerca per nome, azienda, email, città..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="pl-10"
+        />
+      </div>
+
+      {/* Lista */}
+      {loading ? (
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="w-6 h-6 text-primary animate-spin" />
+        </div>
+      ) : clientiFiltrati.length === 0 ? (
+        <div className="text-center py-20 text-muted-foreground">
+          <Users className="w-12 h-12 mx-auto mb-3 opacity-30" />
+          <p className="text-sm">Nessun cliente trovato.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {clientiFiltrati.map((c) => (
+            <div
+              key={c.id}
+              className="bg-card border border-border rounded-[12px] p-4 transition-colors hover:border-primary/50 group"
+            >
+              <div className="flex items-start gap-3 mb-3">
+                <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center flex-shrink-0">
+                  <span className="text-sm font-bold text-primary">
+                    {c.nome?.charAt(0).toUpperCase() || "?"}
+                  </span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-sm leading-tight truncate">
+                    {c.nome}
+                  </h3>
+                  {c.azienda && (
+                    <p className="text-xs text-muted-foreground truncate flex items-center gap-1 mt-0.5">
+                      <Building className="w-3 h-3" />
+                      {c.azienda}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-1.5 mb-3">
+                {c.email && (
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground truncate">
+                    <Mail className="w-3 h-3 flex-shrink-0" />
+                    {c.email}
+                  </div>
+                )}
+                {c.telefono && (
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <Phone className="w-3 h-3 flex-shrink-0" />
+                    {c.telefono}
+                  </div>
+                )}
+                {c.citta && (
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground truncate">
+                    <MapPin className="w-3 h-3 flex-shrink-0" />
+                    {c.citta}
+                    {c.provincia && ` (${c.provincia})`}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex gap-1.5 pt-2 border-t border-border opacity-0 group-hover:opacity-100 transition-opacity">
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-7 w-7"
+                  onClick={() => handleEdit(c)}
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-7 w-7 text-destructive hover:text-destructive"
+                  onClick={() => handleDelete(c)}
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <ClienteForm
+        open={formOpen}
+        onOpenChange={setFormOpen}
+        cliente={editing}
+        onSaved={load}
+      />
+    </div>
+  );
+}
