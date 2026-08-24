@@ -161,7 +161,7 @@ export default function Clienti() {
                 )}
               </div>
 
-              <div className="flex gap-1.5 pt-2 border-t border-border opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="flex gap-1.5 pt-2 border-t border-border">
                 <Button
                   size="icon"
                   variant="ghost"
