@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -15,8 +14,8 @@ import {
   UserMinus,
   Loader2,
   HardHat,
-  Star,
   Crown,
+  User,
 } from "lucide-react";
 
 const RUOLI_CANTIERE = [
@@ -35,12 +34,13 @@ function parseRuoli(str) {
   }
 }
 
-export default function CantiereSquadra({ cantiere, onSaved }) {
+export default function CantiereSquadra({ cantiere, clienti = [], onSaved, onOpenScheda }) {
   const { toast } = useToast();
   const [collaboratori, setCollaboratori] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [responsabileId, setResponsabileId] = useState(cantiere.responsabile_id || "");
+  const [clienteId, setClienteId] = useState(cantiere.cliente_id || "");
 
   const assignedIds = (cantiere.collaboratori_ids || "")
     .split(",")
@@ -102,6 +102,21 @@ export default function CantiereSquadra({ cantiere, onSaved }) {
     }
   };
 
+  const saveCliente = async () => {
+    const cli = clienti.find((c) => c.id === clienteId);
+    setSaving(true);
+    try {
+      await base44.entities.Cantiere.update(cantiere.id, {
+        cliente_id: clienteId || "",
+        cliente_nome: cli?.nome || "",
+      });
+      onSaved();
+      toast({ title: "Cliente aggiornato" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center py-8">
@@ -117,6 +132,54 @@ export default function CantiereSquadra({ cantiere, onSaved }) {
 
   return (
     <div className="space-y-5">
+      {/* Cliente abbinato */}
+      <div className="bg-card border border-border rounded-lg p-4">
+        <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+          <User className="w-4 h-4 text-primary" />
+          Cliente abbinato
+        </h3>
+        <div className="flex gap-2">
+          <Select
+            value={clienteId || "__none__"}
+            onValueChange={(v) => setClienteId(v === "__none__" ? "" : v)}
+          >
+            <SelectTrigger className="flex-1">
+              <SelectValue placeholder="Seleziona cliente" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__none__">— Nessuno —</SelectItem>
+              {clienti.map((c) => (
+                <SelectItem key={c.id} value={c.id}>
+                  {c.is_azienda ? c.azienda || c.nome : c.nome}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={saveCliente}
+            disabled={saving}
+          >
+            Aggiorna
+          </Button>
+        </div>
+        {cantiere.cliente_nome && (
+          <div className="mt-2 text-xs text-muted-foreground">
+            Attuale:{" "}
+            <button
+              onClick={() => {
+                const cli = clienti.find((c) => c.id === cantiere.cliente_id);
+                if (cli && onOpenScheda) onOpenScheda({ type: "cliente", item: cli });
+              }}
+              className="text-primary hover:underline"
+            >
+              {cantiere.cliente_nome}
+            </button>
+          </div>
+        )}
+      </div>
+
       {/* Responsabile */}
       <div className="bg-card border border-border rounded-lg p-4">
         <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
@@ -185,14 +248,17 @@ export default function CantiereSquadra({ cantiere, onSaved }) {
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium truncate">
+                    <button
+                      onClick={() => onOpenScheda?.({ type: "collaboratore", item: c })}
+                      className="text-sm font-medium truncate text-left hover:text-primary hover:underline"
+                    >
                       {c.nome}
                       {isResp && (
                         <span className="ml-1.5 text-[10px] text-primary font-semibold">
                           RESPONSABILE
                         </span>
                       )}
-                    </div>
+                    </button>
                   </div>
                   <Select
                     value={ruolo}
@@ -242,7 +308,12 @@ export default function CantiereSquadra({ cantiere, onSaved }) {
                     <HardHat className="w-4 h-4 text-muted-foreground" />
                   </div>
                   <div className="min-w-0">
-                    <div className="text-sm truncate">{c.nome}</div>
+                    <button
+                      onClick={() => onOpenScheda?.({ type: "collaboratore", item: c })}
+                      className="text-sm truncate text-left hover:text-primary hover:underline block"
+                    >
+                      {c.nome}
+                    </button>
                     <span className="text-[10px] text-muted-foreground">
                       {c.qualifica}
                     </span>

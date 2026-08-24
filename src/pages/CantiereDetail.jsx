@@ -24,6 +24,7 @@ import CantiereSquadra from "@/components/cantiere/CantiereSquadra";
 import CantiereDocumenti from "@/components/cantiere/CantiereDocumenti";
 import CantiereAvanzamento from "@/components/cantiere/CantiereAvanzamento";
 import CantierePagamenti from "@/components/cantiere/CantierePagamenti";
+import SchedaDialog from "@/components/cantiere/SchedaDialog";
 import { useToast } from "@/components/ui/use-toast";
 import { Image as UIImage } from "@/components/ui/image";
 
@@ -49,18 +50,21 @@ export default function CantiereDetail() {
   const { toast } = useToast();
   const [cantiere, setCantiere] = useState(null);
   const [clienti, setClienti] = useState([]);
+  const [collaboratori, setCollaboratori] = useState([]);
   const [loading, setLoading] = useState(true);
   const [formOpen, setFormOpen] = useState(false);
+  const [scheda, setScheda] = useState(null);
 
   const load = useCallback(async () => {
-    setLoading(true);
     try {
-      const [c, cl] = await Promise.all([
+      const [c, cl, collabs] = await Promise.all([
         base44.entities.Cantiere.get(id),
         base44.entities.Cliente.list(),
+        base44.entities.Collaboratore.list(),
       ]);
       setCantiere(c);
       setClienti(cl);
+      setCollaboratori(collabs);
     } catch (err) {
       console.error("Errore caricamento cantiere:", err);
     } finally {
@@ -108,9 +112,12 @@ export default function CantiereDetail() {
     );
   }
 
+  const assignedCollabIds = (cantiere.collaboratori_ids || "").split(",").filter(Boolean);
+  const assignedCollabs = collaboratori.filter((c) => assignedCollabIds.includes(c.id));
+  const clienteObj = clienti.find((c) => c.id === cantiere.cliente_id);
+  const responsabileObj = collaboratori.find((c) => c.id === cantiere.responsabile_id);
+
   const infoRows = [
-    { icon: User, label: "Cliente", value: cantiere.cliente_nome },
-    { icon: HardHat, label: "Responsabile", value: cantiere.responsabile_nome },
     { icon: MapPin, label: "Indirizzo", value: cantiere.indirizzo },
     { icon: MapPin, label: "Città", value: cantiere.citta },
     {
@@ -238,6 +245,70 @@ export default function CantiereDetail() {
                 </div>
               ))}
             </div>
+
+            {/* Cliente + Responsabile cliccabili */}
+            <div className="mt-4 pt-4 border-t border-border space-y-3">
+              <div className="flex items-start gap-2.5">
+                <User className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                <div>
+                  <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                    Cliente
+                  </div>
+                  {clienteObj ? (
+                    <button
+                      onClick={() => setScheda({ type: "cliente", item: clienteObj })}
+                      className="text-sm text-primary hover:underline text-left"
+                    >
+                      {clienteObj.is_azienda ? clienteObj.azienda || clienteObj.nome : clienteObj.nome}
+                    </button>
+                  ) : (
+                    <div className="text-sm text-muted-foreground">—</div>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-start gap-2.5">
+                <HardHat className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                <div>
+                  <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                    Responsabile / Capo cantiere
+                  </div>
+                  {responsabileObj ? (
+                    <button
+                      onClick={() => setScheda({ type: "collaboratore", item: responsabileObj })}
+                      className="text-sm text-primary hover:underline text-left"
+                    >
+                      {responsabileObj.nome}
+                    </button>
+                  ) : (
+                    <div className="text-sm text-muted-foreground">—</div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Squadra abbinata */}
+            {assignedCollabs.length > 0 && (
+              <div className="mt-4 pt-4 border-t border-border">
+                <div className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">
+                  Squadra abbinata ({assignedCollabs.length})
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {assignedCollabs.map((c) => (
+                    <button
+                      key={c.id}
+                      onClick={() => setScheda({ type: "collaboratore", item: c })}
+                      className="flex items-center gap-1.5 bg-secondary/50 hover:bg-secondary border border-border rounded-full pl-1.5 pr-3 py-1 text-xs transition-colors"
+                    >
+                      <span className="w-5 h-5 rounded-full bg-primary/15 flex items-center justify-center flex-shrink-0">
+                        <HardHat className="w-3 h-3 text-primary" />
+                      </span>
+                      {c.nome}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {cantiere.note_interne && (
               <div className="mt-4 pt-4 border-t border-border">
                 <div className="text-[11px] uppercase tracking-wider text-muted-foreground mb-1">
@@ -250,7 +321,12 @@ export default function CantiereDetail() {
         </TabsContent>
 
         <TabsContent value="squadra">
-          <CantiereSquadra cantiere={cantiere} onSaved={load} />
+          <CantiereSquadra
+            cantiere={cantiere}
+            clienti={clienti}
+            onSaved={load}
+            onOpenScheda={setScheda}
+          />
         </TabsContent>
 
         <TabsContent value="documenti">
@@ -272,6 +348,13 @@ export default function CantiereDetail() {
         cantiere={cantiere}
         clienti={clienti}
         onSaved={load}
+      />
+
+      <SchedaDialog
+        open={!!scheda}
+        onOpenChange={(v) => !v && setScheda(null)}
+        type={scheda?.type}
+        item={scheda?.item}
       />
     </div>
   );
