@@ -9,6 +9,8 @@ import ScrollToTop from './components/ScrollToTop';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import GestionaleLayout from '@/components/GestionaleLayout';
 import Dashboard from '@/pages/Dashboard';
+import Cantieri from '@/pages/Cantieri';
+import CantiereDetail from '@/pages/CantiereDetail';
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
 import ForgotPassword from '@/pages/ForgotPassword';
@@ -50,6 +52,8 @@ const AuthenticatedApp = () => {
       <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
         <Route element={<GestionaleLayout />}>
           <Route path="/" element={<Dashboard />} />
+          <Route path="/cantieri" element={<Cantieri />} />
+          <Route path="/cantieri/:id" element={<CantiereDetail />} />
         </Route>
       </Route>
       <Route path="*" element={<PageNotFound />} />
