@@ -181,17 +181,7 @@ export default function CantiereDetail() {
       </div>
 
       {/* Titolo + stato */}
-      <div className="bg-card border border-border rounded-[14px] p-5 mb-4 overflow-hidden">
-        {cantiere.foto_url && (
-          <div className="relative -mx-5 -mt-5 mb-4 h-44 sm:h-56 overflow-hidden bg-secondary">
-            <UIImage
-              src={cantiere.foto_url}
-              alt={cantiere.nome}
-              className="w-full h-full"
-              fittingType="cover"
-            />
-          </div>
-        )}
+      <div className="bg-card border border-border rounded-[14px] p-5 mb-4">
         <div className="flex items-start justify-between gap-3 mb-1">
           <h1 className="text-xl font-bold flex items-center gap-2">
             <Building2 className="w-5 h-5 text-primary" />
@@ -242,11 +232,29 @@ export default function CantiereDetail() {
         </TabsList>
 
         <TabsContent value="panoramica">
+          {cantiere.foto_url && (
+            <div className="relative h-24 sm:h-28 rounded-[14px] overflow-hidden bg-secondary mb-4">
+              <UIImage
+                src={cantiere.foto_url}
+                alt={cantiere.nome}
+                className="w-full h-full"
+                fittingType="cover"
+              />
+            </div>
+          )}
           <div className="bg-card border border-border rounded-[14px] p-5">
-            <h2 className="text-sm font-semibold mb-4 flex items-center gap-2">
-              <FileText className="w-4 h-4 text-primary" />
-              Dettagli
-            </h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-sm font-semibold flex items-center gap-2">
+                <FileText className="w-4 h-4 text-primary" />
+                Dettagli
+              </h2>
+              {!isCliente && (
+                <Button variant="outline" size="sm" onClick={() => setFormOpen(true)}>
+                  <Pencil className="w-3.5 h-3.5 mr-1" />
+                  Modifica dati cantiere
+                </Button>
+              )}
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {infoRows.map((row, i) => (
                 <div key={i} className="flex items-start gap-2.5">
