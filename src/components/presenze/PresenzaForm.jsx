@@ -102,6 +102,32 @@ export default function PresenzaForm({ open, onOpenChange, presenza, onSaved }) 
     [form.ora_ingresso, form.ora_uscita]
   );
 
+  // Filtra collaboratori assegnati al cantiere selezionato
+  const collaboratoriFiltrati = useMemo(() => {
+    if (!form.cantiere_id) return collaboratori;
+    const cantiere = cantieri.find((c) => c.id === form.cantiere_id);
+    if (!cantiere || !cantiere.collaboratori_ids) return collaboratori;
+    const ids = cantiere.collaboratori_ids
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const filtered = collaboratori.filter((c) => ids.includes(c.id));
+    // Include currently selected even if not in cantiere team (editing)
+    if (
+      form.collaboratore_id &&
+      !filtered.find((c) => c.id === form.collaboratore_id)
+    ) {
+      const sel = collaboratori.find((c) => c.id === form.collaboratore_id);
+      if (sel) filtered.unshift(sel);
+    }
+    return filtered;
+  }, [collaboratori, cantieri, form.cantiere_id, form.collaboratore_id]);
+
+  const lavSelezionata = useMemo(
+    () => lavorazioni.find((l) => l.id === form.lavorazione_id),
+    [lavorazioni, form.lavorazione_id]
+  );
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.collaboratore_id || !form.data) return;
@@ -157,7 +183,7 @@ export default function PresenzaForm({ open, onOpenChange, presenza, onSaved }) 
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="__none__">—</SelectItem>
-                {collaboratori.map((c) => (
+                {collaboratoriFiltrati.map((c) => (
                   <SelectItem key={c.id} value={c.id}>
                     {c.nome}
                   </SelectItem>
@@ -193,9 +219,28 @@ export default function PresenzaForm({ open, onOpenChange, presenza, onSaved }) 
               <Label>Lavorazione</Label>
               <Select
                 value={form.lavorazione_id || "__none__"}
-                onValueChange={(v) =>
-                  update("lavorazione_id", v === "__none__" ? "" : v)
-                }
+                onValueChange={(v) => {
+                  const lavId = v === "__none__" ? "" : v;
+                  update("lavorazione_id", lavId);
+                  // Auto-fill uscita based on lavorazione ore_previste
+                  if (lavId) {
+                    const lav = lavorazioni.find((l) => l.id === lavId);
+                    if (lav && lav.ore_previste && form.ora_ingresso) {
+                      const [hi, mi] = form.ora_ingresso
+                        .split(":")
+                        .map(Number);
+                      const totalMin = hi * 60 + mi + lav.ore_previste * 60;
+                      const hu = Math.floor(totalMin / 60) % 24;
+                      const mu = totalMin % 60;
+                      update(
+                        "ora_uscita",
+                        `${String(hu).padStart(2, "0")}:${String(
+                          mu
+                        ).padStart(2, "0")}`
+                      );
+                    }
+                  }
+                }}
                 disabled={!form.cantiere_id}
               >
                 <SelectTrigger>
@@ -206,6 +251,7 @@ export default function PresenzaForm({ open, onOpenChange, presenza, onSaved }) 
                   {lavorazioni.map((l) => (
                     <SelectItem key={l.id} value={l.id}>
                       {l.titolo}
+                      {l.ore_previste ? ` · ${l.ore_previste}h prev.` : ""}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -248,6 +294,30 @@ export default function PresenzaForm({ open, onOpenChange, presenza, onSaved }) 
             <span className="text-sm text-muted-foreground">Ore totali calcolate</span>
             <span className="text-lg font-bold text-primary">{oreTotali} h</span>
           </div>
+
+          {lavSelezionata && (
+            <div className="flex items-center justify-between bg-secondary/30 rounded-lg p-3 border border-border/50">
+              <div className="text-sm text-muted-foreground">
+                Ore previste lavorazione:{" "}
+                <span className="font-medium text-foreground">
+                  {lavSelezionata.ore_previste || 0} h
+                </span>
+              </div>
+              <div className="text-sm font-medium">
+                {oreTotali === (lavSelezionata.ore_previste || 0) ? (
+                  <span className="text-green-500">✓ Coincide</span>
+                ) : (
+                  <span className="text-yellow-500">
+                    Diff:{" "}
+                    {(
+                      oreTotali - (lavSelezionata.ore_previste || 0)
+                    ).toFixed(2)}
+                    h
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
