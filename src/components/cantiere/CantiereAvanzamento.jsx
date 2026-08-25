@@ -563,17 +563,11 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate }) {
                           </button>
                         </div>
                       </div>
-                      {/* Barra avanzamento fase — mostra il contributo al totale progetto */}
+                      {/* Barra avanzamento fase — piena a 100% quando completata */}
                       <div className="mt-2 flex items-center gap-2">
-                        <div className="flex-1 h-2.5 bg-secondary rounded-full overflow-hidden relative">
-                          {/* Peso della fase (sfondo semi-trasparente) */}
+                        <div className="flex-1 h-2.5 bg-secondary rounded-full overflow-hidden">
                           <div
-                            className="absolute h-full bg-primary/10 border-r border-primary/20"
-                            style={{ width: `${Math.min(pctPrev, 100)}%` }}
-                          />
-                          {/* Contributo effettivo = peso × completamento */}
-                          <div
-                            className={`h-full transition-all relative ${
+                            className={`h-full transition-all ${
                               l.stato === "completata"
                                 ? "bg-green-500"
                                 : l.stato === "in_corso"
@@ -587,16 +581,16 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate }) {
                             style={{
                               width: `${
                                 l.stato === "completata"
-                                  ? Math.min(pctPrev, 100)
+                                  ? 100
                                   : l.stato === "da_fare" || l.stato === "annullata"
                                   ? 0
-                                  : Math.min((pctPrev * pctCompl) / 100, pctPrev)
+                                  : Math.min(pctCompl, 100)
                               }%`,
                             }}
                           />
                         </div>
                         <span className="text-[10px] text-muted-foreground whitespace-nowrap tabular-nums">
-                          {Math.round((pctPrev * pctCompl) / 100)}% / {pctPrev}% peso
+                          {pctCompl}% · peso {pctPrev}%
                         </span>
                       </div>
                       <div className="flex items-center gap-2 mt-2">
