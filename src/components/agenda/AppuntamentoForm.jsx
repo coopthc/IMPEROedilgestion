@@ -17,7 +17,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, User, HardHat, Check } from "lucide-react";
+import {
+  Loader2,
+  User,
+  HardHat,
+  Check,
+  Calendar,
+  X,
+} from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { creaNotifiche } from "@/lib/notifiche";
 
@@ -36,17 +43,34 @@ const STATI = [
   { value: "annullato", label: "Annullato" },
 ];
 
+const DURATE_PILLOLE = [10, 15, 30, 45, 60];
+
 const emptyForm = {
   titolo: "",
   data: "",
   ora: "",
-  durata_minuti: 60,
   tipo: "interno",
   cliente_id: "",
   cantiere_id: "",
   note: "",
   stato: "programmato",
 };
+
+function durataToPillole(durata) {
+  if (!durata || durata <= 0) return [60];
+  const pillole = [];
+  let r = durata;
+  while (r >= 60) {
+    pillole.push(60);
+    r -= 60;
+  }
+  if (r === 45) pillole.push(45);
+  else if (r === 30) pillole.push(30);
+  else if (r === 15) pillole.push(15);
+  else if (r === 10) pillole.push(10);
+  else if (r > 0) pillole.push(r);
+  return pillole.length > 0 ? pillole : [60];
+}
 
 export default function AppuntamentoForm({
   open,
@@ -57,10 +81,12 @@ export default function AppuntamentoForm({
 }) {
   const [form, setForm] = useState(emptyForm);
   const [loading, setLoading] = useState(false);
+  const [sendingEmail, setSendingEmail] = useState(false);
   const [clienti, setClienti] = useState([]);
   const [cantieri, setCantieri] = useState([]);
-  const [squadra, setSquadra] = useState([]);
+  const [collaboratori, setCollaboratori] = useState([]);
   const [partecipantiIds, setPartecipantiIds] = useState([]);
+  const [pillole, setPillole] = useState([60]);
   const [creaCantiereBozza, setCreaCantiereBozza] = useState(false);
 
   useEffect(() => {
@@ -69,7 +95,6 @@ export default function AppuntamentoForm({
         titolo: appuntamento.titolo || "",
         data: appuntamento.data || "",
         ora: appuntamento.ora || "",
-        durata_minuti: appuntamento.durata_minuti ?? 60,
         tipo: appuntamento.tipo || "interno",
         cliente_id: appuntamento.cliente_id || "",
         cantiere_id: appuntamento.cantiere_id || "",
@@ -79,9 +104,11 @@ export default function AppuntamentoForm({
       setPartecipantiIds(
         (appuntamento.partecipanti_ids || "").split(",").filter(Boolean)
       );
+      setPillole(durataToPillole(appuntamento.durata_minuti));
     } else {
       setForm({ ...emptyForm, data: defaultData || "" });
       setPartecipantiIds([]);
+      setPillole([60]);
       setCreaCantiereBozza(false);
     }
   }, [appuntamento, open, defaultData]);
@@ -93,26 +120,12 @@ export default function AppuntamentoForm({
         .filter({ archiviato: false })
         .then(setCantieri)
         .catch(() => {});
+      base44.entities.Collaboratore
+        .filter({ attivo: true })
+        .then(setCollaboratori)
+        .catch(() => {});
     }
   }, [open]);
-
-  // Quando cambia il cantiere, carica la squadra
-  useEffect(() => {
-    if (!form.cantiere_id) {
-      setSquadra([]);
-      return;
-    }
-    base44.entities.Cantiere.get(form.cantiere_id).then((c) => {
-      const ids = (c.collaboratori_ids || "").split(",").filter(Boolean);
-      if (ids.length === 0) {
-        setSquadra([]);
-        return;
-      }
-      base44.entities.Collaboratore.list().then((all) => {
-        setSquadra(all.filter((coll) => ids.includes(coll.id)));
-      });
-    });
-  }, [form.cantiere_id]);
 
   const update = (field, value) => setForm((f) => ({ ...f, [field]: value }));
 
@@ -122,6 +135,21 @@ export default function AppuntamentoForm({
     );
   };
 
+  const addPillola = (val) => setPillole((prev) => [...prev, val]);
+  const removePillola = (idx) =>
+    setPillole((prev) => prev.filter((_, i) => i !== idx));
+  const resetPillole = () => setPillole([]);
+
+  const durataTotale = pillole.reduce((a, b) => a + b, 0);
+
+  const dataLabel = form.data
+    ? new Date(form.data + "T00:00").toLocaleDateString("it-IT", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+      })
+    : "";
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.titolo.trim() || !form.data || !form.ora) return;
@@ -130,16 +158,15 @@ export default function AppuntamentoForm({
     const cliente = clienti.find((c) => c.id === form.cliente_id);
     const cantiere = cantieri.find((c) => c.id === form.cantiere_id);
 
-    // Costruisci nomi partecipanti
     const nomi = [];
     if (cliente) nomi.push(cliente.nome);
-    squadra.forEach((s) => {
+    collaboratori.forEach((s) => {
       if (partecipantiIds.includes(s.id)) nomi.push(s.nome);
     });
 
     const payload = {
       ...form,
-      durata_minuti: Number(form.durata_minuti) || 60,
+      durata_minuti: durataTotale || 60,
       cliente_nome: cliente?.nome || "",
       cantiere_nome: cantiere?.nome || "",
       partecipanti_ids: partecipantiIds.join(","),
@@ -150,7 +177,6 @@ export default function AppuntamentoForm({
       let cantiereId = form.cantiere_id;
       let cantiereNome = cantiere?.nome || "";
 
-      // Crea cantiere in bozza per sopralluogo
       if (creaCantiereBozza && form.cliente_id && !cantiereId) {
         const clienteObj = clienti.find((c) => c.id === form.cliente_id);
         const nuovoCant = await base44.entities.Cantiere.create({
@@ -168,21 +194,43 @@ export default function AppuntamentoForm({
         cantiereNome = nuovoCant.nome;
       }
 
-      const payloadFinal = { ...payload, cantiere_id: cantiereId, cantiere_nome: cantiereNome };
+      const payloadFinal = {
+        ...payload,
+        cantiere_id: cantiereId,
+        cantiere_nome: cantiereNome,
+      };
 
+      let savedId;
       if (appuntamento) {
         await base44.entities.Appuntamento.update(appuntamento.id, payloadFinal);
+        savedId = appuntamento.id;
       } else {
-        await base44.entities.Appuntamento.create(payloadFinal);
+        const created = await base44.entities.Appuntamento.create(payloadFinal);
+        savedId = created.id;
       }
-      // Notifica in-app tutti i partecipanti (collaboratori con utente collegato)
+
+      // Notifica in-app collaboratori
       await creaNotifiche({
         collaboratoriIds: partecipantiIds,
         tipo: "appuntamento",
         titolo: `Appuntamento: ${form.titolo}`,
-        testo: `${form.data} alle ${form.ora}${cantiere ? " — " + cantiere.nome : ""}`,
+        testo: `${form.data} alle ${form.ora}${cantiereNome ? " — " + cantiereNome : ""}`,
         url: "/agenda",
       });
+
+      // Invia email individuali a tutti i partecipanti (cliente + collaboratori)
+      if (partecipantiIds.length > 0 || form.cliente_id) {
+        setSendingEmail(true);
+        try {
+          await base44.functions.invoke("inviaNotificaAppuntamento", {
+            appuntamento_id: savedId,
+          });
+        } catch (err) {
+          console.error("Errore invio email appuntamento:", err);
+        }
+        setSendingEmail(false);
+      }
+
       onSaved();
       onOpenChange(false);
     } catch (err) {
@@ -201,6 +249,35 @@ export default function AppuntamentoForm({
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 pt-2">
+          {/* Data + Ora */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label>Data</Label>
+              {defaultData && !appuntamento ? (
+                <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-secondary text-sm capitalize">
+                  <Calendar className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+                  <span className="truncate">{dataLabel}</span>
+                </div>
+              ) : (
+                <Input
+                  type="date"
+                  value={form.data}
+                  onChange={(e) => update("data", e.target.value)}
+                  required
+                />
+              )}
+            </div>
+            <div className="space-y-1.5">
+              <Label>Ora</Label>
+              <Input
+                type="time"
+                value={form.ora}
+                onChange={(e) => update("ora", e.target.value)}
+                required
+              />
+            </div>
+          </div>
+
           <div className="space-y-1.5">
             <Label htmlFor="titolo">Titolo *</Label>
             <Input
@@ -212,47 +289,56 @@ export default function AppuntamentoForm({
             />
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="data">Data *</Label>
-              <Input
-                id="data"
-                type="date"
-                value={form.data}
-                onChange={(e) => update("data", e.target.value)}
-                required
-              />
+          {/* Durata pillole */}
+          <div className="space-y-2">
+            <Label>Durata</Label>
+            <div className="flex flex-wrap gap-2">
+              {DURATE_PILLOLE.map((d) => (
+                <button
+                  key={d}
+                  type="button"
+                  onClick={() => addPillola(d)}
+                  className="px-3 py-1.5 rounded-full bg-secondary text-sm font-medium hover:bg-primary hover:text-primary-foreground transition-colors"
+                >
+                  +{d}min
+                </button>
+              ))}
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="ora">Ora *</Label>
-              <Input
-                id="ora"
-                type="time"
-                value={form.ora}
-                onChange={(e) => update("ora", e.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="durata">Durata (min)</Label>
-              <Input
-                id="durata"
-                type="number"
-                min="5"
-                step="5"
-                value={form.durata_minuti}
-                onChange={(e) => update("durata_minuti", e.target.value)}
-              />
-            </div>
+            {pillole.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                {pillole.map((p, i) => (
+                  <span
+                    key={i}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary/15 text-primary text-xs font-semibold"
+                  >
+                    {p}min
+                    <button
+                      type="button"
+                      onClick={() => removePillola(i)}
+                      className="hover:text-destructive"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                ))}
+                <span className="text-xs text-muted-foreground ml-1">
+                  = {durataTotale}min
+                </span>
+                <button
+                  type="button"
+                  onClick={resetPillole}
+                  className="text-[10px] text-muted-foreground hover:text-destructive ml-1"
+                >
+                  azzera
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Tipo</Label>
-              <Select
-                value={form.tipo}
-                onValueChange={(v) => update("tipo", v)}
-              >
+              <Select value={form.tipo} onValueChange={(v) => update("tipo", v)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -267,10 +353,7 @@ export default function AppuntamentoForm({
             </div>
             <div className="space-y-1.5">
               <Label>Stato</Label>
-              <Select
-                value={form.stato}
-                onValueChange={(v) => update("stato", v)}
-              >
+              <Select value={form.stato} onValueChange={(v) => update("stato", v)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -340,37 +423,33 @@ export default function AppuntamentoForm({
               <div>
                 <span className="text-sm font-medium">Crea cantiere in bozza</span>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Per sopralluoghi: crea un cantiere in stato bozza collegato al cliente. Se il lavoro viene preso, si prosegue; altrimenti si archivia.
+                  Per sopralluoghi: crea un cantiere in stato bozza collegato al
+                  cliente.
                 </p>
               </div>
             </label>
           )}
 
-          {/* Partecipanti — sezione critica 5.3 */}
-          {form.cantiere_id && squadra.length > 0 && (
+          {/* Collaboratori partecipanti — tutti gli attivi */}
+          {collaboratori.length > 0 && (
             <div className="rounded-lg border border-border p-3">
               <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2 block">
-                Partecipanti (squadra del cantiere)
+                Collaboratori partecipanti
               </Label>
-              <div className="space-y-1.5">
+              <div className="space-y-1.5 max-h-40 overflow-y-auto">
                 {form.cliente_id && (
-                  <label className="flex items-center gap-2.5 p-2 rounded-md hover:bg-secondary/50 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={true}
-                      readOnly
-                      className="accent-primary"
-                    />
+                  <div className="flex items-center gap-2.5 p-2 rounded-md bg-secondary/30">
                     <User className="w-3.5 h-3.5 text-primary" />
                     <span className="text-sm">
-                      {clienti.find((c) => c.id === form.cliente_id)?.nome || "Cliente"}
+                      {clienti.find((c) => c.id === form.cliente_id)?.nome ||
+                        "Cliente"}
                     </span>
                     <span className="text-[10px] text-muted-foreground ml-auto">
                       Cliente
                     </span>
-                  </label>
+                  </div>
                 )}
-                {squadra.map((s) => (
+                {collaboratori.map((s) => (
                   <label
                     key={s.id}
                     className="flex items-center gap-2.5 p-2 rounded-md hover:bg-secondary/50 cursor-pointer"
@@ -384,7 +463,7 @@ export default function AppuntamentoForm({
                     <HardHat className="w-3.5 h-3.5 text-muted-foreground" />
                     <span className="text-sm">{s.nome}</span>
                     <span className="text-[10px] text-muted-foreground ml-auto">
-                      Collaboratore
+                      {s.qualifica}
                     </span>
                   </label>
                 ))}
@@ -396,13 +475,6 @@ export default function AppuntamentoForm({
                 </p>
               )}
             </div>
-          )}
-          {form.cantiere_id && squadra.length === 0 && (
-            <p className="text-xs text-muted-foreground">
-              Nessun collaboratore assegnato a questo cantiere. Assegna la
-              squadra dalla scheda cantiere per poterla invitare agli
-              appuntamenti.
-            </p>
           )}
 
           <div className="space-y-1.5">
@@ -420,13 +492,15 @@ export default function AppuntamentoForm({
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
-              disabled={loading}
+              disabled={loading || sendingEmail}
             >
               Annulla
             </Button>
-            <Button type="submit" disabled={loading}>
-              {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              {appuntamento ? "Salva" : "Crea"}
+            <Button type="submit" disabled={loading || sendingEmail}>
+              {(loading || sendingEmail) && (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              )}
+              {sendingEmail ? "Invio email..." : appuntamento ? "Salva" : "Crea"}
             </Button>
           </div>
         </form>
