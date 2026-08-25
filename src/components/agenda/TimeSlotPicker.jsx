@@ -158,11 +158,22 @@ export default function TimeSlotPicker({
             <button
               key={s.time}
               type="button"
-              disabled={s.blocked}
-              onClick={() => onChange(s.time)}
+              onClick={() => {
+                if (s.blocked) {
+                  if (
+                    !confirm(
+                      "Questo orario risulta già occupato. Forzare la prenotazione comunque?"
+                    )
+                  )
+                    return;
+                }
+                onChange(s.time);
+              }}
               className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
                 s.blocked
-                  ? "bg-destructive/10 text-destructive/50 line-through cursor-not-allowed"
+                  ? ora === s.time
+                    ? "bg-destructive text-destructive-foreground"
+                    : "bg-destructive/10 text-destructive/60 line-through hover:bg-destructive/20 hover:text-destructive"
                   : ora === s.time
                   ? "bg-primary text-primary-foreground"
                   : "bg-secondary hover:bg-secondary/70"
@@ -175,7 +186,7 @@ export default function TimeSlotPicker({
       )}
       {slots.some((s) => s.blocked) && (
         <p className="text-[10px] text-muted-foreground mt-1.5">
-          Gli orari barrati sono già occupati.
+          Gli orari barrati sono occupati — clicca per forzare la prenotazione.
         </p>
       )}
     </div>
