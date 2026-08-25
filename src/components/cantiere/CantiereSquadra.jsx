@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -16,6 +17,7 @@ import {
   HardHat,
   Crown,
   User,
+  Search,
 } from "lucide-react";
 
 const RUOLI_CANTIERE = [
@@ -41,6 +43,9 @@ export default function CantiereSquadra({ cantiere, clienti = [], onSaved, onOpe
   const [saving, setSaving] = useState(false);
   const [responsabileId, setResponsabileId] = useState(cantiere.responsabile_id || "");
   const [clienteId, setClienteId] = useState(cantiere.cliente_id || "");
+  const [search, setSearch] = useState("");
+  const [filtroQualifica, setFiltroQualifica] = useState("all");
+  const [filtroAttivo, setFiltroAttivo] = useState("all");
 
   const assignedIds = (cantiere.collaboratori_ids || "")
     .split(",")
@@ -126,9 +131,21 @@ export default function CantiereSquadra({ cantiere, clienti = [], onSaved, onOpe
   }
 
   const assigned = collaboratori.filter((c) => assignedIds.includes(c.id));
-  const available = collaboratori.filter(
-    (c) => !assignedIds.includes(c.id) && c.attivo !== false
-  );
+  const available = collaboratori
+    .filter((c) => !assignedIds.includes(c.id))
+    .filter((c) =>
+      search.trim()
+        ? c.nome.toLowerCase().includes(search.trim().toLowerCase())
+        : true
+    )
+    .filter((c) =>
+      filtroQualifica === "all" ? true : (c.qualifica || "altro") === filtroQualifica
+    )
+    .filter((c) => {
+      if (filtroAttivo === "all") return true;
+      if (filtroAttivo === "active") return c.attivo !== false;
+      return c.attivo === false;
+    });
 
   return (
     <div className="space-y-5">
@@ -292,11 +309,45 @@ export default function CantiereSquadra({ cantiere, clienti = [], onSaved, onOpe
       </div>
 
       {/* Disponibili */}
-      {available.length > 0 && (
-        <div>
-          <h3 className="text-sm font-semibold mb-2 text-muted-foreground">
-            Aggiungi collaboratori
-          </h3>
+      <div>
+        <h3 className="text-sm font-semibold mb-2 text-muted-foreground">
+          Aggiungi collaboratori
+        </h3>
+        <div className="flex flex-col sm:flex-row gap-2 mb-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+            <Input
+              placeholder="Cerca per nome…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="h-8 pl-8 text-sm"
+            />
+          </div>
+          <Select value={filtroQualifica} onValueChange={setFiltroQualifica}>
+            <SelectTrigger className="h-8 sm:w-44 text-sm">
+              <SelectValue placeholder="Qualifica" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tutte le qualifiche</SelectItem>
+              <SelectItem value="capo_cantiere">Capo cantiere</SelectItem>
+              <SelectItem value="operaio">Operaio</SelectItem>
+              <SelectItem value="tecnico">Tecnico</SelectItem>
+              <SelectItem value="amministrazione">Amministrazione</SelectItem>
+              <SelectItem value="altro">Altro</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={filtroAttivo} onValueChange={setFiltroAttivo}>
+            <SelectTrigger className="h-8 sm:w-36 text-sm">
+              <SelectValue placeholder="Stato" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tutti</SelectItem>
+              <SelectItem value="active">Attivi</SelectItem>
+              <SelectItem value="inactive">Non attivi</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        {available.length > 0 ? (
           <div className="space-y-2">
             {available.map((c) => (
               <div
@@ -331,8 +382,14 @@ export default function CantiereSquadra({ cantiere, clienti = [], onSaved, onOpe
               </div>
             ))}
           </div>
-        </div>
-      )}
+        ) : (
+          <p className="text-sm text-muted-foreground py-4 text-center bg-secondary/30 rounded-lg">
+            {search || filtroQualifica !== "all" || filtroAttivo !== "all"
+              ? "Nessun collaboratore trovato con questi filtri."
+              : "Tutti i collaboratori sono già assegnati."}
+          </p>
+        )}
+      </div>
     </div>
   );
 }
