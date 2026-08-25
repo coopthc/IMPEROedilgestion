@@ -61,7 +61,7 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate, isClie
   const [collaboratori, setCollaboratori] = useState([]);
   const [loading, setLoading] = useState(true);
   const [nuovoAgg, setNuovoAgg] = useState({ titolo: "", testo: "", tipo: "aggiornamento", visibile_cliente: false });
-  const [nuovaLav, setNuovaLav] = useState({ titolo: "", collaboratori_ids: [], ore_previste: "", percentuale_prevista: "", costo: "" });
+  const [nuovaLav, setNuovaLav] = useState({ titolo: "", collaboratori_ids: [], ore_previste: "", percentuale_prevista: "", costo: "", crea_pagamento: true });
   const [savingPct, setSavingPct] = useState(false);
   const [savingBudgetId, setSavingBudgetId] = useState(null);
   const [modalita, setModalita] = useState(cantiere.modalita_avanzamento || "manuale");
@@ -203,7 +203,8 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate, isClie
     const nomi = nuovaLav.collaboratori_ids
       .map((id) => collaboratori.find((c) => c.id === id)?.nome)
       .filter(Boolean);
-    await base44.entities.Lavorazione.create({
+    const costoNum = nuovaLav.costo ? Number(nuovaLav.costo) : 0;
+    const created = await base44.entities.Lavorazione.create({
       cantiere_id: cantiere.id,
       cantiere_nome: cantiere.nome,
       titolo: nuovaLav.titolo,
@@ -212,10 +213,23 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate, isClie
       ore_previste: nuovaLav.ore_previste ? Number(nuovaLav.ore_previste) : null,
       percentuale_prevista: nuovaLav.percentuale_prevista ? Number(nuovaLav.percentuale_prevista) : 0,
       percentuale_completata: 0,
-      costo: nuovaLav.costo ? Number(nuovaLav.costo) : 0,
+      costo: costoNum,
       stato: "da_fare",
       ordine: lavorazioni.length,
     });
+    // Crea anche la voce pagamento se richiesto e se c'è un costo
+    if (nuovaLav.crea_pagamento && costoNum > 0) {
+      await base44.entities.Pagamento.create({
+        cantiere_id: cantiere.id,
+        cantiere_nome: cantiere.nome,
+        titolo: nuovaLav.titolo,
+        tipo: "avanzamento",
+        importo: costoNum,
+        percentuale: nuovaLav.percentuale_prevista ? Number(nuovaLav.percentuale_prevista) : null,
+        stato: "non_pagato",
+        lavorazione_id: created.id,
+      });
+    }
     // Notifica i collaboratori assegnati
     await creaNotifiche({
       collaboratoriIds: nuovaLav.collaboratori_ids,
@@ -224,7 +238,7 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate, isClie
       testo: `Cantiere: ${cantiere.nome}`,
       url: `/cantieri/${cantiere.id}`,
     });
-    setNuovaLav({ titolo: "", collaboratori_ids: [], ore_previste: "", percentuale_prevista: "", costo: "" });
+    setNuovaLav({ titolo: "", collaboratori_ids: [], ore_previste: "", percentuale_prevista: "", costo: "", crea_pagamento: true });
     load();
   };
 
@@ -531,6 +545,13 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate, isClie
               />
             </div>
           </div>
+          <label className="flex items-center gap-2 text-xs cursor-pointer">
+            <Switch
+              checked={nuovaLav.crea_pagamento}
+              onCheckedChange={(v) => setNuovaLav((f) => ({ ...f, crea_pagamento: v }))}
+            />
+            Crea anche voce in Pagamenti
+          </label>
           <Button size="sm" onClick={addLavorazione} disabled={!nuovaLav.titolo.trim() || !nuovaLav.percentuale_prevista} className="w-full">
             <Plus className="w-4 h-4 mr-1" />
             Aggiungi fase

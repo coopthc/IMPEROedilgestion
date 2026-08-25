@@ -55,6 +55,10 @@
     "note": {
       "type": "string",
       "title": "Note"
+    },
+    "lavorazione_id": {
+      "type": "string",
+      "title": "Lavorazione collegata"
     }
   },
   "required": [
