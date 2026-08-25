@@ -182,18 +182,30 @@ export default function CantiereDetail() {
 
       {/* Titolo + stato */}
       <div className="bg-card border border-border rounded-[14px] p-5 mb-4">
-        <div className="flex items-start justify-between gap-3 mb-1">
-          <h1 className="text-xl font-bold flex items-center gap-2">
-            <Building2 className="w-5 h-5 text-primary" />
-            {cantiere.nome}
-          </h1>
-          <span
-            className={`text-xs px-2.5 py-1 rounded-full whitespace-nowrap ${
-              STATO_STILI[cantiere.stato] || STATO_STILI.bozza
-            }`}
-          >
-            {STATO_LABEL[cantiere.stato] || cantiere.stato}
-          </span>
+        <div className="flex items-start gap-3 mb-1">
+          {cantiere.foto_url && (
+            <div className="w-14 h-14 rounded-lg overflow-hidden bg-secondary flex-shrink-0">
+              <UIImage
+                src={cantiere.foto_url}
+                alt={cantiere.nome}
+                className="w-full h-full"
+                fittingType="cover"
+              />
+            </div>
+          )}
+          <div className="flex-1 flex items-start justify-between gap-3">
+            <h1 className="text-xl font-bold flex items-center gap-2">
+              <Building2 className="w-5 h-5 text-primary" />
+              {cantiere.nome}
+            </h1>
+            <span
+              className={`text-xs px-2.5 py-1 rounded-full whitespace-nowrap ${
+                STATO_STILI[cantiere.stato] || STATO_STILI.bozza
+              }`}
+            >
+              {STATO_LABEL[cantiere.stato] || cantiere.stato}
+            </span>
+          </div>
         </div>
         {cantiere.descrizione && (
           <p className="text-sm text-muted-foreground mt-2">{cantiere.descrizione}</p>
@@ -232,16 +244,6 @@ export default function CantiereDetail() {
         </TabsList>
 
         <TabsContent value="panoramica">
-          {cantiere.foto_url && (
-            <div className="relative h-24 sm:h-28 rounded-[14px] overflow-hidden bg-secondary mb-4">
-              <UIImage
-                src={cantiere.foto_url}
-                alt={cantiere.nome}
-                className="w-full h-full"
-                fittingType="cover"
-              />
-            </div>
-          )}
           <div className="bg-card border border-border rounded-[14px] p-5">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-sm font-semibold flex items-center gap-2">
