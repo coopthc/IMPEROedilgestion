@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -26,6 +27,9 @@ import {
   Info,
   Eye,
   EyeOff,
+  Users,
+  Target,
+  Gauge,
 } from "lucide-react";
 import { creaNotifiche } from "@/lib/notifiche";
 
@@ -37,12 +41,16 @@ const TIPI_AGG = [
 ];
 
 const STATI_LAV = [
-  { value: "da_fare", label: "Da fare" },
-  { value: "in_corso", label: "In corso" },
-  { value: "completata", label: "Completata" },
-  { value: "bloccata", label: "Bloccata" },
-  { value: "annullata", label: "Annullata" },
+  { value: "da_fare", label: "Da fare", color: "bg-gray-500/15 text-gray-400" },
+  { value: "in_corso", label: "In corso", color: "bg-blue-500/15 text-blue-400" },
+  { value: "completata", label: "Completata", color: "bg-green-500/15 text-green-400" },
+  { value: "bloccata", label: "Bloccata", color: "bg-red-500/15 text-red-400" },
+  { value: "annullata", label: "Annullata", color: "bg-muted/30 text-muted-foreground" },
 ];
+
+function parseIds(str) {
+  return (str || "").split(",").filter(Boolean);
+}
 
 export default function CantiereAvanzamento({ cantiere, onCantiereUpdate }) {
   const { user } = useAuth();
@@ -52,12 +60,14 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate }) {
   const [collaboratori, setCollaboratori] = useState([]);
   const [loading, setLoading] = useState(true);
   const [nuovoAgg, setNuovoAgg] = useState({ titolo: "", testo: "", tipo: "aggiornamento", visibile_cliente: false });
-  const [nuovaLav, setNuovaLav] = useState({ titolo: "", collaboratore_id: "", ore_previste: "" });
+  const [nuovaLav, setNuovaLav] = useState({ titolo: "", collaboratori_ids: [], ore_previste: "", percentuale_prevista: "" });
   const [savingPct, setSavingPct] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({ titolo: "", testo: "", tipo: "aggiornamento", visibile_cliente: false });
+  const [editingLav, setEditingLav] = useState(null);
+  const [lavForm, setLavForm] = useState({ titolo: "", collaboratori_ids: [], ore_previste: "", percentuale_prevista: "", percentuale_completata: 0 });
 
-  const assignedIds = (cantiere.collaboratori_ids || "").split(",").filter(Boolean);
+  const assignedIds = parseIds(cantiere.collaboratori_ids);
 
   const load = async () => {
     setLoading(true);
@@ -78,6 +88,14 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate }) {
   useEffect(() => {
     load();
   }, [cantiere.id]);
+
+  // Calcoli barre
+  const pronosticoTotale = lavorazioni.reduce((sum, l) => sum + (l.percentuale_prevista || 0), 0);
+  const effettivoTotale = lavorazioni.reduce(
+    (sum, l) => sum + ((l.percentuale_completata || 0) / 100) * (l.percentuale_prevista || 0),
+    0
+  );
+  const effettivoPct = pronosticoTotale > 0 ? (effettivoTotale / pronosticoTotale) * 100 : 0;
 
   const savePercentuale = async () => {
     setSavingPct(true);
@@ -102,7 +120,6 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate }) {
       visibile_cliente: nuovoAgg.visibile_cliente,
       autore_nome: user?.full_name || "—",
     });
-    // Notifica in-app tutta la squadra del cantiere
     await creaNotifiche({
       collaboratoriIds: assignedIds,
       tipo: "aggiornamento",
@@ -140,27 +157,88 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate }) {
     setAggiornamenti((prev) => prev.filter((a) => a.id !== id));
   };
 
+  const toggleLavCollab = (collabId, isCreating = false) => {
+    if (isCreating) {
+      const ids = nuovaLav.collaboratori_ids;
+      const newIds = ids.includes(collabId) ? ids.filter((id) => id !== collabId) : [...ids, collabId];
+      setNuovaLav((f) => ({ ...f, collaboratori_ids: newIds }));
+    } else {
+      const ids = lavForm.collaboratori_ids;
+      const newIds = ids.includes(collabId) ? ids.filter((id) => id !== collabId) : [...ids, collabId];
+      setLavForm((f) => ({ ...f, collaboratori_ids: newIds }));
+    }
+  };
+
   const addLavorazione = async () => {
     if (!nuovaLav.titolo.trim()) return;
-    const collab = collaboratori.find((c) => c.id === nuovaLav.collaboratore_id);
+    const nomi = nuovaLav.collaboratori_ids
+      .map((id) => collaboratori.find((c) => c.id === id)?.nome)
+      .filter(Boolean);
     await base44.entities.Lavorazione.create({
       cantiere_id: cantiere.id,
       cantiere_nome: cantiere.nome,
       titolo: nuovaLav.titolo,
-      collaboratore_id: nuovaLav.collaboratore_id || "",
-      collaboratore_nome: collab?.nome || "",
+      collaboratori_ids: nuovaLav.collaboratori_ids.join(","),
+      collaboratori_nomi: nomi.join(", "),
       ore_previste: nuovaLav.ore_previste ? Number(nuovaLav.ore_previste) : null,
+      percentuale_prevista: nuovaLav.percentuale_prevista ? Number(nuovaLav.percentuale_prevista) : 0,
+      percentuale_completata: 0,
       stato: "da_fare",
       ordine: lavorazioni.length,
     });
-    setNuovaLav({ titolo: "", collaboratore_id: "", ore_previste: "" });
+    // Notifica i collaboratori assegnati
+    await creaNotifiche({
+      collaboratoriIds: nuovaLav.collaboratori_ids,
+      tipo: "aggiornamento",
+      titolo: `Nuova lavorazione: ${nuovaLav.titolo}`,
+      testo: `Cantiere: ${cantiere.nome}`,
+      url: `/cantieri/${cantiere.id}`,
+    });
+    setNuovaLav({ titolo: "", collaboratori_ids: [], ore_previste: "", percentuale_prevista: "" });
+    load();
+  };
+
+  const startEditLav = (lav) => {
+    setEditingLav(lav.id);
+    setLavForm({
+      titolo: lav.titolo || "",
+      collaboratori_ids: parseIds(lav.collaboratori_ids || lav.collaboratore_id),
+      ore_previste: lav.ore_previste ?? "",
+      percentuale_prevista: lav.percentuale_prevista ?? 0,
+      percentuale_completata: lav.percentuale_completata ?? 0,
+    });
+  };
+
+  const saveLav = async (id) => {
+    const nomi = lavForm.collaboratori_ids
+      .map((cid) => collaboratori.find((c) => c.id === cid)?.nome)
+      .filter(Boolean);
+    const updateData = {
+      titolo: lavForm.titolo,
+      collaboratori_ids: lavForm.collaboratori_ids.join(","),
+      collaboratori_nomi: nomi.join(", "),
+      ore_previste: lavForm.ore_previste === "" ? null : Number(lavForm.ore_previste),
+      percentuale_prevista: Number(lavForm.percentuale_prevista) || 0,
+      percentuale_completata: Number(lavForm.percentuale_completata) || 0,
+    };
+    // Se completata al 100%, aggiorna stato
+    if (Number(lavForm.percentuale_completata) >= 100) {
+      updateData.stato = "completata";
+    } else if (Number(lavForm.percentuale_completata) > 0) {
+      updateData.stato = "in_corso";
+    }
+    await base44.entities.Lavorazione.update(id, updateData);
+    setEditingLav(null);
     load();
   };
 
   const updateLavStato = async (lav, stato) => {
-    await base44.entities.Lavorazione.update(lav.id, { stato });
+    const updateData = { stato };
+    if (stato === "completata") updateData.percentuale_completata = 100;
+    else if (stato === "da_fare") updateData.percentuale_completata = 0;
+    await base44.entities.Lavorazione.update(lav.id, updateData);
     setLavorazioni((prev) =>
-      prev.map((l) => (l.id === lav.id ? { ...l, stato } : l))
+      prev.map((l) => (l.id === lav.id ? { ...l, ...updateData } : l))
     );
   };
 
@@ -179,11 +257,11 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate }) {
 
   return (
     <div className="space-y-6">
-      {/* Avanzamento percentuale */}
+      {/* Barra manuale (opzione esistente) */}
       <div className="bg-card border border-border rounded-lg p-4">
         <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-          <TrendingUp className="w-4 h-4 text-primary" />
-          Avanzamento generale
+          <Gauge className="w-4 h-4 text-primary" />
+          Avanzamento manuale
         </h3>
         <div className="flex items-center gap-3">
           <input
@@ -202,85 +280,269 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate }) {
         <div className="w-full h-2 bg-secondary rounded-full mt-3 overflow-hidden">
           <div
             className="h-full bg-primary transition-all"
-            style={{ width: `${percentuale}%` }}
+            style={{ width: `${Math.min(percentuale, 100)}%` }}
           />
         </div>
       </div>
 
+      {/* Barra pronostico */}
+      <div className="bg-card border border-border rounded-lg p-4">
+        <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+          <Target className="w-4 h-4 text-blue-400" />
+          Pronostico (somma fasi previste)
+        </h3>
+        <div className="flex items-baseline gap-2 mb-2">
+          <span className="text-2xl font-bold">{pronosticoTotale}%</span>
+          {pronosticoTotale > 100 && (
+            <Badge className="bg-yellow-500/15 text-yellow-400 text-[10px]">
+              +{pronosticoTotale - 100}% lavorazioni extra
+            </Badge>
+          )}
+        </div>
+        <div className="w-full h-3 bg-secondary rounded-full overflow-hidden relative">
+          <div
+            className="h-full bg-blue-500 transition-all"
+            style={{ width: `${Math.min(pronosticoTotale, 100)}%` }}
+          />
+          {pronosticoTotale > 100 && (
+            <div
+              className="absolute top-0 h-full bg-yellow-500/50"
+              style={{ left: "100%", width: "0" }}
+            />
+          )}
+        </div>
+        <p className="text-[11px] text-muted-foreground mt-1.5">
+          Somma delle percentuali previste di ogni fase. Può superare il 100% per lavorazioni aggiuntive.
+        </p>
+      </div>
+
+      {/* Barra effettivo */}
+      <div className="bg-card border border-border rounded-lg p-4">
+        <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+          <TrendingUp className="w-4 h-4 text-green-400" />
+          Effettivo (completamento reale)
+        </h3>
+        <div className="flex items-baseline gap-2 mb-2">
+          <span className="text-2xl font-bold">{Math.round(effettivoPct)}%</span>
+          <span className="text-xs text-muted-foreground">
+            su {pronosticoTotale}% totale previsto
+          </span>
+        </div>
+        <div className="w-full h-3 bg-secondary rounded-full overflow-hidden">
+          <div
+            className="h-full bg-green-500 transition-all"
+            style={{ width: `${Math.min(effettivoPct, 100)}%` }}
+          />
+        </div>
+        <p className="text-[11px] text-muted-foreground mt-1.5">
+          Il 100% di questa barra corrisponde al {pronosticoTotale}% del pronostico.
+        </p>
+      </div>
+
       {/* Lavorazioni */}
       <div className="bg-card border border-border rounded-lg p-4">
-        <h3 className="text-sm font-semibold mb-3">Lavorazioni (fasi di lavoro)</h3>
-        <div className="flex flex-col sm:flex-row gap-2 mb-3">
+        <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+          <Users className="w-4 h-4 text-primary" />
+          Lavorazioni (fasi di lavoro)
+        </h3>
+        {/* Form nuova lavorazione */}
+        <div className="space-y-2 mb-4 bg-secondary/30 rounded-lg p-3">
           <Input
-            placeholder="Titolo fase (es. Demolizione bagno)"
+            placeholder="Titolo fase (es. Demolizione bagno) *"
             value={nuovaLav.titolo}
             onChange={(e) => setNuovaLav((f) => ({ ...f, titolo: e.target.value }))}
-            className="flex-1"
           />
-          <Select
-            value={nuovaLav.collaboratore_id || "__none__"}
-            onValueChange={(v) =>
-              setNuovaLav((f) => ({ ...f, collaboratore_id: v === "__none__" ? "" : v }))
-            }
-          >
-            <SelectTrigger className="w-full sm:w-40">
-              <SelectValue placeholder="Collaboratore" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__none__">—</SelectItem>
-              {collaboratori.map((c) => (
-                <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Input
-            type="number"
-            placeholder="Ore prev."
-            value={nuovaLav.ore_previste}
-            onChange={(e) => setNuovaLav((f) => ({ ...f, ore_previste: e.target.value }))}
-            className="w-full sm:w-24"
-          />
-          <Button size="sm" onClick={addLavorazione}>
-            <Plus className="w-4 h-4" />
+          <div>
+            <Label className="text-xs text-muted-foreground mb-1.5">Collaboratori assegnati</Label>
+            <div className="flex flex-wrap gap-1.5">
+              {collaboratori.map((c) => {
+                const selected = nuovaLav.collaboratori_ids.includes(c.id);
+                return (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => toggleLavCollab(c.id, true)}
+                    className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
+                      selected
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-transparent border-border hover:border-primary/50"
+                    }`}
+                  >
+                    {c.nome}
+                  </button>
+                );
+              })}
+              {collaboratori.length === 0 && (
+                <span className="text-xs text-muted-foreground">Nessun collaboratore in squadra</span>
+              )}
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <Input
+              type="number"
+              placeholder="Ore prev."
+              value={nuovaLav.ore_previste}
+              onChange={(e) => setNuovaLav((f) => ({ ...f, ore_previste: e.target.value }))}
+            />
+            <Input
+              type="number"
+              placeholder="% prevista (es. 20)"
+              value={nuovaLav.percentuale_prevista}
+              onChange={(e) => setNuovaLav((f) => ({ ...f, percentuale_prevista: e.target.value }))}
+            />
+          </div>
+          <Button size="sm" onClick={addLavorazione} disabled={!nuovaLav.titolo.trim()} className="w-full">
+            <Plus className="w-4 h-4 mr-1" />
+            Aggiungi fase
           </Button>
         </div>
+
         {lavorazioni.length === 0 ? (
           <p className="text-xs text-muted-foreground py-3 text-center">
             Nessuna lavorazione. Le lavorazioni create qui compariranno nella sezione Presenze.
           </p>
         ) : (
           <div className="space-y-2">
-            {lavorazioni.map((l) => (
-              <div key={l.id} className="flex items-center gap-2 bg-secondary/30 rounded-lg p-2.5">
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium truncate">{l.titolo}</div>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    {l.collaboratore_nome && (
-                      <span className="text-[10px] text-muted-foreground">{l.collaboratore_nome}</span>
-                    )}
-                    {l.ore_previste != null && (
-                      <span className="text-[10px] text-muted-foreground">{l.ore_previste}h prev.</span>
-                    )}
-                  </div>
+            {lavorazioni.map((l) => {
+              const statoInfo = STATI_LAV.find((s) => s.value === l.stato) || STATI_LAV[0];
+              const isEditing = editingLav === l.id;
+              const lavCollabIds = parseIds(l.collaboratori_ids || l.collaboratore_id);
+              const lavCollabNomi = (l.collaboratori_nomi || l.collaboratore_nome || "").split(",").filter(Boolean);
+              const pctCompl = l.percentuale_completata || 0;
+              const pctPrev = l.percentuale_prevista || 0;
+
+              return (
+                <div key={l.id} className="bg-secondary/30 rounded-lg p-3">
+                  {isEditing ? (
+                    <div className="space-y-2">
+                      <Input
+                        value={lavForm.titolo}
+                        onChange={(e) => setLavForm((f) => ({ ...f, titolo: e.target.value }))}
+                        placeholder="Titolo"
+                      />
+                      <div>
+                        <Label className="text-xs text-muted-foreground mb-1.5">Collaboratori</Label>
+                        <div className="flex flex-wrap gap-1.5">
+                          {collaboratori.map((c) => {
+                            const selected = lavForm.collaboratori_ids.includes(c.id);
+                            return (
+                              <button
+                                key={c.id}
+                                type="button"
+                                onClick={() => toggleLavCollab(c.id)}
+                                className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
+                                  selected
+                                    ? "bg-primary text-primary-foreground border-primary"
+                                    : "bg-transparent border-border hover:border-primary/50"
+                                }`}
+                              >
+                                {c.nome}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        <div>
+                          <Label className="text-[10px] text-muted-foreground">Ore prev.</Label>
+                          <Input
+                            type="number"
+                            value={lavForm.ore_previste}
+                            onChange={(e) => setLavForm((f) => ({ ...f, ore_previste: e.target.value }))}
+                            className="h-8 text-sm"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-[10px] text-muted-foreground">% prevista</Label>
+                          <Input
+                            type="number"
+                            value={lavForm.percentuale_prevista}
+                            onChange={(e) => setLavForm((f) => ({ ...f, percentuale_prevista: e.target.value }))}
+                            className="h-8 text-sm"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-[10px] text-muted-foreground">% completata</Label>
+                          <Input
+                            type="number"
+                            min="0"
+                            max="100"
+                            value={lavForm.percentuale_completata}
+                            onChange={(e) => setLavForm((f) => ({ ...f, percentuale_completata: e.target.value }))}
+                            className="h-8 text-sm"
+                          />
+                        </div>
+                      </div>
+                      <div className="flex gap-1">
+                        <Button size="sm" onClick={() => saveLav(l.id)}>Salva</Button>
+                        <Button size="sm" variant="ghost" onClick={() => setEditingLav(null)}>
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium">{l.titolo}</div>
+                          <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                            {lavCollabNomi.map((n, i) => (
+                              <span key={i} className="text-[10px] bg-primary/15 text-primary px-1.5 py-0.5 rounded">
+                                {n}
+                              </span>
+                            ))}
+                            {lavCollabNomi.length === 0 && (
+                              <span className="text-[10px] text-muted-foreground">Nessun collaboratore</span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex gap-0.5">
+                          <button
+                            onClick={() => startEditLav(l)}
+                            className="p-1 rounded hover:bg-secondary text-muted-foreground"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => deleteLavorazione(l.id)}
+                            className="p-1 rounded hover:bg-destructive/15 text-destructive"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                      {/* Barra avanzamento fase */}
+                      <div className="mt-2 flex items-center gap-2">
+                        <div className="flex-1 h-1.5 bg-secondary rounded-full overflow-hidden">
+                          <div
+                            className={`h-full transition-all ${pctCompl >= 100 ? "bg-green-500" : "bg-blue-500"}`}
+                            style={{ width: `${Math.min(pctCompl, 100)}%` }}
+                          />
+                        </div>
+                        <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                          {pctCompl}% / {pctPrev}% prev.
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 mt-2">
+                        <Select value={l.stato} onValueChange={(v) => updateLavStato(l, v)}>
+                          <SelectTrigger className="h-7 w-28 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {STATI_LAV.map((s) => (
+                              <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {l.ore_previste != null && (
+                          <span className="text-[10px] text-muted-foreground">{l.ore_previste}h prev.</span>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <Select value={l.stato} onValueChange={(v) => updateLavStato(l, v)}>
-                  <SelectTrigger className="h-7 w-28 text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {STATI_LAV.map((s) => (
-                      <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <button
-                  onClick={() => deleteLavorazione(l.id)}
-                  className="p-1 rounded hover:bg-destructive/15 text-destructive"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

@@ -19,6 +19,7 @@ import {
   User,
   Search,
 } from "lucide-react";
+import { creaNotifiche } from "@/lib/notifiche";
 
 const RUOLI_CANTIERE = [
   { value: "operaio", label: "Operaio" },
@@ -73,6 +74,16 @@ export default function CantiereSquadra({ cantiere, clienti = [], onSaved, onOpe
         collaboratori_ids: newIds.join(","),
         collaboratori_ruoli: JSON.stringify(newRuoli),
       });
+      // Notifica il collaboratore appena abbinato
+      if (!isAssigned) {
+        await creaNotifiche({
+          collaboratoriIds: [collabId],
+          tipo: "aggiornamento",
+          titolo: `Abbinato al cantiere: ${cantiere.nome}`,
+          testo: `Sei stato abbinato al cantiere "${cantiere.nome}".`,
+          url: `/cantieri/${cantiere.id}`,
+        });
+      }
       onSaved();
     } finally {
       setSaving(false);
@@ -222,7 +233,7 @@ export default function CantiereSquadra({ cantiere, clienti = [], onSaved, onOpe
             <SelectContent>
               <SelectItem value="__none__">— Nessuno —</SelectItem>
               {collaboratori
-                .filter((c) => c.attivo !== false)
+                .filter((c) => c.attivo !== false && c.qualifica === "capo_cantiere")
                 .map((c) => (
                   <SelectItem key={c.id} value={c.id}>
                     {c.nome}

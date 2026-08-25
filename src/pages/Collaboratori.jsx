@@ -98,6 +98,26 @@ export default function Collaboratori() {
     }
   };
 
+  const reinvita = async (coll) => {
+    if (!coll.email) {
+      toast({ title: "Nessuna email registrata", variant: "destructive" });
+      return;
+    }
+    const RUOLO_MAP = {
+      capo_cantiere: "mssg_capo",
+      operaio: "mssg_operaio",
+      tecnico: "mssg_operaio",
+      amministrazione: "mssg_admin",
+      altro: "mssg_operaio",
+    };
+    try {
+      await base44.users.inviteUser(coll.email, RUOLO_MAP[coll.qualifica] || "mssg_operaio");
+      toast({ title: "Email re-inviata", description: coll.email });
+    } catch (err) {
+      toast({ title: "Errore invio email", variant: "destructive" });
+    }
+  };
+
   return (
     <div>
       {/* Header */}
@@ -251,6 +271,17 @@ export default function Collaboratori() {
                 >
                   <Pencil className="w-3.5 h-3.5" />
                 </Button>
+                {c.email && (
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-7 w-7"
+                    onClick={() => reinvita(c)}
+                    title="Re-invia email di benvenuto"
+                  >
+                    <Mail className="w-3.5 h-3.5" />
+                  </Button>
+                )}
                 <Button
                   size="icon"
                   variant="ghost"

@@ -16,8 +16,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Loader2 } from "lucide-react";
+import { Loader2, Mail, Check } from "lucide-react";
 import { base44 } from "@/api/base44Client";
+import { useToast } from "@/components/ui/use-toast";
 
 const QUALIFICHE = [
   { value: "capo_cantiere", label: "Capo cantiere" },
@@ -26,6 +27,14 @@ const QUALIFICHE = [
   { value: "amministrazione", label: "Amministrazione" },
   { value: "altro", label: "Altro" },
 ];
+
+const RUOLO_MAP = {
+  capo_cantiere: "mssg_capo",
+  operaio: "mssg_operaio",
+  tecnico: "mssg_operaio",
+  amministrazione: "mssg_admin",
+  altro: "mssg_operaio",
+};
 
 const emptyForm = {
   nome: "",
@@ -42,11 +51,16 @@ const emptyForm = {
   piva: "",
   codice_fiscale: "",
   attivo: true,
+  cantiere_id: "",
+  invita_utente: true,
 };
 
 export default function CollaboratoreForm({ open, onOpenChange, collaboratore, onSaved }) {
+  const { toast } = useToast();
   const [form, setForm] = useState(emptyForm);
   const [loading, setLoading] = useState(false);
+  const [cantieri, setCantieri] = useState([]);
+  const [invited, setInvited] = useState(false);
 
   useEffect(() => {
     if (collaboratore) {
@@ -65,13 +79,35 @@ export default function CollaboratoreForm({ open, onOpenChange, collaboratore, o
         piva: collaboratore.piva || "",
         codice_fiscale: collaboratore.codice_fiscale || "",
         attivo: collaboratore.attivo !== false,
+        cantiere_id: "",
+        invita_utente: false,
       });
+      setInvited(!!collaboratore.user_id);
     } else {
       setForm(emptyForm);
+      setInvited(false);
     }
   }, [collaboratore, open]);
 
+  useEffect(() => {
+    if (open) {
+      base44.entities.Cantiere.filter({ stato: "attivo" }).then(setCantieri).catch(() => {});
+    }
+  }, [open]);
+
   const update = (field, value) => setForm((f) => ({ ...f, [field]: value }));
+
+  const invitaUtente = async (email, qualifica) => {
+    const ruolo = RUOLO_MAP[qualifica] || "mssg_operaio";
+    try {
+      await base44.users.inviteUser(email, ruolo);
+      return true;
+    } catch (err) {
+      // Se l'utente esiste già, non è un errore bloccante
+      console.error("Errore invito utente:", err);
+      return false;
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -81,16 +117,59 @@ export default function CollaboratoreForm({ open, onOpenChange, collaboratore, o
       ...form,
       costo_orario: form.costo_orario === "" ? null : Number(form.costo_orario),
     };
+    delete payload.cantiere_id;
+    delete payload.invita_utente;
     try {
+      let saved;
       if (collaboratore) {
-        await base44.entities.Collaboratore.update(collaboratore.id, payload);
+        saved = await base44.entities.Collaboratore.update(collaboratore.id, payload);
       } else {
-        await base44.entities.Collaboratore.create(payload);
+        saved = await base44.entities.Collaboratore.create(payload);
       }
+
+      // Invita utente se richiesto e c'è una email
+      if (form.invita_utente && form.email) {
+        const ok = await invitaUtente(form.email, form.qualifica);
+        if (ok) {
+          toast({ title: "Email di benvenuto inviata", description: form.email });
+          // Tenta di collegare lo user_id
+          try {
+            const users = await base44.entities.User.list();
+            const found = users.find((u) => u.email === form.email);
+            if (found) {
+              await base44.entities.Collaboratore.update(saved.id, { user_id: found.id });
+              setInvited(true);
+            }
+          } catch (e) {
+            console.error("Collegamento user_id fallito:", e);
+          }
+        }
+      }
+
+      // Abbinamento opzionale a cantiere attivo
+      if (form.cantiere_id) {
+        const cantiere = cantieri.find((c) => c.id === form.cantiere_id);
+        if (cantiere) {
+          const existingIds = (cantiere.collaboratori_ids || "").split(",").filter(Boolean);
+          if (!existingIds.includes(saved.id)) {
+            const newIds = [...existingIds, saved.id];
+            let ruoli = {};
+            try { ruoli = JSON.parse(cantiere.collaboratori_ruoli || "{}"); } catch {}
+            ruoli[saved.id] = "operaio";
+            await base44.entities.Cantiere.update(cantiere.id, {
+              collaboratori_ids: newIds.join(","),
+              collaboratori_ruoli: JSON.stringify(ruoli),
+            });
+            toast({ title: `Abbinato al cantiere: ${cantiere.nome}` });
+          }
+        }
+      }
+
       onSaved();
       onOpenChange(false);
     } catch (err) {
       console.error("Errore salvataggio collaboratore:", err);
+      toast({ title: "Errore durante il salvataggio", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -196,6 +275,48 @@ export default function CollaboratoreForm({ open, onOpenChange, collaboratore, o
               />
             </div>
           </div>
+
+          {/* Invito utente + email benvenuto */}
+          {form.email && (
+            <div className="flex items-center justify-between rounded-lg border border-border p-3">
+              <div>
+                <Label className="cursor-pointer flex items-center gap-1.5">
+                  <Mail className="w-3.5 h-3.5" />
+                  Invita utente e invia email di benvenuto
+                </Label>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {invited
+                    ? "Utente già invitato. Riattiva per re-inviare l'email."
+                    : "Invia email con istruzioni per impostare la password"}
+                </p>
+              </div>
+              <Switch
+                checked={form.invita_utente}
+                onCheckedChange={(v) => update("invita_utente", v)}
+              />
+            </div>
+          )}
+
+          {/* Abbinamento opzionale a cantiere */}
+          {!collaboratore && (
+            <div className="space-y-1.5">
+              <Label>Abbinamento cantiere (opzionale)</Label>
+              <Select
+                value={form.cantiere_id || "__none__"}
+                onValueChange={(v) => update("cantiere_id", v === "__none__" ? "" : v)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleziona un cantiere attivo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">— Nessun cantiere —</SelectItem>
+                  {cantieri.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           {/* Sezione fatturazione */}
           <div className="pt-2">

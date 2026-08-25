@@ -30,13 +30,23 @@
       "default": "da_fare",
       "title": "Stato"
     },
-    "collaboratore_id": {
+    "collaboratori_ids": {
       "type": "string",
-      "title": "Collaboratore assegnato"
+      "title": "ID collaboratori (separati da virgola)"
     },
-    "collaboratore_nome": {
+    "collaboratori_nomi": {
       "type": "string",
-      "title": "Nome collaboratore"
+      "title": "Nomi collaboratori (separati da virgola)"
+    },
+    "percentuale_prevista": {
+      "type": "number",
+      "default": 0,
+      "title": "Percentuale prevista (pronostico)"
+    },
+    "percentuale_completata": {
+      "type": "number",
+      "default": 0,
+      "title": "Percentuale completata (effettivo)"
     },
     "ore_previste": {
       "type": "number",
