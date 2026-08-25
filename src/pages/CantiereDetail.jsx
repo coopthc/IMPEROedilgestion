@@ -26,6 +26,7 @@ import CantiereAvanzamento from "@/components/cantiere/CantiereAvanzamento";
 import CantierePagamenti from "@/components/cantiere/CantierePagamenti";
 import CantiereChat from "@/components/cantiere/CantiereChat";
 import CantiereProgetto from "@/components/cantiere/CantiereProgetto";
+import CantiereAvanzamentoRiepilogo from "@/components/cantiere/CantiereAvanzamentoRiepilogo";
 import SchedaDialog from "@/components/cantiere/SchedaDialog";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/lib/AuthContext";
@@ -332,6 +333,8 @@ export default function CantiereDetail() {
               </div>
             )}
           </div>
+
+          <CantiereAvanzamentoRiepilogo cantiere={cantiere} />
         </TabsContent>
 
         {!isCliente && (
