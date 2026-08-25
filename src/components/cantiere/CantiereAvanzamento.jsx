@@ -30,6 +30,7 @@ import {
   Users,
   Target,
   Gauge,
+  Euro,
 } from "lucide-react";
 import { creaNotifiche } from "@/lib/notifiche";
 
@@ -60,14 +61,14 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate, isClie
   const [collaboratori, setCollaboratori] = useState([]);
   const [loading, setLoading] = useState(true);
   const [nuovoAgg, setNuovoAgg] = useState({ titolo: "", testo: "", tipo: "aggiornamento", visibile_cliente: false });
-  const [nuovaLav, setNuovaLav] = useState({ titolo: "", collaboratori_ids: [], ore_previste: "", percentuale_prevista: "" });
+  const [nuovaLav, setNuovaLav] = useState({ titolo: "", collaboratori_ids: [], ore_previste: "", percentuale_prevista: "", costo: "" });
   const [savingPct, setSavingPct] = useState(false);
   const [savingBudget, setSavingBudget] = useState(false);
   const [modalita, setModalita] = useState(cantiere.modalita_avanzamento || "manuale");
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({ titolo: "", testo: "", tipo: "aggiornamento", visibile_cliente: false });
   const [editingLav, setEditingLav] = useState(null);
-  const [lavForm, setLavForm] = useState({ titolo: "", collaboratori_ids: [], ore_previste: "", percentuale_prevista: "", percentuale_completata: 0 });
+  const [lavForm, setLavForm] = useState({ titolo: "", collaboratori_ids: [], ore_previste: "", percentuale_prevista: "", percentuale_completata: 0, costo: 0 });
   const [showFasi, setShowFasi] = useState(false);
 
   const assignedIds = parseIds(cantiere.collaboratori_ids);
@@ -99,6 +100,8 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate, isClie
     (sum, l) => sum + ((l.percentuale_completata || 0) / 100) * (l.percentuale_prevista || 0),
     0
   );
+  const totaleCosti = lavorazioni.reduce((sum, l) => sum + (l.costo || 0), 0);
+  const diffBudget = Math.round((totaleCosti - (cantiere.budget || 0)) * 100) / 100;
 
   const savePercentuale = async () => {
     setSavingPct(true);
@@ -120,14 +123,12 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate, isClie
     onCantiereUpdate?.();
   };
 
-  const applicaBudgetExtra = async () => {
-    const budgetIniziale = cantiere.budget || 0;
-    const extraPct = pronosticoTotale - 100;
-    const variazione = (budgetIniziale * extraPct) / 100;
-    const nuovoBudget = Math.round((budgetIniziale + variazione) * 100) / 100;
+  const applicaBudgetDaLavorazioni = async () => {
     setSavingBudget(true);
     try {
-      await base44.entities.Cantiere.update(cantiere.id, { budget: nuovoBudget });
+      await base44.entities.Cantiere.update(cantiere.id, {
+        budget: Math.round(totaleCosti * 100) / 100,
+      });
       onCantiereUpdate?.();
     } finally {
       setSavingBudget(false);
@@ -208,6 +209,7 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate, isClie
       ore_previste: nuovaLav.ore_previste ? Number(nuovaLav.ore_previste) : null,
       percentuale_prevista: nuovaLav.percentuale_prevista ? Number(nuovaLav.percentuale_prevista) : 0,
       percentuale_completata: 0,
+      costo: nuovaLav.costo ? Number(nuovaLav.costo) : 0,
       stato: "da_fare",
       ordine: lavorazioni.length,
     });
@@ -219,7 +221,7 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate, isClie
       testo: `Cantiere: ${cantiere.nome}`,
       url: `/cantieri/${cantiere.id}`,
     });
-    setNuovaLav({ titolo: "", collaboratori_ids: [], ore_previste: "", percentuale_prevista: "" });
+    setNuovaLav({ titolo: "", collaboratori_ids: [], ore_previste: "", percentuale_prevista: "", costo: "" });
     load();
   };
 
@@ -231,6 +233,7 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate, isClie
       ore_previste: lav.ore_previste ?? "",
       percentuale_prevista: lav.percentuale_prevista ?? 0,
       percentuale_completata: lav.percentuale_completata ?? 0,
+      costo: lav.costo ?? 0,
     });
   };
 
@@ -245,6 +248,7 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate, isClie
       ore_previste: lavForm.ore_previste === "" ? null : Number(lavForm.ore_previste),
       percentuale_prevista: Number(lavForm.percentuale_prevista) || 0,
       percentuale_completata: Number(lavForm.percentuale_completata) || 0,
+      costo: Number(lavForm.costo) || 0,
     };
     // Se completata al 100%, aggiorna stato
     if (Number(lavForm.percentuale_completata) >= 100) {
@@ -415,50 +419,45 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate, isClie
             </p>
           </div>
 
-          {/* Budget extra: quando il pronostico supera il 100% */}
-          {pronosticoTotale > 100 && !isCliente && (cantiere.budget || 0) > 0 && (
-            <div className="bg-yellow-500/5 border border-yellow-500/30 rounded-lg p-4">
-              <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 text-yellow-400" />
-                Variazione budget (lavorazioni extra)
-              </h3>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Budget iniziale</span>
-                  <span className="font-medium">€ {(cantiere.budget || 0).toLocaleString("it-IT", { minimumFractionDigits: 2 })}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Lavorazioni extra</span>
-                  <span className="font-medium text-yellow-400">+{pronosticoTotale - 100}%</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Variazione importo</span>
-                  <span className="font-medium text-yellow-400">
-                    +€ {((cantiere.budget || 0) * (pronosticoTotale - 100) / 100).toLocaleString("it-IT", { minimumFractionDigits: 2 })}
-                  </span>
-                </div>
-                <div className="flex justify-between pt-2 border-t border-yellow-500/20">
-                  <span className="font-semibold">Budget aggiornato</span>
-                  <span className="font-bold text-lg">
-                    € {((cantiere.budget || 0) * (1 + (pronosticoTotale - 100) / 100)).toLocaleString("it-IT", { minimumFractionDigits: 2 })}
-                  </span>
-                </div>
-              </div>
-              <Button
-                size="sm"
-                className="w-full mt-3"
-                variant="outline"
-                onClick={applicaBudgetExtra}
-                disabled={savingBudget}
-              >
-                {savingBudget ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Applica al budget"}
-              </Button>
-              <p className="text-[11px] text-muted-foreground mt-2">
-                Aggiorna il budget del cantiere includendo le lavorazioni extra. Il budget iniziale verrà sostituito.
-              </p>
-            </div>
-          )}
         </>
+      )}
+
+      {/* Riepilogo costi lavorazioni vs budget */}
+      {!isCliente && lavorazioni.length > 0 && (
+        <div className="bg-card border border-border rounded-lg p-4">
+          <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+            <Euro className="w-4 h-4 text-primary" />
+            Costi lavorazioni
+          </h3>
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Totale costi lavorazioni</span>
+              <span className="font-medium">€ {totaleCosti.toLocaleString("it-IT", { minimumFractionDigits: 2 })}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Budget attuale</span>
+              <span className="font-medium">€ {(cantiere.budget || 0).toLocaleString("it-IT", { minimumFractionDigits: 2 })}</span>
+            </div>
+            <div className="flex justify-between pt-2 border-t border-border">
+              <span className="font-semibold">Differenza</span>
+              <span className={`font-bold ${diffBudget > 0 ? "text-yellow-400" : diffBudget < 0 ? "text-green-400" : "text-muted-foreground"}`}>
+                {diffBudget > 0 ? "+" : ""}€ {diffBudget.toLocaleString("it-IT", { minimumFractionDigits: 2 })}
+              </span>
+            </div>
+          </div>
+          <Button
+            size="sm"
+            className="w-full mt-3"
+            variant="outline"
+            onClick={applicaBudgetDaLavorazioni}
+            disabled={savingBudget || totaleCosti === 0}
+          >
+            {savingBudget ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Aggiorna budget da lavorazioni"}
+          </Button>
+          <p className="text-[11px] text-muted-foreground mt-2">
+            Il costo di ogni lavorazione è indipendente dall'avanzamento fisico (percentuale). Modifica i costi per ricalcolare il budget.
+          </p>
+        </div>
       )}
 
       {/* Lavorazioni */}
@@ -510,7 +509,7 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate, isClie
               )}
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-3 gap-2">
             <div>
               <Label className="text-[10px] text-muted-foreground mb-1">Ore prev.</Label>
               <Input
@@ -529,6 +528,17 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate, isClie
                 placeholder="es. 20"
                 value={nuovaLav.percentuale_prevista}
                 onChange={(e) => setNuovaLav((f) => ({ ...f, percentuale_prevista: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label className="text-[10px] text-muted-foreground mb-1">Costo (€)</Label>
+              <Input
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="es. 1500"
+                value={nuovaLav.costo}
+                onChange={(e) => setNuovaLav((f) => ({ ...f, costo: e.target.value }))}
               />
             </div>
           </div>
@@ -584,13 +594,24 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate, isClie
                           })}
                         </div>
                       </div>
-                      <div className="grid grid-cols-3 gap-2">
+                      <div className="grid grid-cols-2 gap-2">
                         <div>
                           <Label className="text-[10px] text-muted-foreground">Ore prev.</Label>
                           <Input
                             type="number"
                             value={lavForm.ore_previste}
                             onChange={(e) => setLavForm((f) => ({ ...f, ore_previste: e.target.value }))}
+                            className="h-8 text-sm"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-[10px] text-muted-foreground">Costo (€)</Label>
+                          <Input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={lavForm.costo}
+                            onChange={(e) => setLavForm((f) => ({ ...f, costo: e.target.value }))}
                             className="h-8 text-sm"
                           />
                         </div>
@@ -682,7 +703,7 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate, isClie
                           />
                         </div>
                         <span className="text-[10px] text-muted-foreground whitespace-nowrap tabular-nums">
-                          {pctCompl}% · peso {pctPrev}%
+                          {pctCompl}% · peso {pctPrev}%{l.costo ? ` · € ${Number(l.costo).toLocaleString("it-IT")}` : ""}
                         </span>
                       </div>
                       <div className="flex items-center gap-2 mt-2">

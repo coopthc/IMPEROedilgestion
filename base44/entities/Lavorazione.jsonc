@@ -48,6 +48,11 @@
       "default": 0,
       "title": "Percentuale completata (effettivo)"
     },
+    "costo": {
+      "type": "number",
+      "default": 0,
+      "title": "Costo lavorazione (\u20ac)"
+    },
     "ore_previste": {
       "type": "number",
       "title": "Ore previste"
