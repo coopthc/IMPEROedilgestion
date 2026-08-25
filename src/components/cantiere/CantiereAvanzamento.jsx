@@ -101,7 +101,6 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate, isClie
     0
   );
   const totaleCosti = lavorazioni.reduce((sum, l) => sum + (l.costo || 0), 0);
-  const diffBudget = Math.round((totaleCosti - (cantiere.budget || 0)) * 100) / 100;
 
   const savePercentuale = async () => {
     setSavingPct(true);
@@ -126,8 +125,9 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate, isClie
   const applicaBudgetDaLavorazioni = async () => {
     setSavingBudget(true);
     try {
+      const nuovoBudget = Math.round(((cantiere.budget || 0) + totaleCosti) * 100) / 100;
       await base44.entities.Cantiere.update(cantiere.id, {
-        budget: Math.round(totaleCosti * 100) / 100,
+        budget: nuovoBudget,
       });
       onCantiereUpdate?.();
     } finally {
@@ -431,17 +431,17 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate, isClie
           </h3>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Totale costi lavorazioni</span>
-              <span className="font-medium">€ {totaleCosti.toLocaleString("it-IT", { minimumFractionDigits: 2 })}</span>
-            </div>
-            <div className="flex justify-between">
               <span className="text-muted-foreground">Budget attuale</span>
               <span className="font-medium">€ {(cantiere.budget || 0).toLocaleString("it-IT", { minimumFractionDigits: 2 })}</span>
             </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Costi lavorazioni</span>
+              <span className="font-medium">€ {totaleCosti.toLocaleString("it-IT", { minimumFractionDigits: 2 })}</span>
+            </div>
             <div className="flex justify-between pt-2 border-t border-border">
-              <span className="font-semibold">Differenza</span>
-              <span className={`font-bold ${diffBudget > 0 ? "text-yellow-400" : diffBudget < 0 ? "text-green-400" : "text-muted-foreground"}`}>
-                {diffBudget > 0 ? "+" : ""}€ {diffBudget.toLocaleString("it-IT", { minimumFractionDigits: 2 })}
+              <span className="font-semibold">Nuovo budget (attuale + costi)</span>
+              <span className="font-bold text-lg">
+                € {((cantiere.budget || 0) + totaleCosti).toLocaleString("it-IT", { minimumFractionDigits: 2 })}
               </span>
             </div>
           </div>
@@ -452,10 +452,10 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate, isClie
             onClick={applicaBudgetDaLavorazioni}
             disabled={savingBudget || totaleCosti === 0}
           >
-            {savingBudget ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Aggiorna budget da lavorazioni"}
+            {savingBudget ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Aggiungi costi al budget"}
           </Button>
           <p className="text-[11px] text-muted-foreground mt-2">
-            Il costo di ogni lavorazione è indipendente dall'avanzamento fisico (percentuale). Modifica i costi per ricalcolare il budget.
+            Aggiunge il totale dei costi delle lavorazioni al budget attuale. La percentuale resta l'avanzamento fisico del lavoro.
           </p>
         </div>
       )}
