@@ -288,9 +288,20 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate, isClie
     );
   };
 
-  const deleteLavorazione = async (id) => {
-    await base44.entities.Lavorazione.delete(id);
-    setLavorazioni((prev) => prev.filter((l) => l.id !== id));
+  const deleteLavorazione = async (lav) => {
+    if (!confirm(`Eliminare la lavorazione "${lav.titolo}"?`)) return;
+    // Se era aggiunta al budget, decurtala
+    if (lav.aggiunta_al_budget && lav.costo) {
+      const nuovoBudget = Math.round(((cantiere.budget || 0) - (lav.costo || 0)) * 100) / 100;
+      await base44.entities.Cantiere.update(cantiere.id, { budget: nuovoBudget });
+      onCantiereUpdate?.();
+    }
+    // Elimina il pagamento collegato se esiste
+    const pagamenti = await base44.entities.Pagamento.filter({ lavorazione_id: lav.id });
+    await Promise.all(pagamenti.map((p) => base44.entities.Pagamento.delete(p.id)));
+    await base44.entities.Lavorazione.delete(lav.id);
+    setLavorazioni((prev) => prev.filter((l) => l.id !== lav.id));
+    load();
   };
 
   if (loading) {
@@ -523,7 +534,7 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate, isClie
               />
             </div>
             <div>
-              <Label className="text-[10px] text-muted-foreground mb-1">% prevista *</Label>
+              <Label className="text-[10px] text-muted-foreground mb-1">% lavorazione (svincolata dal costo) *</Label>
               <Input
                 type="number"
                 min="1"
@@ -678,7 +689,7 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate, isClie
                             <Pencil className="w-3.5 h-3.5" />
                           </button>
                           <button
-                            onClick={() => deleteLavorazione(l.id)}
+                            onClick={() => deleteLavorazione(l)}
                             className="p-1 rounded hover:bg-destructive/15 text-destructive"
                           >
                             <Trash2 className="w-3.5 h-3.5" />

@@ -210,9 +210,9 @@ export default function CantierePagamenti({ cantiere, isCliente = false }) {
           {pagamenti.map((p) => {
             const statoInfo = STATI.find((s) => s.value === p.stato) || STATI[0];
             const tipoInfo = TIPI.find((t) => t.value === p.tipo) || TIPI[0];
-            const importoCalc = budget > 0 && p.percentuale != null
-              ? (budget * p.percentuale / 100)
-              : p.importo;
+            const importoCalc = p.importo != null
+              ? p.importo
+              : (budget > 0 && p.percentuale != null ? (budget * p.percentuale / 100) : null);
             return (
               <div
                 key={p.id}
