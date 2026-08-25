@@ -93,12 +93,11 @@ export default function Cantieri() {
   const getAvanzamento = (cantiere) => {
     if (cantiere.modalita_avanzamento === "pronostico") {
       const lavs = lavorazioni.filter((l) => l.cantiere_id === cantiere.id);
-      const pronostico = lavs.reduce((s, l) => s + (l.percentuale_prevista || 0), 0);
       const effettivo = lavs.reduce(
         (s, l) => s + ((l.percentuale_completata || 0) / 100) * (l.percentuale_prevista || 0),
         0
       );
-      return pronostico > 0 ? Math.round((effettivo / pronostico) * 100) : 0;
+      return Math.round(effettivo);
     }
     return cantiere.avanzamento_percentuale || 0;
   };
