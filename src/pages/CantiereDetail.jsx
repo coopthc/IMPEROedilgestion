@@ -24,9 +24,12 @@ import CantiereSquadra from "@/components/cantiere/CantiereSquadra";
 import CantiereDocumenti from "@/components/cantiere/CantiereDocumenti";
 import CantiereAvanzamento from "@/components/cantiere/CantiereAvanzamento";
 import CantierePagamenti from "@/components/cantiere/CantierePagamenti";
+import CantiereChat from "@/components/cantiere/CantiereChat";
 import SchedaDialog from "@/components/cantiere/SchedaDialog";
 import { useToast } from "@/components/ui/use-toast";
+import { useAuth } from "@/lib/AuthContext";
 import { Image as UIImage } from "@/components/ui/image";
+import { MessageCircle } from "lucide-react";
 
 const STATO_STILI = {
   bozza: "bg-gray-500/15 text-gray-400",
@@ -48,6 +51,8 @@ export default function CantiereDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
+  const isCliente = user?.role === "mssg_cliente";
   const [cantiere, setCantiere] = useState(null);
   const [clienti, setClienti] = useState([]);
   const [collaboratori, setCollaboratori] = useState([]);
@@ -202,30 +207,45 @@ export default function CantiereDetail() {
       </div>
 
       {/* Tabs */}
-      <Tabs defaultValue="panoramica">
+      <Tabs defaultValue={isCliente ? "documenti" : "panoramica"}>
         <TabsList className="w-full justify-start flex-wrap h-auto mb-4">
-          <TabsTrigger value="panoramica" className="text-xs gap-1.5">
-            <FileText className="w-3.5 h-3.5" />
-            Panoramica
-          </TabsTrigger>
-          <TabsTrigger value="squadra" className="text-xs gap-1.5">
-            <HardHat className="w-3.5 h-3.5" />
-            Squadra
-          </TabsTrigger>
+          {!isCliente && (
+            <TabsTrigger value="panoramica" className="text-xs gap-1.5">
+              <FileText className="w-3.5 h-3.5" />
+              Panoramica
+            </TabsTrigger>
+          )}
+          {!isCliente && (
+            <TabsTrigger value="squadra" className="text-xs gap-1.5">
+              <HardHat className="w-3.5 h-3.5" />
+              Squadra
+            </TabsTrigger>
+          )}
           <TabsTrigger value="documenti" className="text-xs gap-1.5">
             <Images className="w-3.5 h-3.5" />
             Documenti
           </TabsTrigger>
-          <TabsTrigger value="avanzamento" className="text-xs gap-1.5">
-            <TrendingUp className="w-3.5 h-3.5" />
-            Avanzamento
-          </TabsTrigger>
-          <TabsTrigger value="pagamenti" className="text-xs gap-1.5">
-            <Wallet className="w-3.5 h-3.5" />
-            Pagamenti
-          </TabsTrigger>
+          {!isCliente && (
+            <TabsTrigger value="chat" className="text-xs gap-1.5">
+              <MessageCircle className="w-3.5 h-3.5" />
+              Chat
+            </TabsTrigger>
+          )}
+          {!isCliente && (
+            <TabsTrigger value="avanzamento" className="text-xs gap-1.5">
+              <TrendingUp className="w-3.5 h-3.5" />
+              Avanzamento
+            </TabsTrigger>
+          )}
+          {!isCliente && (
+            <TabsTrigger value="pagamenti" className="text-xs gap-1.5">
+              <Wallet className="w-3.5 h-3.5" />
+              Pagamenti
+            </TabsTrigger>
+          )}
         </TabsList>
 
+        {!isCliente && (
         <TabsContent value="panoramica">
           <div className="bg-card border border-border rounded-[14px] p-5">
             <h2 className="text-sm font-semibold mb-4 flex items-center gap-2">
@@ -319,7 +339,9 @@ export default function CantiereDetail() {
             )}
           </div>
         </TabsContent>
+        )}
 
+        {!isCliente && (
         <TabsContent value="squadra">
           <CantiereSquadra
             cantiere={cantiere}
@@ -328,18 +350,29 @@ export default function CantiereDetail() {
             onOpenScheda={setScheda}
           />
         </TabsContent>
+        )}
 
         <TabsContent value="documenti">
-          <CantiereDocumenti cantiere={cantiere} />
+          <CantiereDocumenti cantiere={cantiere} soloVisibili={isCliente} />
         </TabsContent>
 
+        {!isCliente && (
+        <TabsContent value="chat">
+          <CantiereChat cantiere={cantiere} collaboratori={assignedCollabs} />
+        </TabsContent>
+        )}
+
+        {!isCliente && (
         <TabsContent value="avanzamento">
           <CantiereAvanzamento cantiere={cantiere} onCantiereUpdate={load} />
         </TabsContent>
+        )}
 
+        {!isCliente && (
         <TabsContent value="pagamenti">
           <CantierePagamenti cantiere={cantiere} />
         </TabsContent>
+        )}
       </Tabs>
 
       <CantiereForm

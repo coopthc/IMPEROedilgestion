@@ -28,7 +28,7 @@ const CATEGORIE = [
   { value: "altro", label: "Altro" },
 ];
 
-export default function CantiereDocumenti({ cantiere }) {
+export default function CantiereDocumenti({ cantiere, soloVisibili = false }) {
   const { toast } = useToast();
   const [documenti, setDocumenti] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -79,10 +79,13 @@ export default function CantiereDocumenti({ cantiere }) {
     setDocumenti((prev) => prev.filter((d) => d.id !== doc.id));
   };
 
+  const visibili = soloVisibili
+    ? documenti.filter((d) => d.visibile_cliente)
+    : documenti;
   const filtered =
     filtroCat === "tutti"
-      ? documenti
-      : documenti.filter((d) => d.categoria === filtroCat);
+      ? visibili
+      : visibili.filter((d) => d.categoria === filtroCat);
 
   const foto = filtered.filter((d) => d.categoria === "foto");
   const video = filtered.filter((d) => d.categoria === "video");
@@ -101,37 +104,39 @@ export default function CantiereDocumenti({ cantiere }) {
   return (
     <div className="space-y-4">
       {/* Upload + filtri */}
-      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
-        <div className="flex gap-1.5 flex-wrap">
-          <button
-            onClick={() => setFiltroCat("tutti")}
-            className={`px-2.5 py-1 rounded-md text-xs ${
-              filtroCat === "tutti"
-                ? "bg-primary text-primary-foreground"
-                : "bg-secondary text-muted-foreground"
-            }`}
-          >
-            Tutti
-          </button>
-          {CATEGORIE.map((c) => (
+      {!soloVisibili && (
+        <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
+          <div className="flex gap-1.5 flex-wrap">
             <button
-              key={c.value}
-              onClick={() => setFiltroCat(c.value)}
+              onClick={() => setFiltroCat("tutti")}
               className={`px-2.5 py-1 rounded-md text-xs ${
-                filtroCat === c.value
+                filtroCat === "tutti"
                   ? "bg-primary text-primary-foreground"
                   : "bg-secondary text-muted-foreground"
               }`}
             >
-              {c.label}
+              Tutti
             </button>
-          ))}
+            {CATEGORIE.map((c) => (
+              <button
+                key={c.value}
+                onClick={() => setFiltroCat(c.value)}
+                className={`px-2.5 py-1 rounded-md text-xs ${
+                  filtroCat === c.value
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-secondary text-muted-foreground"
+                }`}
+              >
+                {c.label}
+              </button>
+            ))}
+          </div>
+          <Button size="sm" onClick={openNew}>
+            <Plus className="w-4 h-4 mr-1" />
+            Aggiungi documento
+          </Button>
         </div>
-        <Button size="sm" onClick={openNew}>
-          <Plus className="w-4 h-4 mr-1" />
-          Aggiungi documento
-        </Button>
-      </div>
+      )}
 
       {/* Foto grid */}
       {foto.length > 0 && (
@@ -152,42 +157,47 @@ export default function CantiereDocumenti({ cantiere }) {
                 />
                 <div className="p-2">
                   <div className="text-xs font-medium truncate">{d.nome}</div>
-                  <div className="flex items-center justify-between mt-1.5">
-                    <button
-                      onClick={() => toggleVisibile(d)}
-                      className={`flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded transition-colors ${
-                        d.visibile_cliente
-                          ? "bg-green-500/15 text-green-500"
-                          : "bg-secondary text-muted-foreground"
-                      }`}
-                      title={
-                        d.visibile_cliente
-                          ? "Visibile al cliente"
-                          : "Nascosto al cliente"
-                      }
-                    >
-                      {d.visibile_cliente ? (
-                        <Eye className="w-3 h-3" />
-                      ) : (
-                        <EyeOff className="w-3 h-3" />
-                      )}
-                      {d.visibile_cliente ? "Visibile" : "Nascosto"}
-                    </button>
-                    <div className="flex gap-0.5">
+                  {d.note && (
+                    <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-2">{d.note}</p>
+                  )}
+                  {!soloVisibili && (
+                    <div className="flex items-center justify-between mt-1.5">
                       <button
-                        onClick={() => openEdit(d)}
-                        className="p-1 rounded hover:bg-primary/15 text-primary"
+                        onClick={() => toggleVisibile(d)}
+                        className={`flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded transition-colors ${
+                          d.visibile_cliente
+                            ? "bg-green-500/15 text-green-500"
+                            : "bg-secondary text-muted-foreground"
+                        }`}
+                        title={
+                          d.visibile_cliente
+                            ? "Visibile al cliente"
+                            : "Nascosto al cliente"
+                        }
                       >
-                        <Pencil className="w-3 h-3" />
+                        {d.visibile_cliente ? (
+                          <Eye className="w-3 h-3" />
+                        ) : (
+                          <EyeOff className="w-3 h-3" />
+                        )}
+                        {d.visibile_cliente ? "Visibile" : "Nascosto"}
                       </button>
-                      <button
-                        onClick={() => handleDelete(d)}
-                        className="p-1 rounded hover:bg-destructive/15 text-destructive"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
+                      <div className="flex gap-0.5">
+                        <button
+                          onClick={() => openEdit(d)}
+                          className="p-1 rounded hover:bg-primary/15 text-primary"
+                        >
+                          <Pencil className="w-3 h-3" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(d)}
+                          className="p-1 rounded hover:bg-destructive/15 text-destructive"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               </div>
             ))}
@@ -214,42 +224,47 @@ export default function CantiereDocumenti({ cantiere }) {
                 />
                 <div className="p-2">
                   <div className="text-xs font-medium truncate">{d.nome}</div>
-                  <div className="flex items-center justify-between mt-1.5">
-                    <button
-                      onClick={() => toggleVisibile(d)}
-                      className={`flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded transition-colors ${
-                        d.visibile_cliente
-                          ? "bg-green-500/15 text-green-500"
-                          : "bg-secondary text-muted-foreground"
-                      }`}
-                      title={
-                        d.visibile_cliente
-                          ? "Visibile al cliente"
-                          : "Nascosto al cliente"
-                      }
-                    >
-                      {d.visibile_cliente ? (
-                        <Eye className="w-3 h-3" />
-                      ) : (
-                        <EyeOff className="w-3 h-3" />
-                      )}
-                      {d.visibile_cliente ? "Visibile" : "Nascosto"}
-                    </button>
-                    <div className="flex gap-0.5">
+                  {d.note && (
+                    <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-2">{d.note}</p>
+                  )}
+                  {!soloVisibili && (
+                    <div className="flex items-center justify-between mt-1.5">
                       <button
-                        onClick={() => openEdit(d)}
-                        className="p-1 rounded hover:bg-primary/15 text-primary"
+                        onClick={() => toggleVisibile(d)}
+                        className={`flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded transition-colors ${
+                          d.visibile_cliente
+                            ? "bg-green-500/15 text-green-500"
+                            : "bg-secondary text-muted-foreground"
+                        }`}
+                        title={
+                          d.visibile_cliente
+                            ? "Visibile al cliente"
+                            : "Nascosto al cliente"
+                        }
                       >
-                        <Pencil className="w-3 h-3" />
+                        {d.visibile_cliente ? (
+                          <Eye className="w-3 h-3" />
+                        ) : (
+                          <EyeOff className="w-3 h-3" />
+                        )}
+                        {d.visibile_cliente ? "Visibile" : "Nascosto"}
                       </button>
-                      <button
-                        onClick={() => handleDelete(d)}
-                        className="p-1 rounded hover:bg-destructive/15 text-destructive"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
+                      <div className="flex gap-0.5">
+                        <button
+                          onClick={() => openEdit(d)}
+                          className="p-1 rounded hover:bg-primary/15 text-primary"
+                        >
+                          <Pencil className="w-3 h-3" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(d)}
+                          className="p-1 rounded hover:bg-destructive/15 text-destructive"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               </div>
             ))}
@@ -281,42 +296,53 @@ export default function CantiereDocumenti({ cantiere }) {
                   >
                     {d.nome}
                   </a>
-                  <span className="text-[10px] text-muted-foreground capitalize">
-                    {d.categoria}
-                  </span>
-                </div>
-                <button
-                  onClick={() => toggleVisibile(d)}
-                  className={`flex items-center gap-1 text-[10px] px-2 py-1 rounded transition-colors flex-shrink-0 ${
-                    d.visibile_cliente
-                      ? "bg-green-500/15 text-green-500"
-                      : "bg-secondary text-muted-foreground"
-                  }`}
-                  title={
-                    d.visibile_cliente
-                      ? "Visibile al cliente"
-                      : "Nascosto al cliente"
-                  }
-                >
-                  {d.visibile_cliente ? (
-                    <Eye className="w-3 h-3" />
-                  ) : (
-                    <EyeOff className="w-3 h-3" />
+                  {d.note && (
+                    <span className="text-[10px] text-muted-foreground block truncate">
+                      {d.note}
+                    </span>
                   )}
-                  {d.visibile_cliente ? "Visibile" : "Nascosto"}
-                </button>
-                <button
-                  onClick={() => openEdit(d)}
-                  className="p-1.5 rounded hover:bg-primary/15 text-primary flex-shrink-0"
-                >
-                  <Pencil className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={() => handleDelete(d)}
-                  className="p-1.5 rounded hover:bg-destructive/15 text-destructive flex-shrink-0"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
+                  {!d.note && (
+                    <span className="text-[10px] text-muted-foreground capitalize">
+                      {d.categoria}
+                    </span>
+                  )}
+                </div>
+                {!soloVisibili && (
+                  <>
+                    <button
+                      onClick={() => toggleVisibile(d)}
+                      className={`flex items-center gap-1 text-[10px] px-2 py-1 rounded transition-colors flex-shrink-0 ${
+                        d.visibile_cliente
+                          ? "bg-green-500/15 text-green-500"
+                          : "bg-secondary text-muted-foreground"
+                      }`}
+                      title={
+                        d.visibile_cliente
+                          ? "Visibile al cliente"
+                          : "Nascosto al cliente"
+                      }
+                    >
+                      {d.visibile_cliente ? (
+                        <Eye className="w-3 h-3" />
+                      ) : (
+                        <EyeOff className="w-3 h-3" />
+                      )}
+                      {d.visibile_cliente ? "Visibile" : "Nascosto"}
+                    </button>
+                    <button
+                      onClick={() => openEdit(d)}
+                      className="p-1.5 rounded hover:bg-primary/15 text-primary flex-shrink-0"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(d)}
+                      className="p-1.5 rounded hover:bg-destructive/15 text-destructive flex-shrink-0"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </>
+                )}
               </div>
             ))}
           </div>
@@ -325,7 +351,9 @@ export default function CantiereDocumenti({ cantiere }) {
 
       {filtered.length === 0 && (
         <p className="text-sm text-muted-foreground py-8 text-center">
-          Nessun documento. Carica il primo file.
+          {soloVisibili
+            ? "Nessun documento disponibile."
+            : "Nessun documento. Carica il primo file."}
         </p>
       )}
 
