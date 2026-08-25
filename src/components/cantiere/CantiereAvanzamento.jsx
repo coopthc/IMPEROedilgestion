@@ -62,6 +62,7 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate, isClie
   const [nuovoAgg, setNuovoAgg] = useState({ titolo: "", testo: "", tipo: "aggiornamento", visibile_cliente: false });
   const [nuovaLav, setNuovaLav] = useState({ titolo: "", collaboratori_ids: [], ore_previste: "", percentuale_prevista: "" });
   const [savingPct, setSavingPct] = useState(false);
+  const [savingBudget, setSavingBudget] = useState(false);
   const [modalita, setModalita] = useState(cantiere.modalita_avanzamento || "manuale");
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({ titolo: "", testo: "", tipo: "aggiornamento", visibile_cliente: false });
@@ -117,6 +118,20 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate, isClie
       modalita_avanzamento: nuovaModalita,
     });
     onCantiereUpdate?.();
+  };
+
+  const applicaBudgetExtra = async () => {
+    const budgetIniziale = cantiere.budget || 0;
+    const extraPct = pronosticoTotale - 100;
+    const variazione = (budgetIniziale * extraPct) / 100;
+    const nuovoBudget = Math.round((budgetIniziale + variazione) * 100) / 100;
+    setSavingBudget(true);
+    try {
+      await base44.entities.Cantiere.update(cantiere.id, { budget: nuovoBudget });
+      onCantiereUpdate?.();
+    } finally {
+      setSavingBudget(false);
+    }
   };
 
   const addAggiornamento = async () => {
@@ -399,6 +414,50 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate, isClie
               Percentuale reale di completamento del progetto (somma dei contributi di ogni fase).
             </p>
           </div>
+
+          {/* Budget extra: quando il pronostico supera il 100% */}
+          {pronosticoTotale > 100 && !isCliente && (cantiere.budget || 0) > 0 && (
+            <div className="bg-yellow-500/5 border border-yellow-500/30 rounded-lg p-4">
+              <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-yellow-400" />
+                Variazione budget (lavorazioni extra)
+              </h3>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Budget iniziale</span>
+                  <span className="font-medium">€ {(cantiere.budget || 0).toLocaleString("it-IT", { minimumFractionDigits: 2 })}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Lavorazioni extra</span>
+                  <span className="font-medium text-yellow-400">+{pronosticoTotale - 100}%</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Variazione importo</span>
+                  <span className="font-medium text-yellow-400">
+                    +€ {((cantiere.budget || 0) * (pronosticoTotale - 100) / 100).toLocaleString("it-IT", { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+                <div className="flex justify-between pt-2 border-t border-yellow-500/20">
+                  <span className="font-semibold">Budget aggiornato</span>
+                  <span className="font-bold text-lg">
+                    € {((cantiere.budget || 0) * (1 + (pronosticoTotale - 100) / 100)).toLocaleString("it-IT", { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+              </div>
+              <Button
+                size="sm"
+                className="w-full mt-3"
+                variant="outline"
+                onClick={applicaBudgetExtra}
+                disabled={savingBudget}
+              >
+                {savingBudget ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Applica al budget"}
+              </Button>
+              <p className="text-[11px] text-muted-foreground mt-2">
+                Aggiorna il budget del cantiere includendo le lavorazioni extra. Il budget iniziale verrà sostituito.
+              </p>
+            </div>
+          )}
         </>
       )}
 
