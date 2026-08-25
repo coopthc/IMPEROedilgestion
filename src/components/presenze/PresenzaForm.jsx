@@ -213,7 +213,7 @@ export default function PresenzaForm({ open, onOpenChange, presenza, onSaved }) 
                   <div className="text-xs text-muted-foreground">Lavorazione</div>
                   {presenza.cantiere_id ? (
                     <Link
-                      to={`/cantieri/${presenza.cantiere_id}`}
+                      to={`/cantieri/${presenza.cantiere_id}?tab=avanzamento`}
                       className="text-sm font-medium text-primary hover:underline"
                     >
                       {presenza.lavorazione_nome || "—"}

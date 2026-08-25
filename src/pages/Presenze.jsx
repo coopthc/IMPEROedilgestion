@@ -217,7 +217,7 @@ export default function Presenze() {
                   )}
                   {p.lavorazione_nome && (
                     <Link
-                      to={`/cantieri/${p.cantiere_id}`}
+                      to={`/cantieri/${p.cantiere_id}?tab=avanzamento`}
                       className="text-[11px] text-primary hover:underline truncate"
                     >
                       → {p.lavorazione_nome}

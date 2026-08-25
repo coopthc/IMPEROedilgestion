@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -62,6 +62,8 @@ export default function CantiereDetail() {
   const [loading, setLoading] = useState(true);
   const [formOpen, setFormOpen] = useState(false);
   const [scheda, setScheda] = useState(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get("tab") || "panoramica";
 
   const load = useCallback(async () => {
     try {
@@ -214,7 +216,17 @@ export default function CantiereDetail() {
       </div>
 
       {/* Tabs */}
-      <Tabs defaultValue="panoramica">
+      <Tabs
+        value={activeTab}
+        onValueChange={(v) => {
+          if (v === "panoramica") {
+            searchParams.delete("tab");
+            setSearchParams(searchParams, { replace: true });
+          } else {
+            setSearchParams({ tab: v }, { replace: true });
+          }
+        }}
+      >
         <TabsList className="w-full justify-start flex-wrap h-auto mb-4">
           <TabsTrigger value="panoramica" className="text-xs gap-1.5">
             <FileText className="w-3.5 h-3.5" />
