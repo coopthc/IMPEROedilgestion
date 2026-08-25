@@ -155,9 +155,9 @@ export default function PresenzaForm({ open, onOpenChange, presenza, onSaved }) 
       ...form,
       ore_totali: oreTotali,
       ore_straordinarie: Number(form.ore_straordinarie) || 0,
-      collaboratore_nome: collab?.nome || "",
-      cantiere_nome: cantiere?.nome || "",
-      lavorazione_nome: lav?.titolo || "",
+      collaboratore_nome: collab?.nome || presenza?.collaboratore_nome || "",
+      cantiere_nome: cantiere?.nome || presenza?.cantiere_nome || "",
+      lavorazione_nome: lav?.titolo || presenza?.lavorazione_nome || "",
     };
 
     try {
@@ -184,6 +184,31 @@ export default function PresenzaForm({ open, onOpenChange, presenza, onSaved }) 
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 pt-2">
+          {presenza ? (
+            <div className="bg-secondary/30 rounded-lg p-3 space-y-2">
+              <div>
+                <div className="text-xs text-muted-foreground">Collaboratore</div>
+                <div className="text-sm font-medium">
+                  {presenza.collaboratore_nome || "—"}
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <div className="text-xs text-muted-foreground">Cantiere</div>
+                  <div className="text-sm font-medium">
+                    {presenza.cantiere_nome || "—"}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground">Lavorazione</div>
+                  <div className="text-sm font-medium">
+                    {presenza.lavorazione_nome || "—"}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <>
           <div className="space-y-1.5">
             <Label>Collaboratore *</Label>
             <Select
@@ -272,6 +297,8 @@ export default function PresenzaForm({ open, onOpenChange, presenza, onSaved }) 
               </Select>
             </div>
           </div>
+            </>
+          )}
 
           <div className="grid grid-cols-3 gap-3">
             <div className="space-y-1.5">
