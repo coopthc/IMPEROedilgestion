@@ -25,6 +25,7 @@ import CantiereDocumenti from "@/components/cantiere/CantiereDocumenti";
 import CantiereAvanzamento from "@/components/cantiere/CantiereAvanzamento";
 import CantierePagamenti from "@/components/cantiere/CantierePagamenti";
 import CantiereChat from "@/components/cantiere/CantiereChat";
+import CantiereProgetto from "@/components/cantiere/CantiereProgetto";
 import SchedaDialog from "@/components/cantiere/SchedaDialog";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/lib/AuthContext";
@@ -159,21 +160,23 @@ export default function CantiereDetail() {
           <ArrowLeft className="w-4 h-4 mr-1" />
           Cantieri
         </Button>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => setFormOpen(true)}>
-            <Pencil className="w-4 h-4 mr-1" />
-            Modifica
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="text-destructive hover:text-destructive"
-            onClick={handleDelete}
-          >
-            <Trash2 className="w-4 h-4 mr-1" />
-            Elimina
-          </Button>
-        </div>
+        {!isCliente && (
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={() => setFormOpen(true)}>
+              <Pencil className="w-4 h-4 mr-1" />
+              Modifica
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-destructive hover:text-destructive"
+              onClick={handleDelete}
+            >
+              <Trash2 className="w-4 h-4 mr-1" />
+              Elimina
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Titolo + stato */}
@@ -207,14 +210,12 @@ export default function CantiereDetail() {
       </div>
 
       {/* Tabs */}
-      <Tabs defaultValue={isCliente ? "documenti" : "panoramica"}>
+      <Tabs defaultValue="panoramica">
         <TabsList className="w-full justify-start flex-wrap h-auto mb-4">
-          {!isCliente && (
-            <TabsTrigger value="panoramica" className="text-xs gap-1.5">
-              <FileText className="w-3.5 h-3.5" />
-              Panoramica
-            </TabsTrigger>
-          )}
+          <TabsTrigger value="panoramica" className="text-xs gap-1.5">
+            <FileText className="w-3.5 h-3.5" />
+            Panoramica
+          </TabsTrigger>
           {!isCliente && (
             <TabsTrigger value="squadra" className="text-xs gap-1.5">
               <HardHat className="w-3.5 h-3.5" />
@@ -225,27 +226,20 @@ export default function CantiereDetail() {
             <Images className="w-3.5 h-3.5" />
             Documenti
           </TabsTrigger>
-          {!isCliente && (
-            <TabsTrigger value="chat" className="text-xs gap-1.5">
-              <MessageCircle className="w-3.5 h-3.5" />
-              Chat
-            </TabsTrigger>
-          )}
-          {!isCliente && (
-            <TabsTrigger value="avanzamento" className="text-xs gap-1.5">
-              <TrendingUp className="w-3.5 h-3.5" />
-              Avanzamento
-            </TabsTrigger>
-          )}
-          {!isCliente && (
-            <TabsTrigger value="pagamenti" className="text-xs gap-1.5">
-              <Wallet className="w-3.5 h-3.5" />
-              Pagamenti
-            </TabsTrigger>
-          )}
+          <TabsTrigger value="chat" className="text-xs gap-1.5">
+            <MessageCircle className="w-3.5 h-3.5" />
+            Chat
+          </TabsTrigger>
+          <TabsTrigger value="avanzamento" className="text-xs gap-1.5">
+            <TrendingUp className="w-3.5 h-3.5" />
+            Avanzamento
+          </TabsTrigger>
+          <TabsTrigger value="pagamenti" className="text-xs gap-1.5">
+            <Wallet className="w-3.5 h-3.5" />
+            Pagamenti
+          </TabsTrigger>
         </TabsList>
 
-        {!isCliente && (
         <TabsContent value="panoramica">
           <div className="bg-card border border-border rounded-[14px] p-5">
             <h2 className="text-sm font-semibold mb-4 flex items-center gap-2">
@@ -329,7 +323,7 @@ export default function CantiereDetail() {
               </div>
             )}
 
-            {cantiere.note_interne && (
+            {!isCliente && cantiere.note_interne && (
               <div className="mt-4 pt-4 border-t border-border">
                 <div className="text-[11px] uppercase tracking-wider text-muted-foreground mb-1">
                   Note interne (non visibili al cliente)
@@ -339,7 +333,6 @@ export default function CantiereDetail() {
             )}
           </div>
         </TabsContent>
-        )}
 
         {!isCliente && (
         <TabsContent value="squadra">
@@ -353,26 +346,23 @@ export default function CantiereDetail() {
         )}
 
         <TabsContent value="documenti">
-          <CantiereDocumenti cantiere={cantiere} soloVisibili={isCliente} />
+          <CantiereDocumenti cantiere={cantiere} soloVisibili={isCliente} collaboratori={assignedCollabs} />
         </TabsContent>
 
-        {!isCliente && (
         <TabsContent value="chat">
-          <CantiereChat cantiere={cantiere} collaboratori={assignedCollabs} />
+          <CantiereChat cantiere={cantiere} collaboratori={assignedCollabs} canale="cliente" />
         </TabsContent>
-        )}
 
-        {!isCliente && (
         <TabsContent value="avanzamento">
-          <CantiereAvanzamento cantiere={cantiere} onCantiereUpdate={load} />
+          <CantiereAvanzamento cantiere={cantiere} onCantiereUpdate={load} isCliente={isCliente} />
         </TabsContent>
-        )}
 
-        {!isCliente && (
         <TabsContent value="pagamenti">
-          <CantierePagamenti cantiere={cantiere} />
+          <div className="space-y-4">
+            <CantierePagamenti cantiere={cantiere} isCliente={isCliente} />
+            <CantiereProgetto cantiere={cantiere} soloVisibili={isCliente} />
+          </div>
         </TabsContent>
-        )}
       </Tabs>
 
       <CantiereForm
