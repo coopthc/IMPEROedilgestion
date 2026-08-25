@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/lib/AuthContext";
 import { base44 } from "@/api/base44Client";
 import {
@@ -231,7 +231,16 @@ export default function Dashboard() {
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-medium truncate">{app.titolo}</div>
                   <div className="text-xs text-muted-foreground truncate">
-                    {app.cliente_nome || app.cantiere_nome || "—"}
+                    {app.cantiere_nome ? (
+                      <Link
+                        to={`/cantieri/${app.cantiere_id}`}
+                        className="text-primary hover:underline"
+                      >
+                        {app.cantiere_nome}
+                      </Link>
+                    ) : (
+                      app.cliente_nome || "—"
+                    )}
                   </div>
                 </div>
                 <span

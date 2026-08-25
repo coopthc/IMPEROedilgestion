@@ -10,6 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Link } from "react-router-dom";
 import {
   Plus,
   Pencil,
@@ -206,15 +207,21 @@ export default function Presenze() {
                       : "—"}
                   </span>
                   {p.cantiere_nome && (
-                    <span className="text-[11px] text-muted-foreground flex items-center gap-1 truncate">
+                    <Link
+                      to={`/cantieri/${p.cantiere_id}`}
+                      className="text-[11px] text-primary hover:underline flex items-center gap-1 truncate"
+                    >
                       <Building2 className="w-3 h-3" />
                       {p.cantiere_nome}
-                    </span>
+                    </Link>
                   )}
                   {p.lavorazione_nome && (
-                    <span className="text-[11px] text-muted-foreground truncate">
+                    <Link
+                      to={`/cantieri/${p.cantiere_id}`}
+                      className="text-[11px] text-primary hover:underline truncate"
+                    >
                       → {p.lavorazione_nome}
-                    </span>
+                    </Link>
                   )}
                 </div>
               </div>

@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Link } from "react-router-dom";
 import {
   Dialog,
   DialogContent,
@@ -195,15 +196,33 @@ export default function PresenzaForm({ open, onOpenChange, presenza, onSaved }) 
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <div className="text-xs text-muted-foreground">Cantiere</div>
-                  <div className="text-sm font-medium">
-                    {presenza.cantiere_nome || "—"}
-                  </div>
+                  {presenza.cantiere_id ? (
+                    <Link
+                      to={`/cantieri/${presenza.cantiere_id}`}
+                      className="text-sm font-medium text-primary hover:underline"
+                    >
+                      {presenza.cantiere_nome || "—"}
+                    </Link>
+                  ) : (
+                    <div className="text-sm font-medium">
+                      {presenza.cantiere_nome || "—"}
+                    </div>
+                  )}
                 </div>
                 <div>
                   <div className="text-xs text-muted-foreground">Lavorazione</div>
-                  <div className="text-sm font-medium">
-                    {presenza.lavorazione_nome || "—"}
-                  </div>
+                  {presenza.cantiere_id ? (
+                    <Link
+                      to={`/cantieri/${presenza.cantiere_id}`}
+                      className="text-sm font-medium text-primary hover:underline"
+                    >
+                      {presenza.lavorazione_nome || "—"}
+                    </Link>
+                  ) : (
+                    <div className="text-sm font-medium">
+                      {presenza.lavorazione_nome || "—"}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
