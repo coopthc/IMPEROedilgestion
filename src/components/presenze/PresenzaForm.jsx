@@ -102,16 +102,30 @@ export default function PresenzaForm({ open, onOpenChange, presenza, onSaved }) 
     [form.ora_ingresso, form.ora_uscita]
   );
 
-  // Filtra collaboratori assegnati al cantiere selezionato
+  // Filtra collaboratori assegnati al cantiere o alle sue lavorazioni
   const collaboratoriFiltrati = useMemo(() => {
     if (!form.cantiere_id) return collaboratori;
     const cantiere = cantieri.find((c) => c.id === form.cantiere_id);
-    if (!cantiere || !cantiere.collaboratori_ids) return collaboratori;
-    const ids = cantiere.collaboratori_ids
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean);
-    const filtered = collaboratori.filter((c) => ids.includes(c.id));
+    // Raccogli ID dalla squadra del cantiere + collaboratori delle lavorazioni
+    const ids = new Set();
+    if (cantiere?.collaboratori_ids) {
+      cantiere.collaboratori_ids
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .forEach((id) => ids.add(id));
+    }
+    lavorazioni.forEach((l) => {
+      if (l.collaboratori_ids) {
+        l.collaboratori_ids
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean)
+          .forEach((id) => ids.add(id));
+      }
+    });
+    if (ids.size === 0) return collaboratori;
+    const filtered = collaboratori.filter((c) => ids.has(c.id));
     // Include currently selected even if not in cantiere team (editing)
     if (
       form.collaboratore_id &&
@@ -121,7 +135,7 @@ export default function PresenzaForm({ open, onOpenChange, presenza, onSaved }) 
       if (sel) filtered.unshift(sel);
     }
     return filtered;
-  }, [collaboratori, cantieri, form.cantiere_id, form.collaboratore_id]);
+  }, [collaboratori, cantieri, form.cantiere_id, form.collaboratore_id, lavorazioni]);
 
   const lavSelezionata = useMemo(
     () => lavorazioni.find((l) => l.id === form.lavorazione_id),
