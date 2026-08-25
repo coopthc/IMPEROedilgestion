@@ -55,6 +55,7 @@ export default function CantiereDetail() {
   const { toast } = useToast();
   const { user } = useAuth();
   const isCliente = user?.role === "mssg_cliente";
+  const isAdmin = user?.role === "admin" || user?.role === "mssg_admin";
   const [cantiere, setCantiere] = useState(null);
   const [clienti, setClienti] = useState([]);
   const [collaboratori, setCollaboratori] = useState([]);
@@ -237,10 +238,12 @@ export default function CantiereDetail() {
             <TrendingUp className="w-3.5 h-3.5" />
             Avanzamento
           </TabsTrigger>
-          <TabsTrigger value="pagamenti" className="text-xs gap-1.5">
-            <Wallet className="w-3.5 h-3.5" />
-            Pagamenti
-          </TabsTrigger>
+          {isAdmin && (
+            <TabsTrigger value="pagamenti" className="text-xs gap-1.5">
+              <Wallet className="w-3.5 h-3.5" />
+              Pagamenti
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="panoramica">
@@ -370,12 +373,14 @@ export default function CantiereDetail() {
           <CantiereAvanzamento cantiere={cantiere} onCantiereUpdate={load} isCliente={isCliente} />
         </TabsContent>
 
-        <TabsContent value="pagamenti">
-          <div className="space-y-4">
-            <CantierePagamenti cantiere={cantiere} isCliente={isCliente} />
-            <CantiereProgetto cantiere={cantiere} soloVisibili={isCliente} />
-          </div>
-        </TabsContent>
+        {isAdmin && (
+          <TabsContent value="pagamenti">
+            <div className="space-y-4">
+              <CantierePagamenti cantiere={cantiere} isCliente={isCliente} />
+              <CantiereProgetto cantiere={cantiere} soloVisibili={isCliente} />
+            </div>
+          </TabsContent>
+        )}
       </Tabs>
 
       <CantiereForm
