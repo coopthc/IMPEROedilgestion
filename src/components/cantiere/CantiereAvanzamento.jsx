@@ -92,11 +92,11 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate }) {
 
   // Calcoli barre
   const pronosticoTotale = lavorazioni.reduce((sum, l) => sum + (l.percentuale_prevista || 0), 0);
-  const effettivoTotale = lavorazioni.reduce(
+  // effettivoTotale è già la percentuale reale di completamento del progetto (somma dei contributi)
+  const effettivoPct = lavorazioni.reduce(
     (sum, l) => sum + ((l.percentuale_completata || 0) / 100) * (l.percentuale_prevista || 0),
     0
   );
-  const effettivoPct = pronosticoTotale > 0 ? (effettivoTotale / pronosticoTotale) * 100 : 0;
 
   const savePercentuale = async () => {
     setSavingPct(true);
@@ -377,7 +377,7 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate }) {
               />
             </div>
             <p className="text-[11px] text-muted-foreground mt-1.5">
-              Il 100% di questa barra corrisponde al {pronosticoTotale}% del pronostico.
+              Percentuale reale di completamento del progetto (somma dei contributi di ogni fase).
             </p>
           </div>
         </>
