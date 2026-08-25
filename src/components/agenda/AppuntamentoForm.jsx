@@ -24,9 +24,12 @@ import {
   Check,
   Calendar,
   X,
+  Search,
 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { creaNotifiche } from "@/lib/notifiche";
+import Combobox from "@/components/agenda/Combobox";
+import TimeSlotPicker from "@/components/agenda/TimeSlotPicker";
 
 const TIPI = [
   { value: "interno", label: "Interno" },
@@ -88,6 +91,7 @@ export default function AppuntamentoForm({
   const [partecipantiIds, setPartecipantiIds] = useState([]);
   const [pillole, setPillole] = useState([60]);
   const [creaCantiereBozza, setCreaCantiereBozza] = useState(false);
+  const [collabSearch, setCollabSearch] = useState("");
 
   useEffect(() => {
     if (appuntamento) {
@@ -269,12 +273,16 @@ export default function AppuntamentoForm({
             </div>
             <div className="space-y-1.5">
               <Label>Ora</Label>
-              <Input
-                type="time"
-                value={form.ora}
-                onChange={(e) => update("ora", e.target.value)}
-                required
+              <TimeSlotPicker
+                data={form.data}
+                ora={form.ora}
+                onChange={(v) => update("ora", v)}
               />
+              {!form.ora && form.data && (
+                <p className="text-[10px] text-muted-foreground">
+                  Clicca un orario per selezionarlo
+                </p>
+              )}
             </div>
           </div>
 
@@ -371,45 +379,22 @@ export default function AppuntamentoForm({
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Cliente</Label>
-              <Select
-                value={form.cliente_id || "__none__"}
-                onValueChange={(v) =>
-                  update("cliente_id", v === "__none__" ? "" : v)
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="—" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none__">—</SelectItem>
-                  {clienti.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.nome}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Combobox
+                value={form.cliente_id}
+                onChange={(v) => update("cliente_id", v)}
+                items={clienti.map((c) => ({ id: c.id, label: c.nome }))}
+                placeholder="Cerca cliente..."
+                icon={User}
+              />
             </div>
             <div className="space-y-1.5">
               <Label>Cantiere</Label>
-              <Select
-                value={form.cantiere_id || "__none__"}
-                onValueChange={(v) =>
-                  update("cantiere_id", v === "__none__" ? "" : v)
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="—" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none__">—</SelectItem>
-                  {cantieri.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.nome}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Combobox
+                value={form.cantiere_id}
+                onChange={(v) => update("cantiere_id", v)}
+                items={cantieri.map((c) => ({ id: c.id, label: c.nome }))}
+                placeholder="Cerca cantiere..."
+              />
             </div>
           </div>
 
@@ -436,7 +421,16 @@ export default function AppuntamentoForm({
               <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2 block">
                 Collaboratori partecipanti
               </Label>
-              <div className="space-y-1.5 max-h-40 overflow-y-auto">
+              <div className="relative mb-2">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                <Input
+                  value={collabSearch}
+                  onChange={(e) => setCollabSearch(e.target.value)}
+                  placeholder="Cerca collaboratore..."
+                  className="h-8 pl-8 text-xs"
+                />
+              </div>
+              <div className="space-y-1.5 max-h-32 overflow-y-auto">
                 {form.cliente_id && (
                   <div className="flex items-center gap-2.5 p-2 rounded-md bg-secondary/30">
                     <User className="w-3.5 h-3.5 text-primary" />
@@ -449,7 +443,13 @@ export default function AppuntamentoForm({
                     </span>
                   </div>
                 )}
-                {collaboratori.map((s) => (
+                {collaboratori
+                  .filter((s) =>
+                    !collabSearch.trim()
+                      ? true
+                      : s.nome?.toLowerCase().includes(collabSearch.toLowerCase())
+                  )
+                  .map((s) => (
                   <label
                     key={s.id}
                     className="flex items-center gap-2.5 p-2 rounded-md hover:bg-secondary/50 cursor-pointer"
