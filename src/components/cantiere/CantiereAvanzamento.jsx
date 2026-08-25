@@ -27,6 +27,7 @@ import {
   Eye,
   EyeOff,
 } from "lucide-react";
+import { creaNotifiche } from "@/lib/notifiche";
 
 const TIPI_AGG = [
   { value: "aggiornamento", label: "Aggiornamento", icon: Info, color: "text-blue-400" },
@@ -100,6 +101,14 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate }) {
       testo: nuovoAgg.testo,
       visibile_cliente: nuovoAgg.visibile_cliente,
       autore_nome: user?.full_name || "—",
+    });
+    // Notifica in-app tutta la squadra del cantiere
+    await creaNotifiche({
+      collaboratoriIds: assignedIds,
+      tipo: "aggiornamento",
+      titolo: `Aggiornamento: ${nuovoAgg.titolo}`,
+      testo: nuovoAgg.testo || cantiere.nome,
+      url: `/cantieri/${cantiere.id}`,
     });
     setNuovoAgg({ titolo: "", testo: "", tipo: "aggiornamento", visibile_cliente: false });
     load();

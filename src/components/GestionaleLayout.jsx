@@ -1,6 +1,7 @@
 import React from "react";
 import { NavLink, useNavigate, Outlet } from "react-router-dom";
 import { useAuth } from "@/lib/AuthContext";
+import NotificationBell from "@/components/NotificationBell";
 import {
   LayoutDashboard,
   Building2,
@@ -112,6 +113,9 @@ export default function GestionaleLayout() {
 
       {/* Main content — singolo Outlet, padding responsive */}
       <main className="flex-1 min-h-screen overflow-x-hidden pb-[70px] md:pb-0">
+        <div className="flex justify-end px-4 md:px-6 lg:px-8 pt-4 md:pt-5">
+          <NotificationBell />
+        </div>
         <div className="p-4 md:p-6 lg:p-8 max-w-6xl mx-auto">
           <Outlet />
         </div>

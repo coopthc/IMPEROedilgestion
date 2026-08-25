@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/select";
 import { Loader2, User, HardHat, Check } from "lucide-react";
 import { base44 } from "@/api/base44Client";
+import { creaNotifiche } from "@/lib/notifiche";
 
 const TIPI = [
   { value: "interno", label: "Interno" },
@@ -146,6 +147,14 @@ export default function AppuntamentoForm({
       } else {
         await base44.entities.Appuntamento.create(payload);
       }
+      // Notifica in-app tutti i partecipanti (collaboratori con utente collegato)
+      await creaNotifiche({
+        collaboratoriIds: partecipantiIds,
+        tipo: "appuntamento",
+        titolo: `Appuntamento: ${form.titolo}`,
+        testo: `${form.data} alle ${form.ora}${cantiere ? " — " + cantiere.nome : ""}`,
+        url: "/agenda",
+      });
       onSaved();
       onOpenChange(false);
     } catch (err) {

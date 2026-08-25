@@ -1,0 +1,40 @@
+{
+  "name": "Notifica",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "title": "Utente destinatario"
+    },
+    "tipo": {
+      "type": "string",
+      "enum": [
+        "appuntamento",
+        "aggiornamento"
+      ],
+      "title": "Tipo"
+    },
+    "titolo": {
+      "type": "string",
+      "title": "Titolo"
+    },
+    "testo": {
+      "type": "string",
+      "title": "Testo"
+    },
+    "url": {
+      "type": "string",
+      "title": "URL destinazione"
+    },
+    "letto": {
+      "type": "boolean",
+      "default": false,
+      "title": "Letto"
+    }
+  },
+  "required": [
+    "user_id",
+    "tipo",
+    "titolo"
+  ]
+}
