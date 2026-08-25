@@ -4,11 +4,12 @@ import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Save, Upload, Building, Trash2 } from "lucide-react";
+import { Loader2, Save, Upload, Building, Trash2, Clock } from "lucide-react";
 
 const empty = {
   ragione_sociale: "", logo_url: "", piva: "", codice_fiscale: "",
   indirizzo: "", citta: "", cap: "", provincia: "", telefono: "", email_azienda: "",
+  appuntamenti_contemporanei: 1,
 };
 
 export default function DatiAzienda() {
@@ -143,6 +144,31 @@ export default function DatiAzienda() {
           <Label>Telefono</Label>
           <Input value={form.telefono} onChange={(e) => setForm((f) => ({ ...f, telefono: e.target.value }))} />
         </div>
+      </div>
+
+      <div className="bg-secondary/30 border border-border rounded-lg p-3 space-y-2">
+        <div className="flex items-center gap-2">
+          <Clock className="w-4 h-4 text-primary" />
+          <h3 className="text-sm font-semibold">Capacità appuntamenti</h3>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Quanti appuntamenti contemporanei puoi gestire? Se lavori da solo
+          lascia 1. Con una squadra di N persone, imposta N (o N+1 se anche tu
+          fai sopralluoghi). Gli slot già pieni verranno automaticamente
+          bloccati nel form.
+        </p>
+        <Input
+          type="number"
+          min="1"
+          value={form.appuntamenti_contemporanei}
+          onChange={(e) =>
+            setForm((f) => ({
+              ...f,
+              appuntamenti_contemporanei: Number(e.target.value) || 1,
+            }))
+          }
+          className="w-24"
+        />
       </div>
 
       <div className="flex justify-end">

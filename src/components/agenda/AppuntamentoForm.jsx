@@ -277,6 +277,7 @@ export default function AppuntamentoForm({
                 data={form.data}
                 ora={form.ora}
                 onChange={(v) => update("ora", v)}
+                excludeId={appuntamento?.id}
               />
               {!form.ora && form.data && (
                 <p className="text-[10px] text-muted-foreground">

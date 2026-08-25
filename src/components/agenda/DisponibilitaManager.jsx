@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -10,7 +11,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Trash2, Clock, Loader2 } from "lucide-react";
+import {
+  Plus,
+  Trash2,
+  Clock,
+  Loader2,
+  Ban,
+  CalendarX,
+} from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 
 const GIORNI = [
@@ -26,6 +34,7 @@ const GIORNI = [
 export default function DisponibilitaManager() {
   const { toast } = useToast();
   const [slots, setSlots] = useState([]);
+  const [giorniBloccati, setGiorniBloccati] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [nuovo, setNuovo] = useState({
@@ -34,16 +43,22 @@ export default function DisponibilitaManager() {
     ora_fine: "18:00",
     durata_slot: 60,
   });
+  const [nuovoBlocco, setNuovoBlocco] = useState({ data: "", motivo: "" });
+  const [savingBlocco, setSavingBlocco] = useState(false);
 
   const load = async () => {
     setLoading(true);
     try {
-      const data = await base44.entities.Disponibilita.list();
+      const [data, bloccati] = await Promise.all([
+        base44.entities.Disponibilita.list(),
+        base44.entities.GiornoBloccato.list("-data"),
+      ]);
       setSlots(data);
+      setGiorniBloccati(bloccati);
     } catch (err) {
       toast({
         title: "Errore caricamento",
-        description: err.message || "Impossibile caricare le disponibilità",
+        description: err.message || "Impossibile caricare",
         variant: "destructive",
       });
     } finally {
@@ -72,7 +87,7 @@ export default function DisponibilitaManager() {
     } catch (err) {
       toast({
         title: "Errore",
-        description: err.message || "Impossibile aggiungere",
+        description: err.message,
         variant: "destructive",
       });
     } finally {
@@ -89,11 +104,7 @@ export default function DisponibilitaManager() {
         prev.map((s) => (s.id === slot.id ? { ...s, attivo: !s.attivo } : s))
       );
     } catch (err) {
-      toast({
-        title: "Errore",
-        description: err.message,
-        variant: "destructive",
-      });
+      toast({ title: "Errore", description: err.message, variant: "destructive" });
     }
   };
 
@@ -104,11 +115,35 @@ export default function DisponibilitaManager() {
       setSlots((prev) => prev.filter((s) => s.id !== slot.id));
       toast({ title: "Fascia eliminata" });
     } catch (err) {
-      toast({
-        title: "Errore",
-        description: err.message,
-        variant: "destructive",
+      toast({ title: "Errore", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const addBlocco = async (e) => {
+    e.preventDefault();
+    if (!nuovoBlocco.data) return;
+    setSavingBlocco(true);
+    try {
+      await base44.entities.GiornoBloccato.create({
+        data: nuovoBlocco.data,
+        motivo: nuovoBlocco.motivo || "",
       });
+      setNuovoBlocco({ data: "", motivo: "" });
+      await load();
+      toast({ title: "Giorno bloccato" });
+    } catch (err) {
+      toast({ title: "Errore", description: err.message, variant: "destructive" });
+    } finally {
+      setSavingBlocco(false);
+    }
+  };
+
+  const removeBlocco = async (g) => {
+    try {
+      await base44.entities.GiornoBloccato.delete(g.id);
+      setGiorniBloccati((prev) => prev.filter((x) => x.id !== g.id));
+    } catch (err) {
+      toast({ title: "Errore", description: err.message, variant: "destructive" });
     }
   };
 
@@ -129,15 +164,14 @@ export default function DisponibilitaManager() {
 
   return (
     <div className="space-y-4">
+      {/* Disponibilità settimanale */}
       <div className="bg-card border border-border rounded-lg p-4">
         <h3 className="text-sm font-semibold mb-1 flex items-center gap-2">
-          <Clock className="w-4 h-4 text-primary" /> Aggiungi fascia di
-          disponibilità
+          <Clock className="w-4 h-4 text-primary" /> Disponibilità settimanale
         </h3>
         <p className="text-xs text-muted-foreground mb-3">
-          Definisci gli orari in cui sei disponibile a ricevere appuntamenti.
-          Questi slot verranno usati per generare gli orari selezionabili nel
-          form appuntamento.
+          Definisci gli orari in cui sei disponibile. Gli slot generati verranno
+          usati nel form appuntamento, escludendo quelli già occupati.
         </p>
         <form onSubmit={add} className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           <Select
@@ -198,6 +232,7 @@ export default function DisponibilitaManager() {
         </p>
       </div>
 
+      {/* Griglia giorni */}
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {grouped.map((g) => (
           <div
@@ -208,9 +243,7 @@ export default function DisponibilitaManager() {
               {g.label}
             </h4>
             {g.slots.length === 0 ? (
-              <p className="text-xs text-muted-foreground py-2">
-                Non disponibile
-              </p>
+              <p className="text-xs text-muted-foreground py-2">Non disponibile</p>
             ) : (
               g.slots.map((s) => (
                 <div
@@ -244,6 +277,81 @@ export default function DisponibilitaManager() {
             )}
           </div>
         ))}
+      </div>
+
+      {/* Blocca giornate specifiche */}
+      <div className="bg-card border border-border rounded-lg p-4">
+        <h3 className="text-sm font-semibold mb-1 flex items-center gap-2">
+          <Ban className="w-4 h-4 text-destructive" /> Blocca giornate specifiche
+        </h3>
+        <p className="text-xs text-muted-foreground mb-3">
+          Blocca singole date per ferie, festività o impegni: in quei giorni non
+          sarà possibile prenotare appuntamenti.
+        </p>
+        <form onSubmit={addBlocco} className="flex flex-wrap gap-2 items-end">
+          <div className="space-y-1.5 flex-1 min-w-[140px]">
+            <Label className="text-xs">Data</Label>
+            <Input
+              type="date"
+              value={nuovoBlocco.data}
+              onChange={(e) =>
+                setNuovoBlocco((f) => ({ ...f, data: e.target.value }))
+              }
+              required
+            />
+          </div>
+          <div className="space-y-1.5 flex-1 min-w-[180px]">
+            <Label className="text-xs">Motivo (opzionale)</Label>
+            <Input
+              value={nuovoBlocco.motivo}
+              onChange={(e) =>
+                setNuovoBlocco((f) => ({ ...f, motivo: e.target.value }))
+              }
+              placeholder="es. Ferie, Festività..."
+            />
+          </div>
+          <Button type="submit" size="sm" disabled={savingBlocco}>
+            {savingBlocco ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Ban className="w-3.5 h-3.5" />
+            )}
+            Blocca
+          </Button>
+        </form>
+
+        {giorniBloccati.length > 0 && (
+          <div className="mt-3 space-y-1.5">
+            {giorniBloccati.map((g) => (
+              <div
+                key={g.id}
+                className="flex items-center justify-between gap-2 px-3 py-2 rounded-md bg-destructive/10 border border-destructive/20"
+              >
+                <div className="flex items-center gap-2">
+                  <CalendarX className="w-3.5 h-3.5 text-destructive" />
+                  <span className="text-sm font-medium">
+                    {new Date(g.data + "T00:00").toLocaleDateString("it-IT", {
+                      weekday: "short",
+                      day: "numeric",
+                      month: "long",
+                    })}
+                  </span>
+                  {g.motivo && (
+                    <span className="text-xs text-muted-foreground">
+                      — {g.motivo}
+                    </span>
+                  )}
+                </div>
+                <button
+                  onClick={() => removeBlocco(g)}
+                  className="p-1 rounded hover:bg-destructive/20 text-destructive"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
