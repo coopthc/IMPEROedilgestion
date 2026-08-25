@@ -3,8 +3,8 @@ import { base44 } from "@/api/base44Client";
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import DocumentoForm from "@/components/cantiere/DocumentoForm";
 import {
-  Upload,
   Trash2,
   Eye,
   EyeOff,
@@ -14,6 +14,8 @@ import {
   File,
   Camera,
   Video,
+  Pencil,
+  Plus,
 } from "lucide-react";
 
 const CATEGORIE = [
@@ -30,11 +32,9 @@ export default function CantiereDocumenti({ cantiere }) {
   const { toast } = useToast();
   const [documenti, setDocumenti] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [uploading, setUploading] = useState(false);
   const [filtroCat, setFiltroCat] = useState("tutti");
-  const fileRef = useRef(null);
-  const photoRef = useRef(null);
-  const videoRef = useRef(null);
+  const [formOpen, setFormOpen] = useState(false);
+  const [editingDoc, setEditingDoc] = useState(null);
 
   const load = async () => {
     setLoading(true);
@@ -52,40 +52,15 @@ export default function CantiereDocumenti({ cantiere }) {
     load();
   }, [cantiere.id]);
 
-  const uploadFile = async (file) => {
-    if (!file) return;
-    setUploading(true);
-    try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      const isImage = file.type.startsWith("image/");
-      const isVideo = file.type.startsWith("video/");
-      const categoria = isImage ? "foto" : isVideo ? "video" : "altro";
-      await base44.entities.Documento.create({
-        cantiere_id: cantiere.id,
-        cantiere_nome: cantiere.nome,
-        nome: file.name,
-        file_url,
-        tipo_file: file.type,
-        categoria,
-        visibile_cliente: false,
-      });
-      load();
-      toast({ title: "File caricato" });
-    } catch (err) {
-      toast({
-        title: "Errore upload",
-        description: "Impossibile caricare il file",
-        variant: "destructive",
-      });
-    } finally {
-      setUploading(false);
-      if (fileRef.current) fileRef.current.value = "";
-      if (photoRef.current) photoRef.current.value = "";
-      if (videoRef.current) videoRef.current.value = "";
-    }
+  const openNew = () => {
+    setEditingDoc(null);
+    setFormOpen(true);
   };
 
-  const handleUpload = (e) => uploadFile(e.target.files?.[0]);
+  const openEdit = (doc) => {
+    setEditingDoc(doc);
+    setFormOpen(true);
+  };
 
   const toggleVisibile = async (doc) => {
     await base44.entities.Documento.update(doc.id, {
@@ -152,60 +127,10 @@ export default function CantiereDocumenti({ cantiere }) {
             </button>
           ))}
         </div>
-        <div className="flex gap-1.5">
-          <input
-            ref={fileRef}
-            type="file"
-            onChange={handleUpload}
-            className="hidden"
-          />
-          <input
-            ref={photoRef}
-            type="file"
-            accept="image/*"
-            capture="environment"
-            onChange={handleUpload}
-            className="hidden"
-          />
-          <input
-            ref={videoRef}
-            type="file"
-            accept="video/*"
-            capture="environment"
-            onChange={handleUpload}
-            className="hidden"
-          />
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => photoRef.current?.click()}
-            disabled={uploading}
-          >
-            {uploading ? (
-              <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-            ) : (
-              <Camera className="w-4 h-4 mr-1" />
-            )}
-            Foto
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => videoRef.current?.click()}
-            disabled={uploading}
-          >
-            <Video className="w-4 h-4 mr-1" />
-            Video
-          </Button>
-          <Button
-            size="sm"
-            onClick={() => fileRef.current?.click()}
-            disabled={uploading}
-          >
-            <Upload className="w-4 h-4 mr-1" />
-            Carica file
-          </Button>
-        </div>
+        <Button size="sm" onClick={openNew}>
+          <Plus className="w-4 h-4 mr-1" />
+          Aggiungi documento
+        </Button>
       </div>
 
       {/* Foto grid */}
@@ -248,12 +173,20 @@ export default function CantiereDocumenti({ cantiere }) {
                       )}
                       {d.visibile_cliente ? "Visibile" : "Nascosto"}
                     </button>
-                    <button
-                      onClick={() => handleDelete(d)}
-                      className="p-1 rounded hover:bg-destructive/15 text-destructive"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </button>
+                    <div className="flex gap-0.5">
+                      <button
+                        onClick={() => openEdit(d)}
+                        className="p-1 rounded hover:bg-primary/15 text-primary"
+                      >
+                        <Pencil className="w-3 h-3" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(d)}
+                        className="p-1 rounded hover:bg-destructive/15 text-destructive"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -302,12 +235,20 @@ export default function CantiereDocumenti({ cantiere }) {
                       )}
                       {d.visibile_cliente ? "Visibile" : "Nascosto"}
                     </button>
-                    <button
-                      onClick={() => handleDelete(d)}
-                      className="p-1 rounded hover:bg-destructive/15 text-destructive"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </button>
+                    <div className="flex gap-0.5">
+                      <button
+                        onClick={() => openEdit(d)}
+                        className="p-1 rounded hover:bg-primary/15 text-primary"
+                      >
+                        <Pencil className="w-3 h-3" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(d)}
+                        className="p-1 rounded hover:bg-destructive/15 text-destructive"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -365,6 +306,12 @@ export default function CantiereDocumenti({ cantiere }) {
                   {d.visibile_cliente ? "Visibile" : "Nascosto"}
                 </button>
                 <button
+                  onClick={() => openEdit(d)}
+                  className="p-1.5 rounded hover:bg-primary/15 text-primary flex-shrink-0"
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                </button>
+                <button
                   onClick={() => handleDelete(d)}
                   className="p-1.5 rounded hover:bg-destructive/15 text-destructive flex-shrink-0"
                 >
@@ -381,6 +328,14 @@ export default function CantiereDocumenti({ cantiere }) {
           Nessun documento. Carica il primo file.
         </p>
       )}
+
+      <DocumentoForm
+        open={formOpen}
+        onClose={() => setFormOpen(false)}
+        cantiere={cantiere}
+        documento={editingDoc}
+        onSaved={load}
+      />
     </div>
   );
 }
