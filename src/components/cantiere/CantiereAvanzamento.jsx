@@ -31,8 +31,10 @@ import {
   Target,
   Gauge,
   Euro,
+  Clock,
 } from "lucide-react";
 import { creaNotifiche } from "@/lib/notifiche";
+import PresenzaQuickDialog from "@/components/cantiere/PresenzaQuickDialog";
 
 const TIPI_AGG = [
   { value: "aggiornamento", label: "Aggiornamento", icon: Info, color: "text-blue-400" },
@@ -70,6 +72,7 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate, isClie
   const [editingLav, setEditingLav] = useState(null);
   const [lavForm, setLavForm] = useState({ titolo: "", collaboratori_ids: [], ore_previste: "", percentuale_prevista: "", percentuale_completata: 0, costo: 0, visibile_cliente: false });
   const [showFasi, setShowFasi] = useState(false);
+  const [quickPresenza, setQuickPresenza] = useState(null);
 
   const assignedIds = parseIds(cantiere.collaboratori_ids);
 
@@ -697,11 +700,30 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate, isClie
                         <div className="flex-1 min-w-0">
                           <div className="text-sm font-medium">{l.titolo}</div>
                           <div className="flex flex-wrap items-center gap-1.5 mt-1">
-                            {lavCollabNomi.map((n, i) => (
-                              <span key={i} className="text-[10px] bg-primary/15 text-primary px-1.5 py-0.5 rounded">
-                                {n}
-                              </span>
-                            ))}
+                            {lavCollabNomi.map((n, i) => {
+                              const collabId = lavCollabIds[i];
+                              const collab = collaboratori.find(
+                                (c) => c.id === collabId
+                              );
+                              return (
+                                <button
+                                  key={i}
+                                  type="button"
+                                  onClick={() =>
+                                    collab &&
+                                    setQuickPresenza({
+                                      collaboratore: collab,
+                                      lavorazione: l,
+                                    })
+                                  }
+                                  className="text-[10px] bg-primary/15 text-primary px-1.5 py-0.5 rounded hover:bg-primary/30 transition-colors flex items-center gap-0.5"
+                                  title="Registra ore lavorate"
+                                >
+                                  <Clock className="w-2.5 h-2.5" />
+                                  {n}
+                                </button>
+                              );
+                            })}
                             {lavCollabNomi.length === 0 && (
                               <span className="text-[10px] text-muted-foreground">Nessun collaboratore</span>
                             )}
@@ -984,6 +1006,14 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate, isClie
         )}
       </div>
       )}
+
+      <PresenzaQuickDialog
+        open={!!quickPresenza}
+        onOpenChange={(v) => !v && setQuickPresenza(null)}
+        collaboratore={quickPresenza?.collaboratore}
+        cantiere={cantiere}
+        lavorazione={quickPresenza?.lavorazione}
+      />
     </div>
   );
 }
