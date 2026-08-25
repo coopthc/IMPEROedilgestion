@@ -63,7 +63,7 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate, isClie
   const [nuovoAgg, setNuovoAgg] = useState({ titolo: "", testo: "", tipo: "aggiornamento", visibile_cliente: false });
   const [nuovaLav, setNuovaLav] = useState({ titolo: "", collaboratori_ids: [], ore_previste: "", percentuale_prevista: "", costo: "" });
   const [savingPct, setSavingPct] = useState(false);
-  const [savingBudget, setSavingBudget] = useState(false);
+  const [savingBudgetId, setSavingBudgetId] = useState(null);
   const [modalita, setModalita] = useState(cantiere.modalita_avanzamento || "manuale");
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({ titolo: "", testo: "", tipo: "aggiornamento", visibile_cliente: false });
@@ -101,6 +101,7 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate, isClie
     0
   );
   const totaleCosti = lavorazioni.reduce((sum, l) => sum + (l.costo || 0), 0);
+  const totaleAggiunte = lavorazioni.filter((l) => l.aggiunta_al_budget).reduce((sum, l) => sum + (l.costo || 0), 0);
 
   const savePercentuale = async () => {
     setSavingPct(true);
@@ -122,16 +123,18 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate, isClie
     onCantiereUpdate?.();
   };
 
-  const applicaBudgetDaLavorazioni = async () => {
-    setSavingBudget(true);
+  const toggleBudgetLav = async (lav) => {
+    const costo = lav.costo || 0;
+    const wasAdded = lav.aggiunta_al_budget;
+    setSavingBudgetId(lav.id);
     try {
-      const nuovoBudget = Math.round(((cantiere.budget || 0) + totaleCosti) * 100) / 100;
-      await base44.entities.Cantiere.update(cantiere.id, {
-        budget: nuovoBudget,
-      });
-      onCantiereUpdate?.();
+      const nuovoBudget = Math.round(((cantiere.budget || 0) + (wasAdded ? -costo : costo)) * 100) / 100;
+      await base44.entities.Cantiere.update(cantiere.id, { budget: nuovoBudget });
+      await base44.entities.Lavorazione.update(lav.id, { aggiunta_al_budget: !wasAdded });
+      await onCantiereUpdate?.();
+      await load();
     } finally {
-      setSavingBudget(false);
+      setSavingBudgetId(null);
     }
   };
 
@@ -422,44 +425,6 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate, isClie
         </>
       )}
 
-      {/* Riepilogo costi lavorazioni vs budget */}
-      {!isCliente && lavorazioni.length > 0 && (
-        <div className="bg-card border border-border rounded-lg p-4">
-          <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-            <Euro className="w-4 h-4 text-primary" />
-            Costi lavorazioni
-          </h3>
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Budget attuale</span>
-              <span className="font-medium">€ {(cantiere.budget || 0).toLocaleString("it-IT", { minimumFractionDigits: 2 })}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Costi lavorazioni</span>
-              <span className="font-medium">€ {totaleCosti.toLocaleString("it-IT", { minimumFractionDigits: 2 })}</span>
-            </div>
-            <div className="flex justify-between pt-2 border-t border-border">
-              <span className="font-semibold">Nuovo budget (attuale + costi)</span>
-              <span className="font-bold text-lg">
-                € {((cantiere.budget || 0) + totaleCosti).toLocaleString("it-IT", { minimumFractionDigits: 2 })}
-              </span>
-            </div>
-          </div>
-          <Button
-            size="sm"
-            className="w-full mt-3"
-            variant="outline"
-            onClick={applicaBudgetDaLavorazioni}
-            disabled={savingBudget || totaleCosti === 0}
-          >
-            {savingBudget ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Aggiungi costi al budget"}
-          </Button>
-          <p className="text-[11px] text-muted-foreground mt-2">
-            Aggiunge il totale dei costi delle lavorazioni al budget attuale. La percentuale resta l'avanzamento fisico del lavoro.
-          </p>
-        </div>
-      )}
-
       {/* Lavorazioni */}
       <div className="bg-card border border-border rounded-lg p-4">
         <div className="flex items-center justify-between">
@@ -476,6 +441,30 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate, isClie
             </button>
           )}
         </div>
+
+        {/* Riepilogo budget */}
+        {!isCliente && lavorazioni.length > 0 && (
+          <div className="bg-secondary/30 rounded-lg p-3 mb-4 text-sm">
+            <div className="flex items-center gap-1.5 mb-2 text-xs text-muted-foreground">
+              <Euro className="w-3.5 h-3.5" />
+              Budget
+            </div>
+            <div className="space-y-1.5">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Budget iniziale</span>
+                <span>€ {Math.max(0, (cantiere.budget || 0) - totaleAggiunte).toLocaleString("it-IT", { minimumFractionDigits: 2 })}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Aggiunte ({lavorazioni.filter((l) => l.aggiunta_al_budget).length})</span>
+                <span className="text-green-400">+ € {totaleAggiunte.toLocaleString("it-IT", { minimumFractionDigits: 2 })}</span>
+              </div>
+              <div className="flex justify-between pt-1.5 border-t border-border">
+                <span className="font-semibold">Budget attuale</span>
+                <span className="font-bold">€ {(cantiere.budget || 0).toLocaleString("it-IT", { minimumFractionDigits: 2 })}</span>
+              </div>
+            </div>
+          </div>
+        )}
         {/* Form nuova lavorazione */}
         {!isCliente && (
         <div className="space-y-2 mb-4 bg-secondary/30 rounded-lg p-3">
@@ -727,6 +716,35 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate, isClie
                           <span className="text-[10px] text-muted-foreground">{l.ore_previste}h prev.</span>
                         )}
                       </div>
+                      {/* Costo + aggiunta al budget */}
+                      {l.costo > 0 && !isCliente && (
+                        <div className="flex items-center justify-between mt-2 bg-secondary/50 rounded-md px-2.5 py-1.5">
+                          <span className="text-xs text-muted-foreground">Costo</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-semibold">€ {Number(l.costo).toLocaleString("it-IT", { minimumFractionDigits: 2 })}</span>
+                            <button
+                              onClick={() => toggleBudgetLav(l)}
+                              disabled={savingBudgetId === l.id}
+                              className={`text-[10px] px-2.5 py-1 rounded-full border transition-colors flex items-center gap-1 ${
+                                l.aggiunta_al_budget
+                                  ? "bg-green-500/15 text-green-400 border-green-500/30"
+                                  : "bg-primary/10 text-primary border-primary/30 hover:bg-primary/20"
+                              }`}
+                            >
+                              {savingBudgetId === l.id ? (
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                              ) : l.aggiunta_al_budget ? (
+                                <>
+                                  <CheckCircle2 className="w-3 h-3" />
+                                  Aggiunta
+                                </>
+                              ) : (
+                                "Aggiungi al budget"
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

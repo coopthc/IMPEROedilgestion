@@ -53,6 +53,11 @@
       "default": 0,
       "title": "Costo lavorazione (\u20ac)"
     },
+    "aggiunta_al_budget": {
+      "type": "boolean",
+      "default": false,
+      "title": "Aggiunta al budget"
+    },
     "ore_previste": {
       "type": "number",
       "title": "Ore previste"
