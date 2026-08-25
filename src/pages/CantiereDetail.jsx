@@ -238,7 +238,7 @@ export default function CantiereDetail() {
             <TrendingUp className="w-3.5 h-3.5" />
             Avanzamento
           </TabsTrigger>
-          {isAdmin && (
+          {(isAdmin || isCliente) && (
             <TabsTrigger value="pagamenti" className="text-xs gap-1.5">
               <Wallet className="w-3.5 h-3.5" />
               Pagamenti
@@ -373,7 +373,7 @@ export default function CantiereDetail() {
           <CantiereAvanzamento cantiere={cantiere} onCantiereUpdate={load} isCliente={isCliente} />
         </TabsContent>
 
-        {isAdmin && (
+        {(isAdmin || isCliente) && (
           <TabsContent value="pagamenti">
             <div className="space-y-4">
               <CantierePagamenti cantiere={cantiere} isCliente={isCliente} />
