@@ -16,17 +16,26 @@ export async function creaNotifiche({ collaboratoriIds, tipo, titolo, testo, url
     const targets = all.filter(
       (c) => collaboratoriIds.includes(c.id) && c.user_id
     );
-    if (targets.length === 0) return;
-    await base44.entities.Notifica.bulkCreate(
-      targets.map((c) => ({
-        user_id: c.user_id,
-        tipo,
-        titolo,
-        testo: testo || "",
-        url: url || "",
-        letto: false,
-      }))
-    );
+    if (targets.length > 0) {
+      await base44.entities.Notifica.bulkCreate(
+        targets.map((c) => ({
+          user_id: c.user_id,
+          tipo,
+          titolo,
+          testo: testo || "",
+          url: url || "",
+          letto: false,
+        }))
+      );
+    }
+    // Email di fallback per collaboratori senza account utente
+    await base44.functions.invoke("notificaEmailFallback", {
+      collaboratoriIds,
+      tipo,
+      titolo,
+      testo: testo || "",
+      url: url || "",
+    });
   } catch (e) {
     console.error("Errore creazione notifiche:", e);
   }
