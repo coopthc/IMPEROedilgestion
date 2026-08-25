@@ -62,22 +62,21 @@ export default function TimeSlotPicker({
           (s) => s.giorno_settimana === dayOfWeek && s.attivo
         );
 
+        // Always use 30-min grid for alignment with variable appointment durations
+        const SLOT_STEP = 30;
         let rawSlots = [];
-        let slotDuration = 60;
         if (daySlots.length === 0) {
           setNoAvailability(true);
-          rawSlots = generaSlot("08:00", "18:00", 30);
-          slotDuration = 30;
+          rawSlots = generaSlot("08:00", "18:00", SLOT_STEP);
         } else {
           setNoAvailability(false);
           rawSlots = [
             ...new Set(
               daySlots.flatMap((s) =>
-                generaSlot(s.ora_inizio, s.ora_fine, s.durata_slot || 60)
+                generaSlot(s.ora_inizio, s.ora_fine, SLOT_STEP)
               )
             ),
           ].sort();
-          slotDuration = daySlots[0].durata_slot || 60;
         }
 
         // Capacity from settings (default 1 = working alone)
@@ -90,7 +89,7 @@ export default function TimeSlotPicker({
         // Build slot list with blocked status
         const slotsWithStatus = rawSlots.map((slot) => {
           const slotStart = timeToMinutes(slot);
-          const slotEnd = slotStart + slotDuration;
+          const slotEnd = slotStart + SLOT_STEP;
           const overlapping = existingApps.filter((a) => {
             if (a.stato === "annullato") return false;
             if (excludeId && a.id === excludeId) return false;
