@@ -17,7 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, Loader2, Euro, Check } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, Euro, Check, Send, Mail } from "lucide-react";
 
 const TIPI = [
   { value: "acconto", label: "Acconto", icon: "💶" },
@@ -144,6 +144,25 @@ export default function CantierePagamenti({ cantiere, isCliente = false }) {
     load();
   };
 
+  const [sendingId, setSendingId] = useState(null);
+
+  const inviaNotifica = async (p) => {
+    setSendingId(p.id);
+    try {
+      const res = await base44.functions.invoke("inviaNotificaPagamento", { pagamento_id: p.id });
+      if (res.data?.error) {
+        toast({ title: res.data.error, variant: "destructive" });
+      } else {
+        toast({ title: `Notifica inviata a ${res.data.inviata_a}` });
+        load();
+      }
+    } catch (err) {
+      toast({ title: "Errore invio notifica", variant: "destructive" });
+    } finally {
+      setSendingId(null);
+    }
+  };
+
   const totale = pagamenti.reduce((s, p) => s + (p.importo || 0), 0);
   const pagato = pagamenti
     .filter((p) => p.stato === "pagato")
@@ -259,10 +278,24 @@ export default function CantierePagamenti({ cantiere, isCliente = false }) {
                     {p.note && (
                       <span className="text-[10px] text-muted-foreground italic truncate">{p.note}</span>
                     )}
+                    {p.notifica_inviata_data && (
+                      <span className="text-[10px] text-blue-400 flex items-center gap-0.5">
+                        <Mail className="w-2.5 h-2.5" />
+                        notifica {new Date(p.notifica_inviata_data).toLocaleDateString("it-IT")}
+                      </span>
+                    )}
                   </div>
                 </div>
                 {!isCliente && (
                   <>
+                    <button
+                      onClick={() => inviaNotifica(p)}
+                      disabled={sendingId === p.id}
+                      className="p-1.5 rounded hover:bg-blue-500/15 text-blue-400 flex-shrink-0 disabled:opacity-50"
+                      title="Invia notifica al cliente"
+                    >
+                      {sendingId === p.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                    </button>
                     <button
                       onClick={() => openEdit(p)}
                       className="p-1.5 rounded hover:bg-secondary text-muted-foreground flex-shrink-0"

@@ -59,6 +59,15 @@
     "lavorazione_id": {
       "type": "string",
       "title": "Lavorazione collegata"
+    },
+    "notifica_inviata_data": {
+      "type": "string",
+      "format": "date",
+      "title": "Data invio notifica al cliente"
+    },
+    "notifica_inviata_a": {
+      "type": "string",
+      "title": "Email destinatario notifica"
     }
   },
   "required": [

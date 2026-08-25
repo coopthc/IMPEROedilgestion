@@ -13,6 +13,7 @@ import {
   Cloud,
   LogOut,
   HardHat,
+  Settings,
 } from "lucide-react";
 
 // Voci di navigazione — replicate dal plugin WordPress
@@ -26,6 +27,7 @@ export const NAV_ITEMS = [
   { to: "/area-personale", icon: Home, label: "Area personale", group: "personale" },
   { to: "/esporta", icon: Download, label: "Esporta dati", group: "strumenti" },
   { to: "/storage", icon: Cloud, label: "Storage & Cloud", group: "strumenti" },
+  { to: "/impostazioni", icon: Settings, label: "Impostazioni", group: "strumenti" },
 ];
 
 // Voci per la tab bar mobile (sottoinsieme principale)

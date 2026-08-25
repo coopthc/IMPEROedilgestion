@@ -1,0 +1,19 @@
+{
+  "name": "ImpostazioneApp",
+  "type": "object",
+  "properties": {
+    "nome_mittente": {
+      "type": "string",
+      "title": "Nome mittente email"
+    },
+    "oggetto_email_pagamento": {
+      "type": "string",
+      "title": "Oggetto email promemoria pagamento"
+    },
+    "corpo_email_pagamento": {
+      "type": "string",
+      "title": "Corpo email promemoria pagamento"
+    }
+  },
+  "required": []
+}
