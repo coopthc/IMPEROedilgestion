@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   Dialog,
   DialogContent,
@@ -10,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Loader2 } from "lucide-react";
+import { Loader2, HardHat, ExternalLink } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 
 const emptyForm = {
@@ -31,6 +32,7 @@ const emptyForm = {
 export default function ClienteForm({ open, onOpenChange, cliente, onSaved }) {
   const [form, setForm] = useState(emptyForm);
   const [loading, setLoading] = useState(false);
+  const [cantieri, setCantieri] = useState([]);
 
   useEffect(() => {
     if (cliente) {
@@ -48,8 +50,12 @@ export default function ClienteForm({ open, onOpenChange, cliente, onSaved }) {
         codice_fiscale: cliente.codice_fiscale || "",
         note: cliente.note || "",
       });
+      base44.entities.Cantiere.filter({ cliente_id: cliente.id })
+        .then(setCantieri)
+        .catch(() => setCantieri([]));
     } else {
       setForm(emptyForm);
+      setCantieri([]);
     }
   }, [cliente, open]);
 
@@ -214,6 +220,30 @@ export default function ClienteForm({ open, onOpenChange, cliente, onSaved }) {
               </div>
             </div>
           </div>
+
+          {/* Cantieri collegati (read-only) */}
+          {cliente && cantieri.length > 0 && (
+            <div className="space-y-1.5">
+              <Label>Cantieri collegati ({cantieri.length})</Label>
+              <div className="flex flex-wrap gap-1.5">
+                {cantieri.map((cant) => (
+                  <Link
+                    key={cant.id}
+                    to={`/cantieri/${cant.id}`}
+                    onClick={() => onOpenChange(false)}
+                    className="text-xs px-2.5 py-1 rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors flex items-center gap-1"
+                  >
+                    <HardHat className="w-3 h-3" />
+                    {cant.nome}
+                    <ExternalLink className="w-2.5 h-2.5 opacity-60" />
+                  </Link>
+                ))}
+              </div>
+              <p className="text-[10px] text-muted-foreground">
+                I cantieri si collegano automaticamente quando li abbini al cliente.
+              </p>
+            </div>
+          )}
 
           <div className="space-y-1.5">
             <Label htmlFor="note">Note</Label>

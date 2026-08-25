@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
+import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +15,7 @@ import {
   Loader2,
   Building,
   MessageCircle,
+  HardHat,
 } from "lucide-react";
 
 const waLink = (phone) =>
@@ -24,6 +26,7 @@ import { useToast } from "@/components/ui/use-toast";
 export default function Clienti() {
   const { toast } = useToast();
   const [clienti, setClienti] = useState([]);
+  const [cantieri, setCantieri] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [formOpen, setFormOpen] = useState(false);
@@ -32,14 +35,21 @@ export default function Clienti() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await base44.entities.Cliente.list("-created_date");
+      const [data, cants] = await Promise.all([
+        base44.entities.Cliente.list("-created_date"),
+        base44.entities.Cantiere.list(),
+      ]);
       setClienti(data);
+      setCantieri(cants);
     } catch (err) {
       console.error("Errore caricamento clienti:", err);
     } finally {
       setLoading(false);
     }
   }, []);
+
+  const cantieriDelCliente = (clienteId) =>
+    cantieri.filter((c) => c.cliente_id === clienteId);
 
   useEffect(() => {
     load();
@@ -187,6 +197,30 @@ export default function Clienti() {
                   </div>
                 )}
               </div>
+
+              {(() => {
+                const cantieriCollegati = cantieriDelCliente(c.id);
+                if (cantieriCollegati.length === 0) return null;
+                return (
+                  <div className="mb-3">
+                    <div className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1.5">
+                      Cantieri ({cantieriCollegati.length})
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {cantieriCollegati.map((cant) => (
+                        <Link
+                          key={cant.id}
+                          to={`/cantieri/${cant.id}`}
+                          className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors flex items-center gap-1"
+                        >
+                          <HardHat className="w-2.5 h-2.5" />
+                          {cant.nome}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
 
               <div className="flex gap-1.5 pt-2 border-t border-border">
                 <Button
