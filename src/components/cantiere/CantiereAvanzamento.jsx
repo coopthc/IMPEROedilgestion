@@ -61,14 +61,14 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate, isClie
   const [collaboratori, setCollaboratori] = useState([]);
   const [loading, setLoading] = useState(true);
   const [nuovoAgg, setNuovoAgg] = useState({ titolo: "", testo: "", tipo: "aggiornamento", visibile_cliente: false });
-  const [nuovaLav, setNuovaLav] = useState({ titolo: "", collaboratori_ids: [], ore_previste: "", percentuale_prevista: "", costo: "", crea_pagamento: true });
+  const [nuovaLav, setNuovaLav] = useState({ titolo: "", collaboratori_ids: [], ore_previste: "", percentuale_prevista: "", costo: "", crea_pagamento: true, visibile_cliente: false });
   const [savingPct, setSavingPct] = useState(false);
   const [savingBudgetId, setSavingBudgetId] = useState(null);
   const [modalita, setModalita] = useState(cantiere.modalita_avanzamento || "manuale");
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({ titolo: "", testo: "", tipo: "aggiornamento", visibile_cliente: false });
   const [editingLav, setEditingLav] = useState(null);
-  const [lavForm, setLavForm] = useState({ titolo: "", collaboratori_ids: [], ore_previste: "", percentuale_prevista: "", percentuale_completata: 0, costo: 0 });
+  const [lavForm, setLavForm] = useState({ titolo: "", collaboratori_ids: [], ore_previste: "", percentuale_prevista: "", percentuale_completata: 0, costo: 0, visibile_cliente: false });
   const [showFasi, setShowFasi] = useState(false);
 
   const assignedIds = parseIds(cantiere.collaboratori_ids);
@@ -102,6 +102,7 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate, isClie
   );
   const totaleCosti = lavorazioni.reduce((sum, l) => sum + (l.costo || 0), 0);
   const totaleAggiunte = lavorazioni.filter((l) => l.aggiunta_al_budget).reduce((sum, l) => sum + (l.costo || 0), 0);
+  const lavorazioniVisibili = isCliente ? lavorazioni.filter((l) => l.visibile_cliente) : lavorazioni;
 
   const savePercentuale = async () => {
     setSavingPct(true);
@@ -216,6 +217,7 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate, isClie
       costo: costoNum,
       stato: "da_fare",
       ordine: lavorazioni.length,
+      visibile_cliente: nuovaLav.visibile_cliente,
     });
     // Crea anche la voce pagamento se richiesto e se c'è un costo
     if (nuovaLav.crea_pagamento && costoNum > 0) {
@@ -238,7 +240,7 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate, isClie
       testo: `Cantiere: ${cantiere.nome}`,
       url: `/cantieri/${cantiere.id}`,
     });
-    setNuovaLav({ titolo: "", collaboratori_ids: [], ore_previste: "", percentuale_prevista: "", costo: "", crea_pagamento: true });
+    setNuovaLav({ titolo: "", collaboratori_ids: [], ore_previste: "", percentuale_prevista: "", costo: "", crea_pagamento: true, visibile_cliente: false });
     load();
   };
 
@@ -251,6 +253,7 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate, isClie
       percentuale_prevista: lav.percentuale_prevista ?? 0,
       percentuale_completata: lav.percentuale_completata ?? 0,
       costo: lav.costo ?? 0,
+      visibile_cliente: lav.visibile_cliente || false,
     });
   };
 
@@ -266,6 +269,7 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate, isClie
       percentuale_prevista: Number(lavForm.percentuale_prevista) || 0,
       percentuale_completata: Number(lavForm.percentuale_completata) || 0,
       costo: Number(lavForm.costo) || 0,
+      visibile_cliente: lavForm.visibile_cliente,
     };
     // Se completata al 100%, aggiorna stato
     if (Number(lavForm.percentuale_completata) >= 100) {
@@ -301,6 +305,13 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate, isClie
     await Promise.all(pagamenti.map((p) => base44.entities.Pagamento.delete(p.id)));
     await base44.entities.Lavorazione.delete(lav.id);
     setLavorazioni((prev) => prev.filter((l) => l.id !== lav.id));
+    load();
+  };
+
+  const removePagamentoLav = async (lav) => {
+    if (!confirm(`Rimuovere "${lav.titolo}" dai pagamenti?`)) return;
+    const pagamenti = await base44.entities.Pagamento.filter({ lavorazione_id: lav.id });
+    await Promise.all(pagamenti.map((p) => base44.entities.Pagamento.delete(p.id)));
     load();
   };
 
@@ -457,7 +468,7 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate, isClie
             <Users className="w-4 h-4 text-primary" />
             Lavorazioni (fasi di lavoro)
           </h3>
-          {isCliente && lavorazioni.length > 0 && (
+          {isCliente && lavorazioniVisibili.length > 0 && (
             <button
               onClick={() => setShowFasi(!showFasi)}
               className="text-xs text-primary hover:underline flex items-center gap-1"
@@ -556,13 +567,22 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate, isClie
               />
             </div>
           </div>
-          <label className="flex items-center gap-2 text-xs cursor-pointer">
-            <Switch
-              checked={nuovaLav.crea_pagamento}
-              onCheckedChange={(v) => setNuovaLav((f) => ({ ...f, crea_pagamento: v }))}
-            />
-            Crea anche voce in Pagamenti
-          </label>
+          <div className="flex items-center justify-between">
+            <label className="flex items-center gap-2 text-xs cursor-pointer">
+              <Switch
+                checked={nuovaLav.crea_pagamento}
+                onCheckedChange={(v) => setNuovaLav((f) => ({ ...f, crea_pagamento: v }))}
+              />
+              Crea anche voce in Pagamenti
+            </label>
+            <label className="flex items-center gap-2 text-xs cursor-pointer">
+              <Switch
+                checked={nuovaLav.visibile_cliente}
+                onCheckedChange={(v) => setNuovaLav((f) => ({ ...f, visibile_cliente: v }))}
+              />
+              Visibile al cliente
+            </label>
+          </div>
           <Button size="sm" onClick={addLavorazione} disabled={!nuovaLav.titolo.trim() || !nuovaLav.percentuale_prevista} className="w-full">
             <Plus className="w-4 h-4 mr-1" />
             Aggiungi fase
@@ -574,9 +594,9 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate, isClie
           <p className="text-xs text-muted-foreground py-3 text-center">
             Nessuna lavorazione. Le lavorazioni create qui compariranno nella sezione Presenze.
           </p>
-        ) : lavorazioni.length > 0 && (!isCliente || showFasi) ? (
+        ) : lavorazioniVisibili.length > 0 && (!isCliente || showFasi) ? (
           <div className="space-y-2 mt-4">
-            {lavorazioni.map((l) => {
+            {lavorazioniVisibili.map((l) => {
               const statoInfo = STATI_LAV.find((s) => s.value === l.stato) || STATI_LAV[0];
               const isEditing = editingLav === l.id;
               const lavCollabIds = parseIds(l.collaboratori_ids || l.collaboratore_id);
@@ -657,6 +677,13 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate, isClie
                           />
                         </div>
                       </div>
+                      <label className="flex items-center gap-2 text-xs cursor-pointer">
+                        <Switch
+                          checked={lavForm.visibile_cliente}
+                          onCheckedChange={(v) => setLavForm((f) => ({ ...f, visibile_cliente: v }))}
+                        />
+                        Visibile al cliente
+                      </label>
                       <div className="flex gap-1">
                         <Button size="sm" onClick={() => saveLav(l.id)}>Salva</Button>
                         <Button size="sm" variant="ghost" onClick={() => setEditingLav(null)}>
@@ -747,6 +774,15 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate, isClie
                         {l.ore_previste != null && (
                           <span className="text-[10px] text-muted-foreground">{l.ore_previste}h prev.</span>
                         )}
+                        {l.visibile_cliente ? (
+                          <span className="flex items-center gap-0.5 text-[10px] text-green-500">
+                            <Eye className="w-2.5 h-2.5" /> Cliente
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
+                            <EyeOff className="w-2.5 h-2.5" /> Interno
+                          </span>
+                        )}
                       </div>
                       {/* Costo + aggiunta al budget */}
                       {l.costo > 0 && !isCliente && (
@@ -776,6 +812,15 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate, isClie
                             </button>
                           </div>
                         </div>
+                      )}
+                      {l.costo > 0 && !isCliente && (
+                        <button
+                          onClick={() => removePagamentoLav(l)}
+                          className="text-[10px] text-muted-foreground hover:text-destructive mt-1.5 flex items-center gap-1"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                          Rimuovi dai pagamenti
+                        </button>
                       )}
                     </div>
                   )}

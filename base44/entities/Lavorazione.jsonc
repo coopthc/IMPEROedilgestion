@@ -58,6 +58,11 @@
       "default": false,
       "title": "Aggiunta al budget"
     },
+    "visibile_cliente": {
+      "type": "boolean",
+      "default": false,
+      "title": "Visibile al cliente"
+    },
     "ore_previste": {
       "type": "number",
       "title": "Ore previste"
