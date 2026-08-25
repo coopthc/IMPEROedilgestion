@@ -25,6 +25,7 @@ import {
   Calendar,
   X,
   Search,
+  Trash2,
 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { creaNotifiche } from "@/lib/notifiche";
@@ -92,6 +93,7 @@ export default function AppuntamentoForm({
   const [pillole, setPillole] = useState([60]);
   const [creaCantiereBozza, setCreaCantiereBozza] = useState(false);
   const [collabSearch, setCollabSearch] = useState("");
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (appuntamento) {
@@ -241,6 +243,21 @@ export default function AppuntamentoForm({
       console.error("Errore salvataggio appuntamento:", err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!appuntamento) return;
+    if (!confirm("Eliminare definitivamente questo appuntamento?")) return;
+    setDeleting(true);
+    try {
+      await base44.entities.Appuntamento.delete(appuntamento.id);
+      onSaved();
+      onOpenChange(false);
+    } catch (err) {
+      console.error("Errore eliminazione:", err);
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -488,21 +505,40 @@ export default function AppuntamentoForm({
             />
           </div>
 
-          <div className="flex justify-end gap-2 pt-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              disabled={loading || sendingEmail}
-            >
-              Annulla
-            </Button>
-            <Button type="submit" disabled={loading || sendingEmail}>
-              {(loading || sendingEmail) && (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              )}
-              {sendingEmail ? "Invio email..." : appuntamento ? "Salva" : "Crea"}
-            </Button>
+          <div className="flex justify-between gap-2 pt-2">
+            {appuntamento ? (
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={handleDelete}
+                disabled={loading || sendingEmail || deleting}
+              >
+                {deleting ? (
+                  <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                ) : (
+                  <Trash2 className="w-4 h-4 mr-1" />
+                )}
+                Elimina
+              </Button>
+            ) : (
+              <span />
+            )}
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                disabled={loading || sendingEmail || deleting}
+              >
+                Annulla
+              </Button>
+              <Button type="submit" disabled={loading || sendingEmail || deleting}>
+                {(loading || sendingEmail) && (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                )}
+                {sendingEmail ? "Invio email..." : appuntamento ? "Salva" : "Crea"}
+              </Button>
+            </div>
           </div>
         </form>
       </DialogContent>
