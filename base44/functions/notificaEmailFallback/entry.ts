@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
+import { buildFirmaHtml, getImpostazioni, getModello, fillTemplate } from '../../shared/firmaEmail.ts';
 
 export default async function(req: Request): Promise<Response> {
   try {
@@ -8,7 +9,6 @@ export default async function(req: Request): Promise<Response> {
 
     const body = await req.json();
     const collaboratoriIds: string[] = body?.collaboratoriIds || [];
-    const tipo: string = body?.tipo || 'notifica';
     const titolo: string = body?.titolo || '';
     const testo: string = body?.testo || '';
     const url: string = body?.url || '';
@@ -26,15 +26,25 @@ export default async function(req: Request): Promise<Response> {
       return Response.json({ inviate: 0 });
     }
 
-    const subject = `${titolo}`;
+    const [imp, modello] = await Promise.all([
+      getImpostazioni(base44),
+      getModello(base44, 'collaboratore_notifica'),
+    ]);
+
+    const vars: Record<string, string> = {
+      '{titolo}': titolo,
+      '{testo}': testo,
+    };
+    const oggetto = fillTemplate(modello?.oggetto || titolo, vars);
+    const corpoBase = fillTemplate(modello?.corpo || testo, vars);
     const link = url ? `<p><a href="${url}">Apri nell'app</a></p>` : '';
+
     const bodyHtml = `
       <div style="font-family:sans-serif;max-width:560px;margin:auto">
-        <h2 style="color:#e23a8c">${titolo}</h2>
-        <p style="white-space:pre-line">${testo}</p>
+        <h2 style="color:#e23a8c">${oggetto}</h2>
+        <p style="white-space:pre-line">${corpoBase.replace(/\n/g, '<br>')}</p>
         ${link}
-        <hr style="margin-top:24px;border:none;border-top:1px solid #eee" />
-        <p style="font-size:12px;color:#888">Notifica automatica da EdilGestion</p>
+        ${buildFirmaHtml(imp)}
       </div>`;
 
     let inviate = 0;
@@ -42,8 +52,9 @@ export default async function(req: Request): Promise<Response> {
       try {
         await base44.asServiceRole.integrations.Core.SendEmail({
           to: c.email,
-          subject,
+          subject: oggetto,
           body: bodyHtml,
+          ...(imp.ragione_sociale ? { from_name: imp.ragione_sociale } : {}),
         });
         inviate++;
       } catch (e) {

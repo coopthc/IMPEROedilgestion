@@ -2,17 +2,47 @@
   "name": "ImpostazioneApp",
   "type": "object",
   "properties": {
-    "nome_mittente": {
+    "ragione_sociale": {
       "type": "string",
-      "title": "Nome mittente email"
+      "title": "Ragione sociale"
     },
-    "oggetto_email_pagamento": {
+    "logo_url": {
       "type": "string",
-      "title": "Oggetto email promemoria pagamento"
+      "format": "uri",
+      "title": "Logo azienda"
     },
-    "corpo_email_pagamento": {
+    "piva": {
       "type": "string",
-      "title": "Corpo email promemoria pagamento"
+      "title": "Partita IVA"
+    },
+    "codice_fiscale": {
+      "type": "string",
+      "title": "Codice fiscale"
+    },
+    "indirizzo": {
+      "type": "string",
+      "title": "Indirizzo"
+    },
+    "citta": {
+      "type": "string",
+      "title": "Citt\u00e0"
+    },
+    "cap": {
+      "type": "string",
+      "title": "CAP"
+    },
+    "provincia": {
+      "type": "string",
+      "title": "Provincia"
+    },
+    "telefono": {
+      "type": "string",
+      "title": "Telefono"
+    },
+    "email_azienda": {
+      "type": "string",
+      "format": "email",
+      "title": "Email azienda"
     }
   },
   "required": []

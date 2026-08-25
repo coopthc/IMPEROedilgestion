@@ -1,0 +1,50 @@
+export function buildFirmaHtml(imp: any): string {
+  const riga = (label: string, val: string) =>
+    val
+      ? `<tr><td style="color:#888;font-size:12px;padding-right:8px;white-space:nowrap;vertical-align:top">${label}:</td><td style="font-size:12px;vertical-align:top">${val}</td></tr>`
+      : '';
+  const indirizzo = [imp?.indirizzo, [imp?.cap, imp?.citta].filter(Boolean).join(' '), imp?.provincia]
+    .filter(Boolean)
+    .join(', ');
+  const dati = [
+    riga('P.IVA', imp?.piva),
+    riga('C.F.', imp?.codice_fiscale),
+    riga('Sede', indirizzo),
+    riga('Tel', imp?.telefono),
+    riga('Email', imp?.email_azienda),
+  ].join('');
+  const logo = imp?.logo_url
+    ? `<img src="${imp.logo_url}" alt="logo" style="max-height:50px;max-width:160px;margin-bottom:6px;display:block" />`
+    : '';
+  const nome = imp?.ragione_sociale
+    ? `<div style="font-weight:bold;color:#e23a8c;font-size:14px;margin-bottom:4px">${imp.ragione_sociale}</div>`
+    : '';
+  return `
+    <div style="margin-top:24px;padding-top:14px;border-top:1px solid #eee">
+      ${logo}
+      ${nome}
+      <table style="border-collapse:collapse">${dati}</table>
+    </div>`;
+}
+
+export function buildEmailHtml(oggetto: string, corpo: string, imp: any): string {
+  return `<div style="font-family:sans-serif;max-width:560px;margin:auto">
+    <h2 style="color:#e23a8c">${oggetto}</h2>
+    <p style="white-space:pre-line">${(corpo || '').replace(/\n/g, '<br>')}</p>
+    ${buildFirmaHtml(imp)}
+  </div>`;
+}
+
+export async function getImpostazioni(base44: any): Promise<any> {
+  const list = await base44.asServiceRole.entities.ImpostazioneApp.list();
+  return list[0] || {};
+}
+
+export async function getModello(base44: any, chiave: string): Promise<any> {
+  const list = await base44.asServiceRole.entities.ModelloEmail.filter({ chiave });
+  return list[0] || null;
+}
+
+export function fillTemplate(text: string, vars: Record<string, string>): string {
+  return Object.keys(vars).reduce((acc, k) => acc.split(k).join(vars[k]), text || '');
+}

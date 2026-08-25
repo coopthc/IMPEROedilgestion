@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
+import { buildEmailHtml, getImpostazioni, getModello, fillTemplate } from '../../shared/firmaEmail.ts';
 
 export default async function(req: Request): Promise<Response> {
   try {
@@ -8,10 +9,7 @@ export default async function(req: Request): Promise<Response> {
 
     const body = await req.json();
     const pagamentoId: string = body?.pagamento_id || '';
-
-    if (!pagamentoId) {
-      return Response.json({ error: 'Pagamento mancante' }, { status: 400 });
-    }
+    if (!pagamentoId) return Response.json({ error: 'Pagamento mancante' }, { status: 400 });
 
     const pagamento = await base44.asServiceRole.entities.Pagamento.get(pagamentoId);
     if (!pagamento) return Response.json({ error: 'Pagamento non trovato' }, { status: 404 });
@@ -26,9 +24,10 @@ export default async function(req: Request): Promise<Response> {
       return Response.json({ error: 'Il cliente non ha un indirizzo email' }, { status: 400 });
     }
 
-    // Carica il modello email dalle impostazioni
-    const settings = await base44.asServiceRole.entities.ImpostazioneApp.list();
-    const s: any = settings[0] || {};
+    const [imp, modello] = await Promise.all([
+      getImpostazioni(base44),
+      getModello(base44, 'pagamento_promemoria'),
+    ]);
 
     const importoStr = pagamento.importo != null
       ? `€ ${Number(pagamento.importo).toLocaleString('it-IT', { minimumFractionDigits: 2 })}`
@@ -45,26 +44,20 @@ export default async function(req: Request): Promise<Response> {
       '{cliente}': cliente.nome || '',
     };
 
-    const fill = (text: string) =>
-      Object.keys(vars).reduce((acc, k) => acc.split(k).join(vars[k]), text || '');
+    const oggetto = fillTemplate(modello?.oggetto || `Promemoria pagamento: ${pagamento.titolo || ''}`, vars);
+    const corpo = fillTemplate(
+      modello?.corpo ||
+        `Gentile ${cliente.nome || ''},\n\nLe ricordiamo il pagamento "${pagamento.titolo || ''}" relativo al cantiere ${cantiere.nome || ''}.\nImporto: ${importoStr}\nScadenza: ${scadenzaStr}\n\nCordiali saluti`,
+      vars
+    );
 
-    const oggetto = fill(s.oggetto_email_pagamento) || `Promemoria pagamento: ${pagamento.titolo || ''}`;
-    const corpo = fill(s.corpo_email_pagamento) ||
-      `Gentile ${cliente.nome || ''},\n\nLe ricordiamo il pagamento "${pagamento.titolo || ''}" relativo al cantiere ${cantiere.nome || ''}.\nImporto: ${importoStr}\nScadenza: ${scadenzaStr}\n\nCordiali saluti`;
-
-    const bodyHtml = `
-      <div style="font-family:sans-serif;max-width:560px;margin:auto">
-        <h2 style="color:#e23a8c">${oggetto}</h2>
-        <p style="white-space:pre-line">${corpo.replace(/\n/g, '<br>')}</p>
-        <hr style="margin-top:24px;border:none;border-top:1px solid #eee" />
-        <p style="font-size:12px;color:#888">Promemoria pagamento da EdilGestion</p>
-      </div>`;
+    const bodyHtml = buildEmailHtml(oggetto, corpo, imp);
 
     await base44.asServiceRole.integrations.Core.SendEmail({
       to: cliente.email,
       subject: oggetto,
       body: bodyHtml,
-      ...(s.nome_mittente ? { from_name: s.nome_mittente } : {}),
+      ...(imp.ragione_sociale ? { from_name: imp.ragione_sociale } : {}),
     });
 
     const today = new Date().toISOString().split('T')[0];

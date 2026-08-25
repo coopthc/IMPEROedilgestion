@@ -1,0 +1,40 @@
+{
+  "name": "ModelloEmail",
+  "type": "object",
+  "properties": {
+    "chiave": {
+      "type": "string",
+      "title": "Chiave univoca"
+    },
+    "nome": {
+      "type": "string",
+      "title": "Nome visualizzato"
+    },
+    "categoria": {
+      "type": "string",
+      "enum": [
+        "cliente",
+        "collaboratore",
+        "sistema"
+      ],
+      "title": "Categoria"
+    },
+    "oggetto": {
+      "type": "string",
+      "title": "Oggetto email"
+    },
+    "corpo": {
+      "type": "string",
+      "title": "Corpo email"
+    },
+    "variabili": {
+      "type": "string",
+      "title": "Variabili disponibili"
+    }
+  },
+  "required": [
+    "chiave",
+    "nome",
+    "categoria"
+  ]
+}
