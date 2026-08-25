@@ -12,6 +12,8 @@ import {
   FileText,
   Image as ImageIcon,
   File,
+  Camera,
+  Video,
 } from "lucide-react";
 
 const CATEGORIE = [
@@ -31,6 +33,8 @@ export default function CantiereDocumenti({ cantiere }) {
   const [uploading, setUploading] = useState(false);
   const [filtroCat, setFiltroCat] = useState("tutti");
   const fileRef = useRef(null);
+  const photoRef = useRef(null);
+  const videoRef = useRef(null);
 
   const load = async () => {
     setLoading(true);
@@ -48,14 +52,14 @@ export default function CantiereDocumenti({ cantiere }) {
     load();
   }, [cantiere.id]);
 
-  const handleUpload = async (e) => {
-    const file = e.target.files?.[0];
+  const uploadFile = async (file) => {
     if (!file) return;
     setUploading(true);
     try {
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
       const isImage = file.type.startsWith("image/");
-      const categoria = isImage ? "foto" : "altro";
+      const isVideo = file.type.startsWith("video/");
+      const categoria = isImage ? "foto" : isVideo ? "video" : "altro";
       await base44.entities.Documento.create({
         cantiere_id: cantiere.id,
         cantiere_nome: cantiere.nome,
@@ -76,8 +80,12 @@ export default function CantiereDocumenti({ cantiere }) {
     } finally {
       setUploading(false);
       if (fileRef.current) fileRef.current.value = "";
+      if (photoRef.current) photoRef.current.value = "";
+      if (videoRef.current) videoRef.current.value = "";
     }
   };
+
+  const handleUpload = (e) => uploadFile(e.target.files?.[0]);
 
   const toggleVisibile = async (doc) => {
     await base44.entities.Documento.update(doc.id, {
@@ -102,7 +110,10 @@ export default function CantiereDocumenti({ cantiere }) {
       : documenti.filter((d) => d.categoria === filtroCat);
 
   const foto = filtered.filter((d) => d.categoria === "foto");
-  const altriDoc = filtered.filter((d) => d.categoria !== "foto");
+  const video = filtered.filter((d) => d.categoria === "video");
+  const altriDoc = filtered.filter(
+    (d) => d.categoria !== "foto" && d.categoria !== "video"
+  );
 
   if (loading) {
     return (
@@ -141,23 +152,57 @@ export default function CantiereDocumenti({ cantiere }) {
             </button>
           ))}
         </div>
-        <div>
+        <div className="flex gap-1.5">
           <input
             ref={fileRef}
             type="file"
             onChange={handleUpload}
             className="hidden"
           />
+          <input
+            ref={photoRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            onChange={handleUpload}
+            className="hidden"
+          />
+          <input
+            ref={videoRef}
+            type="file"
+            accept="video/*"
+            capture="environment"
+            onChange={handleUpload}
+            className="hidden"
+          />
           <Button
             size="sm"
-            onClick={() => fileRef.current?.click()}
+            variant="outline"
+            onClick={() => photoRef.current?.click()}
             disabled={uploading}
           >
             {uploading ? (
               <Loader2 className="w-4 h-4 mr-1 animate-spin" />
             ) : (
-              <Upload className="w-4 h-4 mr-1" />
+              <Camera className="w-4 h-4 mr-1" />
             )}
+            Foto
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => videoRef.current?.click()}
+            disabled={uploading}
+          >
+            <Video className="w-4 h-4 mr-1" />
+            Video
+          </Button>
+          <Button
+            size="sm"
+            onClick={() => fileRef.current?.click()}
+            disabled={uploading}
+          >
+            <Upload className="w-4 h-4 mr-1" />
             Carica file
           </Button>
         </div>
@@ -179,6 +224,60 @@ export default function CantiereDocumenti({ cantiere }) {
                   src={d.file_url}
                   alt={d.nome}
                   className="w-full h-32 object-cover"
+                />
+                <div className="p-2">
+                  <div className="text-xs font-medium truncate">{d.nome}</div>
+                  <div className="flex items-center justify-between mt-1.5">
+                    <button
+                      onClick={() => toggleVisibile(d)}
+                      className={`flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded transition-colors ${
+                        d.visibile_cliente
+                          ? "bg-green-500/15 text-green-500"
+                          : "bg-secondary text-muted-foreground"
+                      }`}
+                      title={
+                        d.visibile_cliente
+                          ? "Visibile al cliente"
+                          : "Nascosto al cliente"
+                      }
+                    >
+                      {d.visibile_cliente ? (
+                        <Eye className="w-3 h-3" />
+                      ) : (
+                        <EyeOff className="w-3 h-3" />
+                      )}
+                      {d.visibile_cliente ? "Visibile" : "Nascosto"}
+                    </button>
+                    <button
+                      onClick={() => handleDelete(d)}
+                      className="p-1 rounded hover:bg-destructive/15 text-destructive"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Video grid */}
+      {video.length > 0 && (
+        <div>
+          <h3 className="text-xs font-semibold uppercase text-muted-foreground mb-2">
+            Video
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {video.map((d) => (
+              <div
+                key={d.id}
+                className="relative group bg-card border border-border rounded-lg overflow-hidden"
+              >
+                <video
+                  src={d.file_url}
+                  controls
+                  className="w-full h-40 object-cover bg-black"
                 />
                 <div className="p-2">
                   <div className="text-xs font-medium truncate">{d.nome}</div>
