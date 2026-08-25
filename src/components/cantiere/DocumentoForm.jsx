@@ -26,6 +26,8 @@ const CATEGORIE = [
   { value: "foto", label: "Foto" },
   { value: "video", label: "Video" },
   { value: "contratto", label: "Contratto" },
+  { value: "fattura", label: "Fattura" },
+  { value: "preventivo", label: "Preventivo" },
   { value: "planimetria", label: "Planimetria" },
   { value: "permesso", label: "Permesso" },
   { value: "sicurezza", label: "Sicurezza" },

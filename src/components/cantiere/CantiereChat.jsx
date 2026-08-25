@@ -14,7 +14,7 @@ const RUOLI_LABEL = {
   mssg_cliente: "Cliente",
 };
 
-export default function CantiereChat({ cantiere, collaboratori }) {
+export default function CantiereChat({ cantiere, collaboratori, canale = "squadra" }) {
   const { user } = useAuth();
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -27,7 +27,7 @@ export default function CantiereChat({ cantiere, collaboratori }) {
     try {
       const data = await base44.entities.ChatMessage.filter({
         cantiere_id: cantiere.id,
-        canale: "squadra",
+        canale: canale,
       });
       setMessages(
         data.sort((a, b) => (a.created_date || "").localeCompare(b.created_date || ""))
@@ -41,7 +41,7 @@ export default function CantiereChat({ cantiere, collaboratori }) {
     load();
     const unsubscribe = base44.entities.ChatMessage.subscribe((event) => {
       const d = event.data;
-      if (!d || d.cantiere_id !== cantiere.id || d.canale !== "squadra") return;
+      if (!d || d.cantiere_id !== cantiere.id || d.canale !== canale) return;
       if (event.type === "create") {
         setMessages((prev) => {
           if (prev.some((m) => m.id === d.id)) return prev;
@@ -65,7 +65,7 @@ export default function CantiereChat({ cantiere, collaboratori }) {
     setSending(true);
     try {
       const msg = await base44.entities.ChatMessage.create({
-        canale: "squadra",
+        canale: canale,
         cantiere_id: cantiere.id,
         mittente_id: user?.id || "",
         mittente_nome: user?.full_name || "—",
@@ -75,18 +75,33 @@ export default function CantiereChat({ cantiere, collaboratori }) {
       });
       setMessages((prev) => [...prev, msg]);
       setText("");
-      // Notifica tutti i collaboratori tranne il mittente
-      const otherIds = (collaboratori || [])
-        .filter((c) => c.user_id !== user?.id)
-        .map((c) => c.id);
-      if (otherIds.length > 0) {
-        await creaNotifiche({
-          collaboratoriIds: otherIds,
-          tipo: "aggiornamento",
-          titolo: `Nuovo messaggio chat - ${cantiere.nome}`,
-          testo: text.trim(),
-          url: `/cantieri/${cantiere.id}`,
-        });
+      // Notifica in base al canale
+      if (canale === "squadra") {
+        const otherIds = (collaboratori || [])
+          .filter((c) => c.user_id !== user?.id)
+          .map((c) => c.id);
+        if (otherIds.length > 0) {
+          await creaNotifiche({
+            collaboratoriIds: otherIds,
+            tipo: "aggiornamento",
+            titolo: `Nuovo messaggio chat - ${cantiere.nome}`,
+            testo: text.trim(),
+            url: `/cantieri/${cantiere.id}`,
+          });
+        }
+      } else if (canale === "cliente" && user?.role === "mssg_cliente") {
+        const responsabile = (collaboratori || []).find(
+          (c) => c.id === cantiere.responsabile_id
+        );
+        if (responsabile) {
+          await creaNotifiche({
+            collaboratoriIds: [responsabile.id],
+            tipo: "aggiornamento",
+            titolo: `Nuovo messaggio dal cliente - ${cantiere.nome}`,
+            testo: text.trim(),
+            url: `/cantieri/${cantiere.id}`,
+          });
+        }
       }
     } finally {
       setSending(false);
@@ -118,12 +133,16 @@ export default function CantiereChat({ cantiere, collaboratori }) {
       <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-secondary/30">
         <div className="flex items-center gap-2">
           <MessageCircle className="w-4 h-4 text-primary" />
-          <h3 className="text-sm font-semibold">Chat squadra</h3>
+          <h3 className="text-sm font-semibold">
+            {canale === "squadra" ? "Chat squadra" : "Chat con il cliente"}
+          </h3>
         </div>
-        <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-          <ShieldCheck className="w-3.5 h-3.5 text-green-500" />
-          Non visibile al cliente
-        </div>
+        {canale === "squadra" && (
+          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+            <ShieldCheck className="w-3.5 h-3.5 text-green-500" />
+            Non visibile al cliente
+          </div>
+        )}
       </div>
 
       {/* Messages */}

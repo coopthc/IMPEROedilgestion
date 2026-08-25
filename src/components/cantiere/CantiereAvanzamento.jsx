@@ -52,7 +52,7 @@ function parseIds(str) {
   return (str || "").split(",").filter(Boolean);
 }
 
-export default function CantiereAvanzamento({ cantiere, onCantiereUpdate }) {
+export default function CantiereAvanzamento({ cantiere, onCantiereUpdate, isCliente = false }) {
   const { user } = useAuth();
   const [percentuale, setPercentuale] = useState(cantiere.avanzamento_percentuale || 0);
   const [aggiornamenti, setAggiornamenti] = useState([]);
@@ -67,6 +67,7 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate }) {
   const [editForm, setEditForm] = useState({ titolo: "", testo: "", tipo: "aggiornamento", visibile_cliente: false });
   const [editingLav, setEditingLav] = useState(null);
   const [lavForm, setLavForm] = useState({ titolo: "", collaboratori_ids: [], ore_previste: "", percentuale_prevista: "", percentuale_completata: 0 });
+  const [showFasi, setShowFasi] = useState(false);
 
   const assignedIds = parseIds(cantiere.collaboratori_ids);
 
@@ -267,6 +268,7 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate }) {
   return (
     <div className="space-y-6">
       {/* Selettore modalità */}
+      {!isCliente && (
       <div className="bg-card border border-border rounded-lg p-4">
         <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
           <Gauge className="w-4 h-4 text-primary" />
@@ -301,34 +303,51 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate }) {
           </button>
         </div>
       </div>
+      )}
 
       {/* Modalità manuale: slider */}
       {modalita === "manuale" && (
         <div className="bg-card border border-border rounded-lg p-4">
           <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
             <Gauge className="w-4 h-4 text-primary" />
-            Avanzamento manuale
+            Avanzamento
           </h3>
-          <div className="flex items-center gap-3">
-            <input
-              type="range"
-              min="0"
-              max="100"
-              value={percentuale}
-              onChange={(e) => setPercentuale(Number(e.target.value))}
-              className="flex-1 accent-primary"
-            />
-            <span className="text-sm font-bold w-12 text-right">{percentuale}%</span>
-            <Button size="sm" variant="outline" onClick={savePercentuale} disabled={savingPct}>
-              {savingPct ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Salva"}
-            </Button>
-          </div>
-          <div className="w-full h-2 bg-secondary rounded-full mt-3 overflow-hidden">
-            <div
-              className="h-full bg-primary transition-all"
-              style={{ width: `${Math.min(percentuale, 100)}%` }}
-            />
-          </div>
+          {isCliente ? (
+            <>
+              <div className="flex items-baseline gap-2 mb-2">
+                <span className="text-2xl font-bold">{percentuale}%</span>
+              </div>
+              <div className="w-full h-3 bg-secondary rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-primary transition-all"
+                  style={{ width: `${Math.min(percentuale, 100)}%` }}
+                />
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="flex items-center gap-3">
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={percentuale}
+                  onChange={(e) => setPercentuale(Number(e.target.value))}
+                  className="flex-1 accent-primary"
+                />
+                <span className="text-sm font-bold w-12 text-right">{percentuale}%</span>
+                <Button size="sm" variant="outline" onClick={savePercentuale} disabled={savingPct}>
+                  {savingPct ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Salva"}
+                </Button>
+              </div>
+              <div className="w-full h-2 bg-secondary rounded-full mt-3 overflow-hidden">
+                <div
+                  className="h-full bg-primary transition-all"
+                  style={{ width: `${Math.min(percentuale, 100)}%` }}
+                />
+              </div>
+            </>
+          )}
         </div>
       )}
 
@@ -385,11 +404,22 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate }) {
 
       {/* Lavorazioni */}
       <div className="bg-card border border-border rounded-lg p-4">
-        <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-          <Users className="w-4 h-4 text-primary" />
-          Lavorazioni (fasi di lavoro)
-        </h3>
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold flex items-center gap-2">
+            <Users className="w-4 h-4 text-primary" />
+            Lavorazioni (fasi di lavoro)
+          </h3>
+          {isCliente && lavorazioni.length > 0 && (
+            <button
+              onClick={() => setShowFasi(!showFasi)}
+              className="text-xs text-primary hover:underline flex items-center gap-1"
+            >
+              {showFasi ? "Nascondi fasi" : "Mostra fasi"}
+            </button>
+          )}
+        </div>
         {/* Form nuova lavorazione */}
+        {!isCliente && (
         <div className="space-y-2 mb-4 bg-secondary/30 rounded-lg p-3">
           <Input
             placeholder="Titolo fase (es. Demolizione bagno) *"
@@ -448,13 +478,14 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate }) {
             Aggiungi fase
           </Button>
         </div>
+        )}
 
-        {lavorazioni.length === 0 ? (
+        {lavorazioni.length === 0 && !isCliente ? (
           <p className="text-xs text-muted-foreground py-3 text-center">
             Nessuna lavorazione. Le lavorazioni create qui compariranno nella sezione Presenze.
           </p>
-        ) : (
-          <div className="space-y-2">
+        ) : lavorazioni.length > 0 && (!isCliente || showFasi) ? (
+          <div className="space-y-2 mt-4">
             {lavorazioni.map((l) => {
               const statoInfo = STATI_LAV.find((s) => s.value === l.stato) || STATI_LAV[0];
               const isEditing = editingLav === l.id;
@@ -548,6 +579,7 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate }) {
                             )}
                           </div>
                         </div>
+                        {!isCliente && (
                         <div className="flex gap-0.5">
                           <button
                             onClick={() => startEditLav(l)}
@@ -562,6 +594,7 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate }) {
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
+                        )}
                       </div>
                       {/* Barra avanzamento fase — piena a 100% quando completata */}
                       <div className="mt-2 flex items-center gap-2">
@@ -594,6 +627,11 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate }) {
                         </span>
                       </div>
                       <div className="flex items-center gap-2 mt-2">
+                        {isCliente ? (
+                          <span className={`text-[10px] px-2 py-0.5 rounded ${statoInfo.color}`}>
+                            {statoInfo.label}
+                          </span>
+                        ) : (
                         <Select value={l.stato} onValueChange={(v) => updateLavStato(l, v)}>
                           <SelectTrigger className="h-7 w-28 text-xs">
                             <SelectValue />
@@ -604,6 +642,7 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate }) {
                             ))}
                           </SelectContent>
                         </Select>
+                        )}
                         {l.ore_previste != null && (
                           <span className="text-[10px] text-muted-foreground">{l.ore_previste}h prev.</span>
                         )}
@@ -614,10 +653,11 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate }) {
               );
             })}
           </div>
-        )}
+        ) : null}
       </div>
 
       {/* Feed aggiornamenti */}
+      {!isCliente && (
       <div className="bg-card border border-border rounded-lg p-4">
         <h3 className="text-sm font-semibold mb-3">Feed aggiornamenti</h3>
         {/* Form nuovo */}
@@ -768,6 +808,7 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate }) {
           </div>
         )}
       </div>
+      )}
     </div>
   );
 }

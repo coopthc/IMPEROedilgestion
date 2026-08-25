@@ -4,6 +4,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import DocumentoForm from "@/components/cantiere/DocumentoForm";
+import CantiereChat from "@/components/cantiere/CantiereChat";
 import {
   Trash2,
   Eye,
@@ -21,14 +22,15 @@ import {
 const CATEGORIE = [
   { value: "foto", label: "Foto" },
   { value: "video", label: "Video" },
-  { value: "contratto", label: "Contratto" },
   { value: "planimetria", label: "Planimetria" },
   { value: "permesso", label: "Permesso" },
   { value: "sicurezza", label: "Sicurezza" },
   { value: "altro", label: "Altro" },
 ];
 
-export default function CantiereDocumenti({ cantiere, soloVisibili = false }) {
+const PROGETTO_CATEGORIES = ["contratto", "fattura", "preventivo"];
+
+export default function CantiereDocumenti({ cantiere, soloVisibili = false, collaboratori = [] }) {
   const { toast } = useToast();
   const [documenti, setDocumenti] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -79,9 +81,10 @@ export default function CantiereDocumenti({ cantiere, soloVisibili = false }) {
     setDocumenti((prev) => prev.filter((d) => d.id !== doc.id));
   };
 
+  const nonProgetto = documenti.filter((d) => !PROGETTO_CATEGORIES.includes(d.categoria));
   const visibili = soloVisibili
-    ? documenti.filter((d) => d.visibile_cliente)
-    : documenti;
+    ? nonProgetto.filter((d) => d.visibile_cliente)
+    : nonProgetto;
   const filtered =
     filtroCat === "tutti"
       ? visibili
@@ -103,6 +106,11 @@ export default function CantiereDocumenti({ cantiere, soloVisibili = false }) {
 
   return (
     <div className="space-y-4">
+      {/* Chat squadra (solo interni) */}
+      {!soloVisibili && (
+        <CantiereChat cantiere={cantiere} collaboratori={collaboratori} canale="squadra" />
+      )}
+
       {/* Upload + filtri */}
       {!soloVisibili && (
         <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">

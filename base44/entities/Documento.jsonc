@@ -32,6 +32,8 @@
         "sicurezza",
         "foto",
         "video",
+        "fattura",
+        "preventivo",
         "altro"
       ],
       "default": "foto",

@@ -42,7 +42,7 @@ const emptyForm = {
   note: "",
 };
 
-export default function CantierePagamenti({ cantiere }) {
+export default function CantierePagamenti({ cantiere, isCliente = false }) {
   const { toast } = useToast();
   const [pagamenti, setPagamenti] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -193,10 +193,12 @@ export default function CantierePagamenti({ cantiere }) {
 
       <div className="flex items-center justify-between">
         <span className="text-sm text-muted-foreground">{pagamenti.length} milestone</span>
-        <Button size="sm" onClick={openNew}>
-          <Plus className="w-4 h-4 mr-1" />
-          Nuovo pagamento
-        </Button>
+        {!isCliente && (
+          <Button size="sm" onClick={openNew}>
+            <Plus className="w-4 h-4 mr-1" />
+            Nuovo pagamento
+          </Button>
+        )}
       </div>
 
       {pagamenti.length === 0 ? (
@@ -219,11 +221,15 @@ export default function CantierePagamenti({ cantiere }) {
                 }`}
               >
                 {p.stato !== "pagato" ? (
-                  <button
-                    onClick={() => markPaid(p)}
-                    className="w-5 h-5 rounded border-2 border-border hover:border-green-500 flex-shrink-0"
-                    title="Segna pagato"
-                  />
+                  isCliente ? (
+                    <span className="w-5 h-5 rounded border-2 border-border flex-shrink-0" />
+                  ) : (
+                    <button
+                      onClick={() => markPaid(p)}
+                      className="w-5 h-5 rounded border-2 border-border hover:border-green-500 flex-shrink-0"
+                      title="Segna pagato"
+                    />
+                  )
                 ) : (
                   <Check className="w-5 h-5 text-green-500 flex-shrink-0" />
                 )}
@@ -255,18 +261,22 @@ export default function CantierePagamenti({ cantiere }) {
                     )}
                   </div>
                 </div>
-                <button
-                  onClick={() => openEdit(p)}
-                  className="p-1.5 rounded hover:bg-secondary text-muted-foreground flex-shrink-0"
-                >
-                  <Pencil className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={() => handleDelete(p)}
-                  className="p-1.5 rounded hover:bg-destructive/15 text-destructive flex-shrink-0"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
+                {!isCliente && (
+                  <>
+                    <button
+                      onClick={() => openEdit(p)}
+                      className="p-1.5 rounded hover:bg-secondary text-muted-foreground flex-shrink-0"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(p)}
+                      className="p-1.5 rounded hover:bg-destructive/15 text-destructive flex-shrink-0"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </>
+                )}
               </div>
             );
           })}
