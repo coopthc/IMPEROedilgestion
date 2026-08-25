@@ -96,12 +96,20 @@ export default function CantiereSquadra({ cantiere, clienti = [], onSaved, onOpe
     const collab = collaboratori.find((c) => c.id === responsabileId);
     setSaving(true);
     try {
-      await base44.entities.Cantiere.update(cantiere.id, {
+      const updateData = {
         responsabile_id: responsabileId || "",
         responsabile_nome: collab?.nome || "",
-      });
+      };
+      // Auto-inserisce il responsabile nella squadra con ruolo "capo"
+      if (responsabileId && !assignedIds.includes(responsabileId)) {
+        const newIds = [...assignedIds, responsabileId];
+        const newRuoli = { ...ruoli, [responsabileId]: "capo" };
+        updateData.collaboratori_ids = newIds.join(",");
+        updateData.collaboratori_ruoli = JSON.stringify(newRuoli);
+      }
+      await base44.entities.Cantiere.update(cantiere.id, updateData);
       onSaved();
-      toast({ title: "Responsabile aggiornato" });
+      toast({ title: "Responsabile aggiunto alla squadra" });
     } finally {
       setSaving(false);
     }
