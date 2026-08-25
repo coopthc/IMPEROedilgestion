@@ -378,20 +378,28 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate }) {
             </div>
           </div>
           <div className="grid grid-cols-2 gap-2">
-            <Input
-              type="number"
-              placeholder="Ore prev."
-              value={nuovaLav.ore_previste}
-              onChange={(e) => setNuovaLav((f) => ({ ...f, ore_previste: e.target.value }))}
-            />
-            <Input
-              type="number"
-              placeholder="% prevista (es. 20)"
-              value={nuovaLav.percentuale_prevista}
-              onChange={(e) => setNuovaLav((f) => ({ ...f, percentuale_prevista: e.target.value }))}
-            />
+            <div>
+              <Label className="text-[10px] text-muted-foreground mb-1">Ore prev.</Label>
+              <Input
+                type="number"
+                placeholder="es. 8"
+                value={nuovaLav.ore_previste}
+                onChange={(e) => setNuovaLav((f) => ({ ...f, ore_previste: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label className="text-[10px] text-muted-foreground mb-1">% prevista *</Label>
+              <Input
+                type="number"
+                min="1"
+                max="100"
+                placeholder="es. 20"
+                value={nuovaLav.percentuale_prevista}
+                onChange={(e) => setNuovaLav((f) => ({ ...f, percentuale_prevista: e.target.value }))}
+              />
+            </div>
           </div>
-          <Button size="sm" onClick={addLavorazione} disabled={!nuovaLav.titolo.trim()} className="w-full">
+          <Button size="sm" onClick={addLavorazione} disabled={!nuovaLav.titolo.trim() || !nuovaLav.percentuale_prevista} className="w-full">
             <Plus className="w-4 h-4 mr-1" />
             Aggiungi fase
           </Button>
@@ -511,12 +519,30 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate }) {
                           </button>
                         </div>
                       </div>
-                      {/* Barra avanzamento fase */}
+                      {/* Barra avanzamento fase — colorata in base allo stato */}
                       <div className="mt-2 flex items-center gap-2">
-                        <div className="flex-1 h-1.5 bg-secondary rounded-full overflow-hidden">
+                        <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
                           <div
-                            className={`h-full transition-all ${pctCompl >= 100 ? "bg-green-500" : "bg-blue-500"}`}
-                            style={{ width: `${Math.min(pctCompl, 100)}%` }}
+                            className={`h-full transition-all ${
+                              l.stato === "completata"
+                                ? "bg-green-500"
+                                : l.stato === "in_corso"
+                                ? "bg-yellow-500"
+                                : l.stato === "bloccata"
+                                ? "bg-red-500"
+                                : l.stato === "annullata"
+                                ? "bg-muted-foreground/30"
+                                : "bg-white/20"
+                            }`}
+                            style={{
+                              width: `${
+                                l.stato === "completata"
+                                  ? 100
+                                  : l.stato === "da_fare" || l.stato === "annullata"
+                                  ? 0
+                                  : Math.min(pctCompl, 100)
+                              }%`,
+                            }}
                           />
                         </div>
                         <span className="text-[10px] text-muted-foreground whitespace-nowrap">
