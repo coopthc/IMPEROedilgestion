@@ -29,7 +29,9 @@ const TIPI = [
 ];
 
 const STATI = [
+  { value: "in_attesa", label: "In attesa di conferma" },
   { value: "programmato", label: "Programmato" },
+  { value: "proposto", label: "Proposto (nuovo orario)" },
   { value: "completato", label: "Completato" },
   { value: "annullato", label: "Annullato" },
 ];
@@ -50,6 +52,7 @@ export default function AppuntamentoForm({
   open,
   onOpenChange,
   appuntamento,
+  defaultData,
   onSaved,
 }) {
   const [form, setForm] = useState(emptyForm);
@@ -58,6 +61,7 @@ export default function AppuntamentoForm({
   const [cantieri, setCantieri] = useState([]);
   const [squadra, setSquadra] = useState([]);
   const [partecipantiIds, setPartecipantiIds] = useState([]);
+  const [creaCantiereBozza, setCreaCantiereBozza] = useState(false);
 
   useEffect(() => {
     if (appuntamento) {
@@ -76,10 +80,11 @@ export default function AppuntamentoForm({
         (appuntamento.partecipanti_ids || "").split(",").filter(Boolean)
       );
     } else {
-      setForm(emptyForm);
+      setForm({ ...emptyForm, data: defaultData || "" });
       setPartecipantiIds([]);
+      setCreaCantiereBozza(false);
     }
-  }, [appuntamento, open]);
+  }, [appuntamento, open, defaultData]);
 
   useEffect(() => {
     if (open) {
@@ -142,10 +147,33 @@ export default function AppuntamentoForm({
     };
 
     try {
+      let cantiereId = form.cantiere_id;
+      let cantiereNome = cantiere?.nome || "";
+
+      // Crea cantiere in bozza per sopralluogo
+      if (creaCantiereBozza && form.cliente_id && !cantiereId) {
+        const clienteObj = clienti.find((c) => c.id === form.cliente_id);
+        const nuovoCant = await base44.entities.Cantiere.create({
+          nome:
+            clienteObj?.is_azienda && clienteObj?.azienda
+              ? `Sopralluogo - ${clienteObj.azienda}`
+              : `Sopralluogo - ${clienteObj?.nome || "Nuovo"}`,
+          cliente_id: form.cliente_id,
+          cliente_nome: clienteObj?.nome || "",
+          indirizzo: clienteObj?.indirizzo || "",
+          citta: clienteObj?.citta || "",
+          stato: "bozza",
+        });
+        cantiereId = nuovoCant.id;
+        cantiereNome = nuovoCant.nome;
+      }
+
+      const payloadFinal = { ...payload, cantiere_id: cantiereId, cantiere_nome: cantiereNome };
+
       if (appuntamento) {
-        await base44.entities.Appuntamento.update(appuntamento.id, payload);
+        await base44.entities.Appuntamento.update(appuntamento.id, payloadFinal);
       } else {
-        await base44.entities.Appuntamento.create(payload);
+        await base44.entities.Appuntamento.create(payloadFinal);
       }
       // Notifica in-app tutti i partecipanti (collaboratori con utente collegato)
       await creaNotifiche({
@@ -301,6 +329,22 @@ export default function AppuntamentoForm({
               </Select>
             </div>
           </div>
+
+          {/* Crea cantiere in bozza per sopralluogo */}
+          {form.cliente_id && !form.cantiere_id && (
+            <label className="flex items-center gap-2.5 p-3 rounded-lg border border-border cursor-pointer hover:bg-secondary/30 transition-colors">
+              <Switch
+                checked={creaCantiereBozza}
+                onCheckedChange={setCreaCantiereBozza}
+              />
+              <div>
+                <span className="text-sm font-medium">Crea cantiere in bozza</span>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Per sopralluoghi: crea un cantiere in stato bozza collegato al cliente. Se il lavoro viene preso, si prosegue; altrimenti si archivia.
+                </p>
+              </div>
+            </label>
+          )}
 
           {/* Partecipanti — sezione critica 5.3 */}
           {form.cantiere_id && squadra.length > 0 && (

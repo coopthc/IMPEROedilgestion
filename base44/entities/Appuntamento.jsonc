@@ -62,12 +62,30 @@
     "stato": {
       "type": "string",
       "enum": [
+        "in_attesa",
         "programmato",
+        "proposto",
         "completato",
         "annullato"
       ],
       "default": "programmato",
       "title": "Stato"
+    },
+    "motivo": {
+      "type": "string",
+      "title": "Motivo rifiuto / nota proposta"
+    },
+    "richiedente_tipo": {
+      "type": "string",
+      "enum": [
+        "cliente",
+        "collaboratore"
+      ],
+      "title": "Tipo richiedente"
+    },
+    "richiedente_nome": {
+      "type": "string",
+      "title": "Nome richiedente"
     }
   },
   "required": [
