@@ -62,6 +62,7 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate }) {
   const [nuovoAgg, setNuovoAgg] = useState({ titolo: "", testo: "", tipo: "aggiornamento", visibile_cliente: false });
   const [nuovaLav, setNuovaLav] = useState({ titolo: "", collaboratori_ids: [], ore_previste: "", percentuale_prevista: "" });
   const [savingPct, setSavingPct] = useState(false);
+  const [modalita, setModalita] = useState(cantiere.modalita_avanzamento || "manuale");
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({ titolo: "", testo: "", tipo: "aggiornamento", visibile_cliente: false });
   const [editingLav, setEditingLav] = useState(null);
@@ -107,6 +108,14 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate }) {
     } finally {
       setSavingPct(false);
     }
+  };
+
+  const saveModalita = async (nuovaModalita) => {
+    setModalita(nuovaModalita);
+    await base44.entities.Cantiere.update(cantiere.id, {
+      modalita_avanzamento: nuovaModalita,
+    });
+    onCantiereUpdate?.();
   };
 
   const addAggiornamento = async () => {
@@ -257,87 +266,122 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate }) {
 
   return (
     <div className="space-y-6">
-      {/* Barra manuale (opzione esistente) */}
+      {/* Selettore modalità */}
       <div className="bg-card border border-border rounded-lg p-4">
         <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
           <Gauge className="w-4 h-4 text-primary" />
-          Avanzamento manuale
+          Modalità avanzamento
         </h3>
-        <div className="flex items-center gap-3">
-          <input
-            type="range"
-            min="0"
-            max="100"
-            value={percentuale}
-            onChange={(e) => setPercentuale(Number(e.target.value))}
-            className="flex-1 accent-primary"
-          />
-          <span className="text-sm font-bold w-12 text-right">{percentuale}%</span>
-          <Button size="sm" variant="outline" onClick={savePercentuale} disabled={savingPct}>
-            {savingPct ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Salva"}
-          </Button>
-        </div>
-        <div className="w-full h-2 bg-secondary rounded-full mt-3 overflow-hidden">
-          <div
-            className="h-full bg-primary transition-all"
-            style={{ width: `${Math.min(percentuale, 100)}%` }}
-          />
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            onClick={() => saveModalita("manuale")}
+            className={`p-3 rounded-lg border text-left transition-colors ${
+              modalita === "manuale"
+                ? "border-primary bg-primary/10"
+                : "border-border hover:border-primary/50"
+            }`}
+          >
+            <div className="text-sm font-medium">Manuale</div>
+            <div className="text-[11px] text-muted-foreground mt-0.5">
+              Slider manuale, fasi indipendenti
+            </div>
+          </button>
+          <button
+            onClick={() => saveModalita("pronostico")}
+            className={`p-3 rounded-lg border text-left transition-colors ${
+              modalita === "pronostico"
+                ? "border-primary bg-primary/10"
+                : "border-border hover:border-primary/50"
+            }`}
+          >
+            <div className="text-sm font-medium">Pronostico</div>
+            <div className="text-[11px] text-muted-foreground mt-0.5">
+              Barre calcolate dalle fasi
+            </div>
+          </button>
         </div>
       </div>
 
-      {/* Barra pronostico */}
-      <div className="bg-card border border-border rounded-lg p-4">
-        <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-          <Target className="w-4 h-4 text-blue-400" />
-          Pronostico (somma fasi previste)
-        </h3>
-        <div className="flex items-baseline gap-2 mb-2">
-          <span className="text-2xl font-bold">{pronosticoTotale}%</span>
-          {pronosticoTotale > 100 && (
-            <Badge className="bg-yellow-500/15 text-yellow-400 text-[10px]">
-              +{pronosticoTotale - 100}% lavorazioni extra
-            </Badge>
-          )}
-        </div>
-        <div className="w-full h-3 bg-secondary rounded-full overflow-hidden relative">
-          <div
-            className="h-full bg-blue-500 transition-all"
-            style={{ width: `${Math.min(pronosticoTotale, 100)}%` }}
-          />
-          {pronosticoTotale > 100 && (
-            <div
-              className="absolute top-0 h-full bg-yellow-500/50"
-              style={{ left: "100%", width: "0" }}
+      {/* Modalità manuale: slider */}
+      {modalita === "manuale" && (
+        <div className="bg-card border border-border rounded-lg p-4">
+          <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+            <Gauge className="w-4 h-4 text-primary" />
+            Avanzamento manuale
+          </h3>
+          <div className="flex items-center gap-3">
+            <input
+              type="range"
+              min="0"
+              max="100"
+              value={percentuale}
+              onChange={(e) => setPercentuale(Number(e.target.value))}
+              className="flex-1 accent-primary"
             />
-          )}
+            <span className="text-sm font-bold w-12 text-right">{percentuale}%</span>
+            <Button size="sm" variant="outline" onClick={savePercentuale} disabled={savingPct}>
+              {savingPct ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Salva"}
+            </Button>
+          </div>
+          <div className="w-full h-2 bg-secondary rounded-full mt-3 overflow-hidden">
+            <div
+              className="h-full bg-primary transition-all"
+              style={{ width: `${Math.min(percentuale, 100)}%` }}
+            />
+          </div>
         </div>
-        <p className="text-[11px] text-muted-foreground mt-1.5">
-          Somma delle percentuali previste di ogni fase. Può superare il 100% per lavorazioni aggiuntive.
-        </p>
-      </div>
+      )}
 
-      {/* Barra effettivo */}
-      <div className="bg-card border border-border rounded-lg p-4">
-        <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-          <TrendingUp className="w-4 h-4 text-green-400" />
-          Effettivo (completamento reale)
-        </h3>
-        <div className="flex items-baseline gap-2 mb-2">
-          <span className="text-2xl font-bold">{Math.round(effettivoPct)}%</span>
-          <span className="text-xs text-muted-foreground">
-            su {pronosticoTotale}% totale previsto
-          </span>
-        </div>
-        <div className="w-full h-3 bg-secondary rounded-full overflow-hidden">
-          <div
-            className="h-full bg-green-500 transition-all"
-            style={{ width: `${Math.min(effettivoPct, 100)}%` }}
-          />
-        </div>
-        <p className="text-[11px] text-muted-foreground mt-1.5">
-          Il 100% di questa barra corrisponde al {pronosticoTotale}% del pronostico.
-        </p>
-      </div>
+      {/* Modalità pronostico: barra pronostico + effettivo */}
+      {modalita === "pronostico" && (
+        <>
+          <div className="bg-card border border-border rounded-lg p-4">
+            <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+              <Target className="w-4 h-4 text-blue-400" />
+              Pronostico (somma fasi previste)
+            </h3>
+            <div className="flex items-baseline gap-2 mb-2">
+              <span className="text-2xl font-bold">{pronosticoTotale}%</span>
+              {pronosticoTotale > 100 && (
+                <Badge className="bg-yellow-500/15 text-yellow-400 text-[10px]">
+                  +{pronosticoTotale - 100}% lavorazioni extra
+                </Badge>
+              )}
+            </div>
+            <div className="w-full h-3 bg-secondary rounded-full overflow-hidden relative">
+              <div
+                className="h-full bg-blue-500 transition-all"
+                style={{ width: `${Math.min(pronosticoTotale, 100)}%` }}
+              />
+            </div>
+            <p className="text-[11px] text-muted-foreground mt-1.5">
+              Somma delle percentuali previste di ogni fase. Può superare il 100% per lavorazioni aggiuntive.
+            </p>
+          </div>
+
+          <div className="bg-card border border-border rounded-lg p-4">
+            <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-green-400" />
+              Effettivo (completamento reale)
+            </h3>
+            <div className="flex items-baseline gap-2 mb-2">
+              <span className="text-2xl font-bold">{Math.round(effettivoPct)}%</span>
+              <span className="text-xs text-muted-foreground">
+                su {pronosticoTotale}% totale previsto
+              </span>
+            </div>
+            <div className="w-full h-3 bg-secondary rounded-full overflow-hidden">
+              <div
+                className="h-full bg-green-500 transition-all"
+                style={{ width: `${Math.min(effettivoPct, 100)}%` }}
+              />
+            </div>
+            <p className="text-[11px] text-muted-foreground mt-1.5">
+              Il 100% di questa barra corrisponde al {pronosticoTotale}% del pronostico.
+            </p>
+          </div>
+        </>
+      )}
 
       {/* Lavorazioni */}
       <div className="bg-card border border-border rounded-lg p-4">

@@ -48,6 +48,8 @@ export default function Cantieri() {
   const { toast } = useToast();
   const [cantieri, setCantieri] = useState([]);
   const [clienti, setClienti] = useState([]);
+  const [pagamenti, setPagamenti] = useState([]);
+  const [lavorazioni, setLavorazioni] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filtro, setFiltro] = useState("tutti");
@@ -57,12 +59,16 @@ export default function Cantieri() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [c, cl] = await Promise.all([
+      const [c, cl, pa, lav] = await Promise.all([
         base44.entities.Cantiere.list("-created_date"),
         base44.entities.Cliente.list(),
+        base44.entities.Pagamento.list(),
+        base44.entities.Lavorazione.list(),
       ]);
       setCantieri(c);
       setClienti(cl);
+      setPagamenti(pa);
+      setLavorazioni(lav);
     } catch (err) {
       console.error("Errore caricamento cantieri:", err);
     } finally {
@@ -83,6 +89,28 @@ export default function Cantieri() {
     const matchFiltro = filtro === "tutti" || c.stato === filtro;
     return matchSearch && matchFiltro;
   });
+
+  const getAvanzamento = (cantiere) => {
+    if (cantiere.modalita_avanzamento === "pronostico") {
+      const lavs = lavorazioni.filter((l) => l.cantiere_id === cantiere.id);
+      const pronostico = lavs.reduce((s, l) => s + (l.percentuale_prevista || 0), 0);
+      const effettivo = lavs.reduce(
+        (s, l) => s + ((l.percentuale_completata || 0) / 100) * (l.percentuale_prevista || 0),
+        0
+      );
+      return pronostico > 0 ? Math.round((effettivo / pronostico) * 100) : 0;
+    }
+    return cantiere.avanzamento_percentuale || 0;
+  };
+
+  const getPagamentiPct = (cantiere) => {
+    if (!cantiere.budget) return 0;
+    const pags = pagamenti.filter(
+      (p) => p.cantiere_id === cantiere.id && p.stato === "pagato"
+    );
+    const totalePagato = pags.reduce((s, p) => s + (p.importo || 0), 0);
+    return Math.min(Math.round((totalePagato / cantiere.budget) * 100), 100);
+  };
 
   const handleNew = () => {
     setEditing(null);
@@ -222,6 +250,34 @@ export default function Cantieri() {
                     })}
                   </span>
                 )}
+              </div>
+
+              {/* Barre avanzamento e pagamenti */}
+              <div className="space-y-2 mb-3">
+                <div>
+                  <div className="flex items-center justify-between text-[10px] text-muted-foreground mb-1">
+                    <span>Avanzamento</span>
+                    <span>{getAvanzamento(c)}%</span>
+                  </div>
+                  <div className="w-full h-1.5 bg-secondary rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-primary transition-all"
+                      style={{ width: `${getAvanzamento(c)}%` }}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <div className="flex items-center justify-between text-[10px] text-muted-foreground mb-1">
+                    <span>Pagamenti</span>
+                    <span>{getPagamentiPct(c)}%</span>
+                  </div>
+                  <div className="w-full h-1.5 bg-secondary rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-green-500 transition-all"
+                      style={{ width: `${getPagamentiPct(c)}%` }}
+                    />
+                  </div>
+                </div>
               </div>
 
               {/* Azioni rapide */}

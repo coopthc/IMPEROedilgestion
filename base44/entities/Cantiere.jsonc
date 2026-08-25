@@ -73,6 +73,15 @@
       "type": "string",
       "title": "Ruoli collaboratori (JSON id->ruolo)"
     },
+    "modalita_avanzamento": {
+      "type": "string",
+      "enum": [
+        "manuale",
+        "pronostico"
+      ],
+      "default": "manuale",
+      "title": "Modalit\u00e0 avanzamento"
+    },
     "avanzamento_percentuale": {
       "type": "number",
       "default": 0,
