@@ -1,122 +1,115 @@
-import React, { useMemo } from "react";
-import { Building2, User, HardHat } from "lucide-react";
+import React, { useState, useMemo } from "react";
+import { Button } from "@/components/ui/button";
+import { FileText, Loader2, Network } from "lucide-react";
+import { exportDiagrammaPDF } from "@/lib/exportUtils";
 
-export default function DiagrammaCollegamenti({ cantieri, clienti, collaboratori }) {
-  const rows = useMemo(() => {
-    return cantieri
-      .filter((c) => !c.archiviato)
-      .map((c) => {
-        const cliente = clienti.find((cl) => cl.id === c.cliente_id);
-        const collabIds = (c.collaboratori_ids || "").split(",").filter(Boolean);
-        const collabs = collabIds
-          .map((id) => collaboratori.find((co) => co.id === id))
-          .filter(Boolean);
-        const responsabile = collaboratori.find((co) => co.id === c.responsabile_id);
-        return { cantiere: c, cliente, collabs, responsabile };
+export default function DiagrammaCollegamenti({ cantieri, clienti, collaboratori, documenti }) {
+  const [selectedId, setSelectedId] = useState("");
+  const [exporting, setExporting] = useState(false);
+
+  const cantieriAttivi = useMemo(
+    () => (cantieri || []).filter((c) => !c.archiviato),
+    [cantieri]
+  );
+
+  const selected = cantieriAttivi.find((c) => c.id === selectedId);
+
+  const handleExport = () => {
+    if (!selected) return;
+    setExporting(true);
+    try {
+      const cliente = (clienti || []).find((cl) => cl.id === selected.cliente_id);
+      const responsabile = (collaboratori || []).find((co) => co.id === selected.responsabile_id);
+      const collabIds = (selected.collaboratori_ids || "").split(",").filter(Boolean);
+      const collabs = collabIds
+        .map((id) => (collaboratori || []).find((co) => co.id === id))
+        .filter(Boolean);
+      const docs = (documenti || []).filter((d) => d.cantiere_id === selected.id);
+
+      exportDiagrammaPDF({
+        cantiere: selected,
+        cliente,
+        responsabile,
+        collaboratori: collabs,
+        documenti: docs,
+        filename: `diagramma-${(selected.nome || "cantiere").replace(/\s/g, "-").toLowerCase()}`,
       });
-  }, [cantieri, clienti, collaboratori]);
+    } finally {
+      setExporting(false);
+    }
+  };
 
-  if (rows.length === 0) {
-    return (
-      <div className="text-center py-12 text-muted-foreground text-sm">
-        Nessun cantiere da visualizzare.
-      </div>
-    );
-  }
+  const docCount = selected
+    ? (documenti || []).filter((d) => d.cantiere_id === selected.id).length
+    : 0;
+  const collabCount = selected
+    ? (selected.collaboratori_ids || "").split(",").filter(Boolean).length
+    : 0;
 
   return (
-    <div className="space-y-3 overflow-x-auto pb-2">
-      {rows.map(({ cantiere, cliente, collabs, responsabile }) => (
-        <div
-          key={cantiere.id}
-          className="flex items-stretch gap-0 min-w-[700px]"
-        >
-          {/* Cliente */}
-          <div className="w-[180px] flex-shrink-0 flex items-center">
-            <div className="flex-1 bg-blue-500/10 border border-blue-500/30 rounded-lg p-2.5">
-              <div className="flex items-center gap-1.5 mb-1">
-                <User className="w-3.5 h-3.5 text-blue-400" />
-                <span className="text-[10px] uppercase tracking-wider text-blue-400 font-semibold">
-                  Cliente
-                </span>
-              </div>
-              <div className="text-xs font-medium truncate">
-                {cliente
-                  ? cliente.is_azienda
-                    ? cliente.azienda || cliente.nome
-                    : cliente.nome
-                  : "—"}
+    <div className="space-y-4">
+      <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-end">
+        <div className="flex-1 space-y-1.5">
+          <label className="text-xs text-muted-foreground">Seleziona cantiere</label>
+          <select
+            value={selectedId}
+            onChange={(e) => setSelectedId(e.target.value)}
+            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm"
+          >
+            <option value="" className="bg-card">— Seleziona cantiere —</option>
+            {cantieriAttivi.map((c) => (
+              <option key={c.id} value={c.id} className="bg-card">{c.nome}</option>
+            ))}
+          </select>
+        </div>
+        <Button onClick={handleExport} disabled={!selected || exporting} size="sm">
+          {exporting ? (
+            <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+          ) : (
+            <FileText className="w-4 h-4 mr-1" />
+          )}
+          Esporta PDF
+        </Button>
+      </div>
+
+      {selected ? (
+        <div className="bg-secondary/30 border border-border rounded-lg p-4 space-y-3">
+          <div className="text-xs text-muted-foreground">
+            Il PDF includerà: dati cantiere (con descrizione e note), cliente, responsabile,
+            collaboratori assegnati e documenti collegati (nome e categoria).
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+            <div className="bg-card border border-border rounded p-2">
+              <div className="text-muted-foreground">Cliente</div>
+              <div className="font-medium truncate">
+                {(() => {
+                  const cl = (clienti || []).find((c) => c.id === selected.cliente_id);
+                  return cl ? (cl.is_azienda ? cl.azienda || cl.nome : cl.nome) : "—";
+                })()}
               </div>
             </div>
-          </div>
-
-          {/* Linea sinistra */}
-          <div className="flex items-center flex-shrink-0">
-            <div className="w-6 h-px bg-border" />
-            <div className="w-2 h-2 rounded-full bg-border" />
-          </div>
-
-          {/* Cantiere (centro) */}
-          <div className="w-[200px] flex-shrink-0 flex items-center">
-            <div className="flex-1 bg-primary/10 border-2 border-primary/40 rounded-lg p-3 text-center">
-              <Building2 className="w-5 h-5 text-primary mx-auto mb-1" />
-              <div className="text-sm font-bold truncate">{cantiere.nome}</div>
-              <div className="text-[10px] text-muted-foreground mt-0.5">
-                {cantiere.citta || "—"}
+            <div className="bg-card border border-border rounded p-2">
+              <div className="text-muted-foreground">Responsabile</div>
+              <div className="font-medium truncate">
+                {(collaboratori || []).find((co) => co.id === selected.responsabile_id)?.nome || "—"}
               </div>
-              {responsabile && (
-                <div className="text-[10px] text-primary mt-1 flex items-center justify-center gap-1">
-                  <HardHat className="w-3 h-3" />
-                  {responsabile.nome}
-                </div>
-              )}
             </div>
-          </div>
-
-          {/* Linea destra */}
-          <div className="flex items-center flex-shrink-0">
-            <div className="w-2 h-2 rounded-full bg-border" />
-            <div className="w-6 h-px bg-border" />
-          </div>
-
-          {/* Collaboratori */}
-          <div className="flex-1 flex items-center">
-            {collabs.length > 0 ? (
-              <div className="flex flex-wrap gap-1.5">
-                {collabs.map((c) => (
-                  <div
-                    key={c.id}
-                    className="bg-green-500/10 border border-green-500/30 rounded-full px-2.5 py-1 flex items-center gap-1"
-                  >
-                    <HardHat className="w-3 h-3 text-green-400" />
-                    <span className="text-[11px] font-medium">{c.nome}</span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <span className="text-[11px] text-muted-foreground italic">
-                Nessun collaboratore
-              </span>
-            )}
+            <div className="bg-card border border-border rounded p-2">
+              <div className="text-muted-foreground">Collaboratori</div>
+              <div className="font-medium">{collabCount}</div>
+            </div>
+            <div className="bg-card border border-border rounded p-2">
+              <div className="text-muted-foreground">Documenti</div>
+              <div className="font-medium">{docCount}</div>
+            </div>
           </div>
         </div>
-      ))}
-
-      {/* Legenda */}
-      <div className="flex flex-wrap gap-4 pt-3 mt-3 border-t border-border text-[11px] text-muted-foreground">
-        <span className="flex items-center gap-1.5">
-          <span className="w-3 h-3 rounded bg-blue-500/30 border border-blue-500/40" />
-          Cliente
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="w-3 h-3 rounded bg-primary/30 border border-primary/40" />
-          Cantiere
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="w-3 h-3 rounded-full bg-green-500/30 border border-green-500/40" />
-          Collaboratore
-        </span>
-      </div>
+      ) : (
+        <div className="flex items-center gap-2 text-xs text-muted-foreground bg-secondary/20 border border-dashed border-border rounded-lg p-4">
+          <Network className="w-4 h-4" />
+          Seleziona un cantiere per esportare il diagramma dei collegamenti in PDF.
+        </div>
+      )}
     </div>
   );
 }

@@ -163,6 +163,134 @@ export function exportSchedaPDF({ title, subtitle, sections, filename }) {
   doc.save(filename.endsWith(".pdf") ? filename : filename + ".pdf");
 }
 
+/* ============ Diagramma collegamenti PDF ============ */
+
+const STATO_CANT_LABEL = { bozza: "Bozza", attivo: "Attivo", sospeso: "Sospeso", completato: "Completato", chiuso: "Chiuso" };
+const QUALIFICA_LABEL = { capo_cantiere: "Capo cantiere", operaio: "Operaio", tecnico: "Tecnico", amministrazione: "Amministrazione", altro: "Altro" };
+const CATEGORIA_DOC_LABEL = { contratto: "Contratto", planimetria: "Planimetria", permesso: "Permesso", sicurezza: "Sicurezza", foto: "Foto", video: "Video", fattura: "Fattura", preventivo: "Preventivo", altro: "Altro" };
+
+export function exportDiagrammaPDF({ cantiere, cliente, responsabile, collaboratori, documenti, filename }) {
+  const doc = new jsPDF();
+  const margin = 14;
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  let y = 20;
+
+  const ensureSpace = (needed) => {
+    if (y > pageHeight - needed) { doc.addPage(); y = 20; }
+  };
+
+  // Titolo
+  doc.setFontSize(18);
+  doc.setFont("helvetica", "bold");
+  doc.text("Diagramma collegamenti", margin, y);
+  y += 8;
+  doc.setFontSize(13);
+  doc.text(cantiere.nome || "—", margin, y);
+  y += 10;
+
+  // Sezione Cantiere
+  doc.setFontSize(12);
+  doc.setFont("helvetica", "bold");
+  doc.text("Cantiere", margin, y);
+  y += 6;
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+
+  const campiCantiere = [
+    ["Cliente", cliente ? (cliente.is_azienda ? (cliente.azienda || cliente.nome) : cliente.nome) : "—"],
+    ["Responsabile", responsabile?.nome || "—"],
+    ["Stato", STATO_CANT_LABEL[cantiere.stato] || cantiere.stato || "—"],
+    ["Indirizzo", [cantiere.indirizzo, cantiere.citta, cantiere.cap, cantiere.provincia].filter(Boolean).join(", ") || "—"],
+    ["Budget", cantiere.budget ? `€ ${Number(cantiere.budget).toLocaleString("it-IT")}` : "—"],
+    ["Data inizio", cantiere.data_inizio || "—"],
+    ["Data fine", cantiere.data_fine || "—"],
+    ["Descrizione", cantiere.descrizione || "—"],
+    ["Note interne", cantiere.note_interne || "—"],
+  ];
+
+  campiCantiere.forEach(([label, value]) => {
+    ensureSpace(20);
+    doc.setFont("helvetica", "bold");
+    doc.text(`${label}:`, margin, y);
+    doc.setFont("helvetica", "normal");
+    const lines = doc.splitTextToSize(String(value), pageWidth - margin - 50);
+    doc.text(lines, margin + 45, y);
+    y += 6 * lines.length;
+  });
+  y += 6;
+
+  // Sezione Collaboratori
+  ensureSpace(30);
+  doc.setFontSize(12);
+  doc.setFont("helvetica", "bold");
+  doc.text(`Collaboratori (${collaboratori.length})`, margin, y);
+  y += 6;
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+
+  if (collaboratori.length === 0) {
+    doc.text("Nessun collaboratore assegnato", margin, y);
+    y += 6;
+  } else {
+    collaboratori.forEach((c, i) => {
+      ensureSpace(15);
+      const riga = `${i + 1}. ${c.nome} — ${QUALIFICA_LABEL[c.qualifica] || c.qualifica || "—"}`;
+      const lines = doc.splitTextToSize(riga, pageWidth - margin * 2);
+      doc.text(lines, margin, y);
+      y += 6 * lines.length;
+    });
+  }
+  y += 6;
+
+  // Sezione Documenti
+  ensureSpace(30);
+  doc.setFontSize(12);
+  doc.setFont("helvetica", "bold");
+  doc.text(`Documenti collegati (${documenti.length})`, margin, y);
+  y += 6;
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+
+  if (documenti.length === 0) {
+    doc.text("Nessun documento collegato", margin, y);
+    y += 6;
+  } else {
+    // Intestazione tabella
+    doc.setFont("helvetica", "bold");
+    doc.text("Nome", margin, y);
+    doc.text("Categoria", margin + 110, y);
+    y += 5;
+    doc.setDrawColor(200);
+    doc.line(margin, y - 1, pageWidth - margin, y - 1);
+    doc.setFont("helvetica", "normal");
+
+    documenti.forEach((d) => {
+      ensureSpace(15);
+      const nomeLines = doc.splitTextToSize(String(d.nome || "—"), 100);
+      const cat = CATEGORIA_DOC_LABEL[d.categoria] || d.categoria || "—";
+      doc.text(nomeLines, margin, y);
+      doc.text(String(cat).substring(0, 30), margin + 110, y);
+      y += 6 * nomeLines.length;
+    });
+  }
+
+  // Footer
+  const pageCount = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.setTextColor(120);
+    doc.text(
+      `Generato il ${new Date().toLocaleString("it-IT")} — Pagina ${i}/${pageCount}`,
+      margin,
+      pageHeight - 10
+    );
+  }
+
+  doc.save(filename.endsWith(".pdf") ? filename : filename + ".pdf");
+}
+
 /* ============ CSV Parser (import) ============ */
 
 export function parseCSV(text) {
