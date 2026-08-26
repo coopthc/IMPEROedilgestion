@@ -1,0 +1,699 @@
+================================================================================
+ EDILGESTION — RIEPILOGO COMPLETO DEL PROGETTO
+ Data: 26/08/2026
+ Piattaforma: Base44 (React + Tailwind CSS + Vite)
+================================================================================
+
+MISSION
+-------
+EdilGestion è una piattaforma gestionale versatile e intuitiva progettata per
+ottimizzare i processi aziendali, con strumenti dedicati alla pianificazione,
+alla gestione delle risorse e al coordinamento operativo, ideale per il
+settore edile e non solo.
+
+OBIETTIVO A LUNGO TERMINE
+-------------------------
+Migrare la suite di plugin WordPress di EdilGestion verso un'app web nativa
+in Base44, allineandola alle specifiche tecniche del gestionale MSS, includendo:
+- Gestione cantieri avanzata
+- Documentazione multimediale
+- Collaborazione interna
+- Gestione pagamenti
+- Sistema di agenda
+- Esportazione dati
+- Gestione account
+- Sistema di backup multi-cloud
+- Dashboard dinamica
+- Funzionalità di input vocale evoluto
+
+
+================================================================================
+ DECISIONI ARCHITETTURALI
+================================================================================
+
+- Architettura React su Base44 per sostituire i plugin WordPress esistenti
+- Mantenimento dell'identità stilistica originale (#0d0d1a, tema dark)
+- Autenticazione tramite Google nativamente
+- Sostituzione di admin-ajax.php con entità e API integrate di Base44
+- Layout responsive con sidebar fissa (desktop) e tab bar (mobile)
+- Sistema di ruoli utenti: admin, mssg_admin, mssg_capo, mssg_operaio, mssg_cliente
+- Agenda con griglia settimanale cliccabile (desktop/tablet) e vista dettaglio
+  giornaliera (mobile)
+- Blocchi di disponibilità con opzione manuale per fissare eventi nell'agenda
+- Componenti Accordion per le sezioni nelle Impostazioni
+- Sistema di "Promemoria veloci" integrato in Agenda e Dashboard
+- Override dei blocchi giornata in Agenda da parte degli amministratori
+- DashboardConfig per gestire layout personalizzabile di widget e azioni rapide
+- Web Speech API per dettatura testo e comandi vocali tramite AI
+- Promemoria integrati nella visualizzazione settimanale dell'agenda (colore ambra)
+- Centralizzazione elaborazione comandi vocali in funzione backend
+  (interpretaComandoVocale)
+- Normalizzazione fuzzy dei nomi per matching entità correlate
+- Pulsante "Comando Vocale" persistente in overlay (Sparkles)
+- Interazione vocale bi-direzionale con notifiche cliccabili
+- Supporto comandi vocali per creazione, aggiornamento ed eliminazione entità
+- Dialog di dettaglio separati per visualizzazione (non modifica) di
+  appuntamenti e promemoria in Agenda
+
+
+================================================================================
+ PREFERENZE DI DESIGN E UX
+================================================================================
+
+- Pulsanti di modifica ed elimina sempre visibili sulle card
+- Dati di fatturazione (PIVA, CF, indirizzo) e flag "Azienda" nelle anagrafiche
+- Menu responsabile nel CantiereSquadra mostra solo collaboratori con
+  qualifica "capo_cantiere"
+- Inserimento collaboratore gestisce automaticamente invio mail di benvenuto
+  e reset password
+- Barre delle fasi colorate per stato: vuota (da fare), gialla (in corso),
+  rossa (bloccata), verde (completata)
+- Percentuale prevista obbligatoria per creare nuove fasi lavorazione
+- Widget dashboard: notifiche, ultime chat, pagamenti del mese, appuntamenti
+  di domani, pienezza settimana
+- Appuntamenti distinguono "lavorativo" e "personale" con colorazione diversa
+- Gestione disponibilità supporta blocco di intervalli temporali multi-data
+- Dati dinamici nelle email escapati per prevenire HTML/URL injection
+- Agenda mostra settimana in alto con navigazione, giorni cliccabili
+- Giorno in corso preselezionato all'apertura dell'agenda
+- Filtri categoria/stato non causano salto pagina verso l'alto
+- Pagine con molte opzioni usano Accordion
+- Widget dashboard con liste cliccabili rimandano alle entità di riferimento
+- Ogni dettaglio appuntamento ha link rapido verso vista principale Agenda
+- Giorni bloccati nel widget settimana indicano 100% riempimento (rosso)
+- Barra azioni rapide in dashboard con spaziatura definita rispetto ai widget
+- Azioni rapide configurabili (aggiunta/rimozione/spostamento)
+- Notifiche (Toast) non sovrappongono il pulsante AI (posizione modificata)
+
+
+================================================================================
+ ENTITÀ DEL DATABASE (con schema)
+================================================================================
+
+1. DASHBOARDCONFIG
+   - widgets (string, JSON array di tipi)
+   - quick_actions (string, JSON array di tipi)
+   RLS: accesso limitato al proprietario (created_by_id)
+
+2. CANTIERE
+   - nome (string, required)
+   - cliente_id, cliente_nome
+   - responsabile_id, responsabile_nome
+   - indirizzo, citta
+   - stato (enum: bozza, attivo, sospeso, completato, chiuso)
+   - data_inizio, data_fine (date)
+   - budget (number)
+   - descrizione
+   - foto_url (uri)
+   - collaboratori_ids, collaboratori_ruoli
+   - modalita_avanzamento (enum: manuale, pronostico)
+   - avanzamento_percentuale (number)
+   - note_interne (mai visibili al cliente)
+   - archiviato (boolean)
+   - pinned (boolean)
+   RLS: admin/mssg_admin/mssg_capo leggono; cliente legge propri cantieri
+
+3. IMPOSTAZIONEAPP
+   - ragione_sociale, logo_url, piva, codice_fiscale
+   - indirizzo, citta, cap, provincia, telefono, email_azienda
+   - appuntamenti_contemporanei (number, default 1)
+   - tema_json (string)
+   RLS: lettura pubblica; scrittura admin/mssg_admin
+
+4. BACKUPRECORD
+   - tipo (enum: interno, esterno)
+   - data (date-time, required)
+   - files_json, file_count
+   - status (enum: in_corso, completato, errore)
+   - error_message
+   - provider, cloud_folder
+   RLS: admin/mssg_admin
+
+5. LAVORAZIONE
+   - cantiere_id (required), cantiere_nome
+   - titolo (required), descrizione
+   - stato (enum: da_fare, in_corso, completata, bloccata, annullata)
+   - collaboratori_ids, collaboratori_nomi
+   - percentuale_prevista, percentuale_completata
+   - costo, aggiunta_al_budget
+   - visibile_cliente (boolean)
+   - ore_previste, ordine
+   RLS: admin/mssg_admin/mssg_capo/mssg_operaio leggono; cliente legge
+   lavorazioni visibili dei propri cantieri
+
+6. CLOUDBACKUPCONFIG
+   - provider (enum: google_drive, onedrive, dropbox, amazon_s3)
+   - credentials_json, folder_path
+   - frequency (enum: manuale, giornaliero, settimanale, mensile)
+   - enabled (boolean)
+   - last_backup_date, last_backup_status
+   RLS: admin/mssg_admin
+
+7. PAGAMENTO
+   - cantiere_id (required), cantiere_nome
+   - titolo (required)
+   - tipo (enum: acconto, avanzamento, saldo)
+   - percentuale, importo
+   - data_scadenza, data_pagamento (date)
+   - stato (enum: non_pagato, pagato, parziale)
+   - note, lavorazione_id
+   - notifica_inviata_data, notifica_inviata_a
+   RLS: admin/mssg_admin/mssg_capo leggono; cliente legge propri pagamenti
+
+8. APPUNTAMENTO
+   - titolo (required), data (date, required), ora (required)
+   - durata_minuti (default 60)
+   - categoria (enum: lavorativo, personale)
+   - tipo (enum: interno, richiesta, confermato, admin_fissato)
+   - cliente_id, cliente_nome
+   - cantiere_id, cantiere_nome
+   - partecipanti_ids, partecipanti_nomi
+   - note
+   - stato (enum: in_attesa, programmato, proposto, completato, annullato)
+   - motivo, richiedente_tipo, richiedente_nome
+   RLS: tutti i ruoli interni leggono; cliente legge propri appuntamenti
+
+9. GIORNOBLOCCATO
+   - data (date, required)
+   - motivo
+   RLS: lettura pubblica; scrittura admin/mssg_admin/mssg_capo
+
+10. MODELLOEMAIL
+    - chiave (required), nome (required), categoria (required)
+    - categoria (enum: cliente, collaboratore, sistema)
+    - oggetto, corpo, variabili
+    RLS: admin/mssg_admin/mssg_capo leggono
+
+11. DOCUMENTO
+    - cantiere_id (required), cantiere_nome
+    - nome (required), file_url (uri, required)
+    - tipo_file
+    - categoria (enum: contratto, planimetria, permesso, sicurezza, foto,
+      video, fattura, preventivo, altro)
+    - visibile_cliente (boolean), note
+    RLS: tutti i ruoli interni leggono; cliente legge documenti visibili
+
+12. AGGIORNAMENTO
+    - cantiere_id (required), cantiere_nome
+    - tipo (enum: aggiornamento, avviso, completamento, problema)
+    - titolo (required), testo
+    - visibile_cliente (boolean), autore_nome
+    RLS: tutti i ruoli interni leggono; cliente legge aggiornamenti visibili
+
+13. COLLABORATORE
+    - nome (required)
+    - is_azienda (boolean), azienda
+    - qualifica (enum: capo_cantiere, operaio, tecnico, amministrazione, altro)
+    - costo_orario, telefono, email
+    - indirizzo, citta, cap, provincia, piva, codice_fiscale
+    - attivo (boolean), user_id
+    RLS: admin/mssg_admin/mssg_capo leggono; collaboratore legge proprio record
+
+14. PRESENZA
+    - collaboratore_id (required), collaboratore_nome
+    - cantiere_id, cantiere_nome
+    - lavorazione_id, lavorazione_nome
+    - data (date, required)
+    - ora_ingresso, ora_uscita
+    - ore_totali, ore_straordinarie
+    - note
+    RLS: admin/mssg_admin/mssg_capo leggono; operaio legge proprie presenze
+
+15. CLIENTE
+    - nome (required)
+    - is_azienda (boolean), azienda
+    - email, telefono
+    - indirizzo, citta, cap, provincia, piva, codice_fiscale
+    - note
+    RLS: admin/mssg_admin/mssg_capo leggono; cliente legge proprio record
+
+16. NOTIFICA
+    - user_id (required), tipo (required), titolo (required)
+    - tipo (enum: appuntamento, aggiornamento)
+    - testo, url, letto (boolean)
+    RLS: utente legge proprie notifiche; admin/mssg_admin leggono tutto
+
+17. DISPONIBILITA
+    - giorno_settimana (0-6, required)
+    - ora_inizio (required), ora_fine (required)
+    - durata_slot (default 60), attivo (boolean)
+    RLS: lettura pubblica; scrittura admin/mssg_admin/mssg_capo
+
+18. PROMEMORIA
+    - titolo (required), nota
+    - data (date, required), ora
+    - avviso_email (boolean), minuti_prima (default 60)
+    - completato (boolean)
+    RLS: accesso limitato al proprietario (created_by_id)
+
+19. CHATMESSAGE
+    - canale (enum: cliente, squadra, required)
+    - cantiere_id
+    - mittente_id (required), mittente_nome, mittente_ruolo
+    - testo (required)
+    - letto_da
+    RLS: tutti i ruoli interni leggono; cliente legge chat canale cliente
+
+
+================================================================================
+ PAGINE DELL'APPLICAZIONE
+================================================================================
+
+- Dashboard.jsx          — Dashboard personalizzabile con widget e azioni rapide
+- Cantieri.jsx           — Lista e gestione cantieri
+- CantiereDetail.jsx     — Dettaglio cantiere (progetto, avanzamento, pagamenti,
+                           documenti, chat, squadra, presenze)
+- Clienti.jsx            — Anagrafica clienti
+- Collaboratori.jsx      — Anagrafica collaboratori
+- Agenda.jsx             — Agenda settimanale, richieste, disponibilità,
+                           promemoria
+- Presenze.jsx           — Gestione presenze/ore collaboratori
+- Impostazioni.jsx       — Impostazioni azienda, account, modelli email, tema
+- Esporta.jsx            — Esportazione dati (CSV/Excel) + diagramma collegamenti
+- BackupCloud.jsx        — Backup interno, esterno, ripristino, config cloud
+- Login.jsx              — Login con email/password e Google
+- Register.jsx           — Registrazione con OTP
+- ForgotPassword.jsx     — Recupero password
+- ResetPassword.jsx      — Reset password con token
+- OAuthConsent.jsx       — Consenso OAuth
+- PageNotFound.jsx       — Pagina 404
+
+
+================================================================================
+ COMPONENTI PRINCIPALI
+================================================================================
+
+LAYOUT:
+- GestionaleLayout.jsx       — Shell app con sidebar desktop + tab bar mobile
+- ProtectedRoute.jsx         — Guard autenticazione
+- ScrollToTop.jsx            — Scroll reset su cambio route
+- AuthLayout.jsx             — Layout pagine auth
+- UserNotRegisteredError.jsx — Schermata utente non registrato
+
+DASHBOARD:
+- QuickActions.jsx           — Barra azioni rapide configurabile
+- AddWidgetDialog.jsx        — Dialog aggiunta widget
+- ShareButton.jsx            — Condivisione dashboard
+- ShareMenu.jsx              — Menu condivisione
+- WidgetNotifiche.jsx        — Widget notifiche
+- WidgetChat.jsx             — Widget ultime chat
+- WidgetPagamenti.jsx        — Widget pagamenti del mese
+- WidgetAppuntamenti.jsx     — Widget appuntamenti
+- WidgetAppuntamentiDomani.jsx — Widget appuntamenti di domani
+- WidgetSettimana.jsx        — Widget pienezza settimana
+- WidgetCantieri.jsx         — Widget cantieri
+- WidgetClienti.jsx          — Widget clienti
+- WidgetCollaboratori.jsx    — Widget collaboratori
+- WidgetLavorazioni.jsx      — Widget lavorazioni
+- WidgetPresenze.jsx         — Widget presenze
+- WidgetPromemoria.jsx       — Widget promemoria
+
+AGENDA:
+- SettimanaView.jsx          — Vista griglia settimanale (desktop) + giorno (mobile)
+- ListaAppuntamenti.jsx      — Lista appuntamenti raggruppata per data
+- RichiesteList.jsx          — Lista richieste di appuntamento
+- DisponibilitaManager.jsx  — Gestione disponibilità + giorni bloccati
+- PromemoriaManager.jsx      — Creazione/gestione promemoria
+- AppuntamentoForm.jsx       — Form creazione/modifica appuntamento
+- AppuntamentoDetailDialog.jsx — Dialog dettaglio appuntamento (sola lettura)
+- PromemoriaDetailDialog.jsx   — Dialog dettaglio promemoria (sola lettura)
+- TimeSlotPicker.jsx         — Selettore slot temporali
+- Combobox.jsx               — Combobox ricerca entità
+
+CANTIERE:
+- CantiereForm.jsx           — Form creazione/modifica cantiere
+- CantiereProgetto.jsx       — Scheda progetto cantiere
+- CantiereAvanzamento.jsx    — Gestione fasi/lavorazioni avanzamento
+- CantiereAvanzamentoRiepilogo.jsx — Riepilogo avanzamento
+- CantierePagamenti.jsx      — Gestione pagamenti cantiere
+- CantiereDocumenti.jsx      — Gestione documenti multimedia
+- CantiereChat.jsx           — Chat interna e con cliente
+- CantiereSquadra.jsx        — Gestione squadra cantiere
+- SchedaDialog.jsx           — Dialog scheda cantiere
+- DocumentoForm.jsx          — Form caricamento documento
+- PresenzaQuickDialog.jsx    — Dialog rapido registrazione presenza
+
+CLIENTI:
+- ClienteForm.jsx            — Form creazione/modifica cliente
+
+COLLABORATORI:
+- CollaboratoreForm.jsx      — Form creazione/modifica collaboratore
+
+PRESENZE:
+- PresenzaForm.jsx           — Form registrazione presenza
+
+ESPORTA:
+- ExportButtons.jsx          — Pulsanti export CSV/Excel per entità
+- ImportSection.jsx          — Sezione import dati
+- DiagrammaCollegamenti.jsx — Diagramma relazioni entità
+- CloudBackup.jsx            — Config backup cloud
+
+BACKUP:
+- BackupInterno.jsx          — Backup interno piattaforma
+- BackupEsterno.jsx          — Backup su cloud esterno
+- RipristinoBackup.jsx       — Ripristino da backup
+
+IMPOSTAZIONI:
+- DatiAzienda.jsx            — Dati anagrafici azienda
+- AccountPassword.jsx        — Gestione account e password
+- ModelliEmail.jsx           — Modelli email personalizzabili
+- TemaGestionale.jsx         — Personalizzazione tema/colori
+
+VOCE / AI:
+- VoiceCommandButton.jsx     — Pulsante overlay comando vocale (Sparkles)
+- VoiceCommandDialog.jsx     — Dialog comando vocale con AI
+- VoiceDictation.jsx         — Dettatura vocale su campi input
+- NotificationBell.jsx        — Campanello notifiche
+
+UI SHADCN (tutti i componenti standard):
+- button, input, label, dialog, tabs, select, switch, textarea, badge,
+  accordion, alert-dialog, popover, command, dropdown-menu, sheet, sonner,
+  form, scroll-area, slider, toggle, pagination, alert, tooltip,
+  radio-group, avatar, separator, navigation-menu, progress, hover-card,
+  sidebar, resizable, menubar, drawer, image, image-helpers, calendar,
+  carousel, chart, skeleton, context-menu, table, collapsible, breadcrumb,
+  checkbox, aspect-ratio, toggle-group, input-otp, card, toast, toaster,
+  use-toast
+
+
+================================================================================
+ FUNZIONI BACKEND
+================================================================================
+
+1. interpretaComandoVocale (entry.ts)
+   - Elabora comandi vocali naturali tramite LLM
+   - Supporta creazione, aggiornamento ed eliminazione di:
+     Cliente, Collaboratore, Cantiere, Lavorazione, Appuntamento, Promemoria
+   - Normalizzazione fuzzy dei nomi per matching entità
+   - Utility: Levenshtein distance, stripping articoli/preposizioni italiani
+   - Validazione input tramite schema JSON
+   - Cross-entity linking e data validation
+
+2. inviaNotificaAppuntamento (entry.ts)
+   - Invia notifica email al cliente per appuntamenti
+   - Fallback con notifica in-app
+
+3. inviaNotificaPagamento (entry.ts)
+   - Invia notifica email al cliente per pagamenti/scadenze
+
+4. notificaEmailFallback (entry.ts)
+   - Sistema fallback notifiche via email
+
+5. backupSuCloud (entry.ts)
+   - Esecuzione backup su provider cloud esterno
+   - Supporta Google Drive, OneDrive, Dropbox, Amazon S3
+
+MODULI CONDIVISI:
+- base44/shared/firmaEmail.ts — Logica firma email condivisa tra funzioni
+
+
+================================================================================
+ HOOKS E UTILITY
+================================================================================
+
+HOOKS:
+- useSpeechRecognition.js — Hook Web Speech API con auto-restart per pause
+                           prolungate durante la dettatura
+- use-mobile.jsx          — Hook per rilevare viewport mobile
+- use-size.jsx            — Hook per dimensioni elemento
+
+LIB:
+- base44Client.js    — SDK Base44 pre-inizializzato
+- AuthContext.jsx    — Contesto autenticazione
+- authReturnTo.js    — Gestione redirect post-login
+- exportUtils.js     — Utility esportazione CSV/Excel
+- notifiche.js       — Helper notifiche in-app
+- tema.js            — Gestione tema dinamico
+- query-client.js    — Istanza React Query
+- app-params.js      — Parametri app
+- utils.js           — Utility generiche (cn, ecc.)
+- PageNotFound.jsx   — Componente 404
+
+API:
+- @/api/base44Client — SDK pre-inizializzato per entità e integrazioni
+
+
+================================================================================
+ FUNZIONALITÀ IMPLEMENTATE
+================================================================================
+
+GESTIONE CANTIERI:
+- Creazione/modifica/eliminazione cantieri
+- Stati: bozza, attivo, sospeso, completato, chiuso
+- Avanzamento manuale o a pronostico
+- Fasi lavorazione con percentuale prevista (obbligatoria) e completata
+- Barre colorate per stato fasi (vuota/gialla/rossa/verde)
+- Budget e costi lavorazioni
+- Note interne (mai visibili al cliente)
+- Archiviazione e fissaggio in cima
+- Foto cantiere
+
+GESTIONE ANAGRAFICHE:
+- Clienti con dati fatturazione completi (PIVA, CF, indirizzo)
+- Flag "Azienda" con ragione sociale
+- Collaboratori con qualifica, costo orario, dati anagrafici
+- Invito collaboratori con email di benvenuto + reset password automatico
+- Collegamento collaboratore → utente app
+
+AGENDA:
+- Vista settimanale cliccabile (desktop/tablet)
+- Vista dettaglio giornaliera (mobile)
+- Navigazione settimana avanti/indietro
+- Giorno corrente preselezionato
+- Appuntamenti lavorativi/personali con colorazione
+- Richieste di appuntamento da cliente/collaboratore
+- Approvazione/rifiuto/proposta alternativa
+- Override blocchi giornata da admin (admin_fissato)
+- Disponibilità settimanale ricorrente
+- Blocchi disponibilità multi-data con motivo
+- Giorni bloccati (ferie/festività)
+- Promemoria integrati (colore ambra)
+- Dialog dettaglio sola lettura → poi modifica
+- Link rapido dettaglio → vista Agenda
+
+DASHBOARD:
+- Widget personalizzabili (aggiunta/rimozione/riordino)
+- Azioni rapide configurabili
+- Widget: notifiche, chat, pagamenti mese, appuntamenti domani,
+  pienezza settimana, cantieri, clienti, collaboratori, lavorazioni,
+  presenze, promemoria
+- Elementi liste cliccabili → entità di riferimento
+- Modalità modifica layout
+- Giorni bloccati = 100% riempimento (rosso)
+
+COMANDO VOCALE (AI):
+- Pulsante overlay Sparkles (basso-destra)
+- Creazione entità via voce: clienti, collaboratori, cantieri, lavorazioni,
+  appuntamenti, promemoria
+- Modifica entità esistenti (es. aggiorna budget cantiere)
+- Eliminazione entità
+- Interpretabile tramite LLM backend
+- Normalizzazione fuzzy nomi
+- Notifiche cliccabili con link a entità create
+- Stop automatico microfono dopo comando
+- Auto-restart per pause prolungate
+- Dettatura testo su campi input (Web Speech API)
+
+PAGAMENTI:
+- Acconti, avanzamenti, saldi
+- Stati: non pagato, pagato, parziale
+- Data scadenza e data pagamento
+- Notifica email al cliente
+- Collegamento a lavorazioni
+
+DOCUMENTI:
+- Upload file multimediali (foto, video, contratti, planimetrie, ecc.)
+- Categorie: contratto, planimetria, permesso, sicurezza, foto, video,
+  fattura, preventivo, altro
+- Visibilità cliente configurabile
+
+CHAT:
+- Canale squadra (interno)
+- Canale cliente (con cliente)
+- Indicatori lettura
+
+PRESENZE:
+- Registrazione ingresso/uscita
+- Calcolo ore totali e straordinarie
+- Collegamento a cantiere e lavorazione
+- Filtri per data
+
+AGGIORNAMENTI CANTIERE:
+- Tipi: aggiornamento, avviso, completamento, problema
+- Visibilità cliente configurabile
+
+ESPORTAZIONE:
+- Export CSV/Excel per ogni entità
+- Import dati da file
+- Diagramma collegamenti entità
+- Configurazione backup cloud
+
+BACKUP:
+- Backup interno (piattaforma)
+- Backup esterno (Google Drive, OneDrive, Dropbox, Amazon S3)
+- Frequenza: manuale, giornaliero, settimanale, mensile
+- Ripristino da backup
+- Storico backup con stato
+
+IMPOSTAZIONI:
+- Dati azienda (ragione sociale, PIVA, CF, indirizzo, contatti)
+- Logo azienda
+- Capacità appuntamenti contemporanei
+- Modelli email personalizzabili con variabili
+- Tema gestionale dinamico (mode + colors)
+- Gestione account e password
+
+AUTENTICAZIONE:
+- Login email/password
+- Login Google OAuth
+- Registrazione con OTP
+- Recupero/reset password
+- Ruoli: admin, mssg_admin, mssg_capo, mssg_operaio, mssg_cliente
+- ProtectedRoute per pagine autenticate
+
+NOTIFICHE:
+- Notifiche in-app per utente
+- Campanello notifiche (NotificationBell)
+- Notifiche email (con fallback)
+- Toast posizionati per non coprire pulsante AI
+
+
+================================================================================
+ SICUREZZA (RLS — Row Level Security)
+================================================================================
+
+Ogni entità ha RLS configurata:
+- admin: accesso completo a tutto
+- mssg_admin: gestione completa (eccetto eliminazione su alcune entità)
+- mssg_capo: lettura completa + creazione/modifica su cantieri, lavorazioni,
+  pagamenti, appuntamenti, presenze
+- mssg_operaio: lettura + creazione presenze e appuntamenti
+- mssg_cliente: lettura solo propri dati (cantieri, pagamenti, documenti,
+  aggiornamenti, chat visibili, appuntamenti propri)
+- Promemoria e DashboardConfig: accesso limitato al proprietario
+
+
+================================================================================
+ STRUTTURA FILE PROGETTO
+================================================================================
+
+src/
+├── App.jsx                      (router principale)
+├── main.jsx                      (entry point)
+├── index.css                     (tema + token design system)
+├── api/
+│   └── base44Client.js
+├── lib/
+│   ├── AuthContext.jsx
+│   ├── authReturnTo.js
+│   ├── exportUtils.js
+│   ├── notifiche.js
+│   ├── tema.js
+│   ├── query-client.js
+│   ├── app-params.js
+│   ├── utils.js
+│   └── PageNotFound.jsx
+├── hooks/
+│   ├── useSpeechRecognition.js
+│   ├── use-mobile.jsx
+│   └── use-size.jsx
+├── pages/
+│   ├── Dashboard.jsx
+│   ├── Cantieri.jsx
+│   ├── CantiereDetail.jsx
+│   ├── Clienti.jsx
+│   ├── Collaboratori.jsx
+│   ├── Agenda.jsx
+│   ├── Presenze.jsx
+│   ├── Impostazioni.jsx
+│   ├── Esporta.jsx
+│   ├── BackupCloud.jsx
+│   ├── Login.jsx
+│   ├── Register.jsx
+│   ├── ForgotPassword.jsx
+│   ├── ResetPassword.jsx
+│   └── OAuthConsent.jsx
+├── components/
+│   ├── GestionaleLayout.jsx
+│   ├── ProtectedRoute.jsx
+│   ├── ScrollToTop.jsx
+│   ├── AuthLayout.jsx
+│   ├── UserNotRegisteredError.jsx
+│   ├── VoiceCommandButton.jsx
+│   ├── VoiceCommandDialog.jsx
+│   ├── VoiceDictation.jsx
+│   ├── NotificationBell.jsx
+│   ├── GoogleIcon.jsx
+│   ├── agenda/ (9 componenti)
+│   ├── cantiere/ (11 componenti)
+│   ├── clienti/ (1 componente)
+│   ├── collaboratori/ (1 componente)
+│   ├── presenze/ (1 componente)
+│   ├── dashboard/ (15 componenti)
+│   ├── esporta/ (4 componenti)
+│   ├── backup/ (3 componenti)
+│   ├── impostazioni/ (4 componenti)
+│   └── ui/ (tutti i componenti shadcn)
+└── utils/
+    └── index.ts
+
+base44/
+├── entities/ (19 entità .jsonc)
+├── functions/
+│   ├── interpretaComandoVocale/entry.ts
+│   ├── inviaNotificaAppuntamento/entry.ts
+│   ├── inviaNotificaPagamento/entry.ts
+│   ├── notificaEmailFallback/entry.ts
+│   └── backupSuCloud/entry.ts
+├── shared/
+│   └── firmaEmail.ts
+├── workflows/
+├── agents/
+├── config.jsonc
+└── (file di configurazione piattaforma)
+
+CONFIG:
+- tailwind.config.js
+- vite.config.js
+- package.json
+- jsconfig.json
+- components.json
+- postcss.config.js
+- eslint.config.js
+- index.html
+
+
+================================================================================
+ ISSUE NOTE E DEAD END (scartati)
+================================================================================
+
+- Integrazione WhatsApp API/Telegram Bot — scartati per complessità e costi
+  (preferito sistema di notifiche in-app)
+- Calcolo budget basato su variazione percentuale — scartato perché non
+  considera costo specifico materiali/lavorazioni eterogenee
+- Richiesta immediata OAuth Google Drive/OneDrive — scartata, preferita
+  pagina dedicata di configurazione
+- Configurazione backup dentro pagina Esporta — scartata, creata pagina
+  dedicata "Backup e Cloud"
+- Lista appuntamenti scroll infinito mobile — scartata, preferita navigazione
+  per settimana solare con giorni passati visibili
+
+ISSUE NOTI:
+- Incompatibilità Web Speech API in iframe ristretti (richiede fallback)
+
+
+================================================================================
+ PROSSIMI PASSI CONSIGLIATI
+================================================================================
+
+1. Pubblicare l'app (pulsante Pubblica nel builder)
+2. Invitare utenti con i rispettivi ruoli (admin, capi cantiere, operai, clienti)
+3. Configurare dati azienda e tema dalle Impostazioni
+4. Testare flusso completo: cliente → cantiere → lavorazioni → appuntamenti
+5. Configurare backup cloud se desiderato
+6. Personalizzare modelli email
+7. Eventualmente collegare dominio personalizzato
+
+================================================================================
+ FINE DOCUMENTO
+================================================================================
