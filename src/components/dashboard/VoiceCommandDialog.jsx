@@ -50,26 +50,13 @@ export default function VoiceCommandDialog({ open, onOpenChange }) {
       const response = await base44.functions.invoke("interpretaComandoVocale", { transcript });
       const res = response.data;
 
-      if (res.tipo === "appuntamento") {
-        const created = await base44.entities.Appuntamento.create({
-          titolo: res.titolo,
-          data: res.data,
-          ora: res.ora || "09:00",
-          durata_minuti: res.durata_minuti || 60,
-          categoria: res.categoria || "lavorativo",
-          stato: "programmato",
-        });
-        setResult({ tipo: "appuntamento", record: created });
-        toast({ title: "Appuntamento creato", description: res.titolo });
-      } else {
-        const created = await base44.entities.Promemoria.create({
-          titolo: res.titolo,
-          data: res.data,
-          ora: res.ora || "",
-        });
-        setResult({ tipo: "promemoria", record: created });
-        toast({ title: "Promemoria creato", description: res.titolo });
+      if (res.error) {
+        toast({ title: "Errore", description: res.error, variant: "destructive" });
+        return;
       }
+      setResult({ tipo: res.tipo, record: res.record, message: res.message });
+      const label = res.record?.titolo || res.record?.nome || "";
+      toast({ title: res.message, description: label });
     } catch (err) {
       toast({ title: "Errore interpretazione", description: err.message, variant: "destructive" });
     } finally {
@@ -94,7 +81,7 @@ export default function VoiceCommandDialog({ open, onOpenChange }) {
             <Sparkles className="w-4 h-4 text-primary" /> Comando vocale
           </DialogTitle>
           <DialogDescription>
-            Parla per creare un appuntamento o un promemoria. Es: &laquo;appuntamento domani alle 14 con Rossi&raquo; oppure &laquo;promemoria venerdì chiamare fornitore&raquo;.
+            Parla o scrivi per creare: appuntamento, promemoria, cliente, collaboratore, cantiere o lavorazione. Es: &laquo;appuntamento domani alle 14 con Rossi&raquo;, &laquo;nuovo cliente Mario Rossi email mario@email.it&raquo;, &laquo;crea cantiere ristrutturazione Bagno per il cliente Bianchi&raquo;.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
@@ -137,8 +124,7 @@ export default function VoiceCommandDialog({ open, onOpenChange }) {
             <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3 text-sm flex items-center gap-2">
               <Check className="w-4 h-4 text-green-500 flex-shrink-0" />
               <span>
-                {result.tipo === "appuntamento" ? "Appuntamento" : "Promemoria"} creato:{" "}
-                <strong>{result.record.titolo}</strong>
+                {result.message}: <strong>{result.record?.titolo || result.record?.nome}</strong>
               </span>
             </div>
           )}
