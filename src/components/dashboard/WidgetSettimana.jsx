@@ -16,10 +16,13 @@ export default function WidgetSettimana() {
   useEffect(() => {
     (async () => {
       try {
-        const [apps, disponibilita] = await Promise.all([
+        const [apps, disponibilita, bloccati] = await Promise.all([
           base44.entities.Appuntamento.list(),
           base44.entities.Disponibilita.list(),
+          base44.entities.GiornoBloccato.list(),
         ]);
+
+        const blocDates = new Set(bloccati.map((b) => b.data));
 
         const today = new Date();
         const dayOfWeek = today.getDay();
@@ -54,14 +57,16 @@ export default function WidgetSettimana() {
             }
           }
 
+          const isBlocked = blocDates.has(dateStr);
           const maxHours = availableHours > 0 ? availableHours : 10;
-          const workPct = availableHours > 0 ? Math.min((workMinutes / 60) / availableHours * 100, 100) : 0;
-          const personalPct = Math.min((personalMinutes / 60) / maxHours * 100, 100);
+          const workPct = isBlocked ? 100 : (availableHours > 0 ? Math.min((workMinutes / 60) / availableHours * 100, 100) : 0);
+          const personalPct = isBlocked ? 0 : Math.min((personalMinutes / 60) / maxHours * 100, 100);
 
           weekDays.push({
             dateStr,
             dayName: DAY_NAMES[i],
             isToday: dateStr === todayStr,
+            isBlocked,
             workPct,
             personalPct,
             count: dayApps.length,
@@ -91,11 +96,17 @@ export default function WidgetSettimana() {
             <div key={day.dateStr} className="flex-1 flex flex-col items-center gap-1">
               <div className="text-[9px] font-medium">{Math.round(capped)}%</div>
               <div className={`relative w-full h-16 bg-secondary/30 rounded-md overflow-hidden flex flex-col justify-end border ${day.isToday ? "border-primary" : "border-transparent"}`}>
-                {personalH > 0 && (
-                  <div className="bg-purple-500/60 w-full" style={{ height: `${personalH}%` }} title="Personale" />
-                )}
-                {workH > 0 && (
-                  <div className="bg-primary w-full" style={{ height: `${workH}%` }} title="Lavoro" />
+                {day.isBlocked ? (
+                  <div className="bg-red-500/50 w-full" style={{ height: "100%" }} title="Giorno bloccato" />
+                ) : (
+                  <>
+                    {personalH > 0 && (
+                      <div className="bg-purple-500/60 w-full" style={{ height: `${personalH}%` }} title="Personale" />
+                    )}
+                    {workH > 0 && (
+                      <div className="bg-primary w-full" style={{ height: `${workH}%` }} title="Lavoro" />
+                    )}
+                  </>
                 )}
               </div>
               <span className={`text-[9px] ${day.isToday ? "text-primary font-bold" : "text-muted-foreground"}`}>{day.dayName}</span>
