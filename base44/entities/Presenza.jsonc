@@ -71,12 +71,34 @@
           }
         },
         {
-          "user_condition": {
-            "role": "mssg_capo"
-          }
-        },
-        {
-          "data.collaboratore_id": "{{user.data.collaboratore_id}}"
+          "$and": [
+            {
+              "$or": [
+                {
+                  "user_condition": {
+                    "role": "mssg_capo"
+                  }
+                },
+                {
+                  "user_condition": {
+                    "role": "mssg_operaio"
+                  }
+                }
+              ]
+            },
+            {
+              "$or": [
+                {
+                  "data.cantiere_id": {
+                    "$in": "{{user.data.cantieri_ids}}"
+                  }
+                },
+                {
+                  "data.collaboratore_id": "{{user.data.collaboratore_id}}"
+                }
+              ]
+            }
+          ]
         }
       ]
     },
@@ -98,9 +120,16 @@
           }
         },
         {
-          "user_condition": {
-            "role": "mssg_operaio"
-          }
+          "$and": [
+            {
+              "user_condition": {
+                "role": "mssg_operaio"
+              }
+            },
+            {
+              "data.collaboratore_id": "{{user.data.collaboratore_id}}"
+            }
+          ]
         }
       ]
     },
