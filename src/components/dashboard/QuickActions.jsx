@@ -1,16 +1,33 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Bell, HardHat, Users, Calendar, Cloud, Plus, Loader2 } from "lucide-react";
+import { Bell, HardHat, Users, Calendar, Cloud, Plus, Loader2, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { base44 } from "@/api/base44Client";
 import { useToast } from "@/components/ui/use-toast";
 
-export default function QuickActions() {
+export const ACTION_CONFIG = {
+  promemoria: { icon: Bell, label: "Promemoria" },
+  appuntamento: { icon: Calendar, label: "Appuntamento", to: "/agenda" },
+  cliente: { icon: Users, label: "Cliente", to: "/clienti" },
+  collaboratore: { icon: HardHat, label: "Collaboratore", to: "/collaboratori" },
+  backup: { icon: Cloud, label: "Backup", to: "/backup-cloud" },
+};
+
+export const ALL_ACTION_TYPES = Object.keys(ACTION_CONFIG);
+
+export default function QuickActions({ visibleActions, editMode, onRemove, onAdd }) {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [promOpen, setPromOpen] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
   const [nuovo, setNuovo] = useState({ titolo: "", data: "", ora: "" });
   const [saving, setSaving] = useState(false);
 
@@ -34,30 +51,57 @@ export default function QuickActions() {
     }
   };
 
-  const actions = [
-    { icon: Bell, label: "Promemoria", onClick: () => setPromOpen(true) },
-    { icon: Calendar, label: "Appuntamento", onClick: () => navigate("/agenda") },
-    { icon: Users, label: "Cliente", onClick: () => navigate("/clienti") },
-    { icon: HardHat, label: "Collaboratore", onClick: () => navigate("/collaboratori") },
-    { icon: Cloud, label: "Backup", onClick: () => navigate("/backup-cloud") },
-  ];
+  const handleClick = (type) => {
+    if (editMode) return;
+    const cfg = ACTION_CONFIG[type];
+    if (type === "promemoria") {
+      setPromOpen(true);
+    } else if (cfg?.to) {
+      navigate(cfg.to);
+    }
+  };
+
+  const hiddenActions = ALL_ACTION_TYPES.filter((t) => !visibleActions.includes(t));
 
   return (
     <>
       <div className="flex flex-wrap gap-2">
-        {actions.map((a) => (
+        {visibleActions.map((type) => {
+          const cfg = ACTION_CONFIG[type];
+          if (!cfg) return null;
+          return (
+            <div key={type} className="relative">
+              <button
+                onClick={() => handleClick(type)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-card border border-border hover:border-primary hover:bg-primary/5 transition-colors text-xs font-medium"
+              >
+                <Plus className="w-3 h-3 text-primary" />
+                <cfg.icon className="w-3.5 h-3.5 text-muted-foreground" />
+                {cfg.label}
+              </button>
+              {editMode && (
+                <button
+                  onClick={() => onRemove(type)}
+                  className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center hover:bg-destructive/80 z-10"
+                >
+                  <X className="w-2.5 h-2.5" />
+                </button>
+              )}
+            </div>
+          );
+        })}
+        {editMode && hiddenActions.length > 0 && (
           <button
-            key={a.label}
-            onClick={a.onClick}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-card border border-border hover:border-primary hover:bg-primary/5 transition-colors text-xs font-medium"
+            onClick={() => setAddOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border-2 border-dashed border-border hover:border-primary hover:text-primary transition-colors text-xs font-medium text-muted-foreground"
           >
-            <Plus className="w-3 h-3 text-primary" />
-            <a.icon className="w-3.5 h-3.5 text-muted-foreground" />
-            {a.label}
+            <Plus className="w-3 h-3" />
+            Aggiungi
           </button>
-        ))}
+        )}
       </div>
 
+      {/* Dialog promemoria */}
       <Dialog open={promOpen} onOpenChange={setPromOpen}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
@@ -96,6 +140,33 @@ export default function QuickActions() {
               </Button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog aggiungi azione */}
+      <Dialog open={addOpen} onOpenChange={setAddOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-base">
+              <Plus className="w-4 h-4 text-primary" /> Aggiungi azione rapida
+            </DialogTitle>
+            <DialogDescription>Scegli un'azione da aggiungere alla barra</DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-1 gap-2">
+            {hiddenActions.map((type) => {
+              const cfg = ACTION_CONFIG[type];
+              return (
+                <button
+                  key={type}
+                  onClick={() => { onAdd(type); setAddOpen(false); }}
+                  className="flex items-center gap-2.5 p-3 bg-card border border-border rounded-lg hover:border-primary hover:bg-primary/5 transition-colors text-left"
+                >
+                  <cfg.icon className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">{cfg.label}</span>
+                </button>
+              );
+            })}
+          </div>
         </DialogContent>
       </Dialog>
     </>

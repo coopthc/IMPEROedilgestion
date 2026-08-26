@@ -5,6 +5,10 @@
     "widgets": {
       "type": "string",
       "title": "Widget ordinati (JSON array di tipi)"
+    },
+    "quick_actions": {
+      "type": "string",
+      "title": "Azioni rapide visibili (JSON array di tipi)"
     }
   },
   "required": [],

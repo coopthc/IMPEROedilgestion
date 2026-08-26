@@ -47,6 +47,7 @@ export default function Dashboard() {
   const [azienda, setAzienda] = useState(null);
   const [config, setConfig] = useState(null);
   const [widgets, setWidgets] = useState([]);
+  const [quickActions, setQuickActions] = useState(["promemoria", "appuntamento", "cliente", "collaboratore", "backup"]);
   const [loading, setLoading] = useState(true);
   const [editMode, setEditMode] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
@@ -62,10 +63,18 @@ export default function Dashboard() {
         if (configs.length > 0) {
           setConfig(configs[0]);
           setWidgets(JSON.parse(configs[0].widgets || "[]"));
+          if (configs[0].quick_actions) {
+            setQuickActions(JSON.parse(configs[0].quick_actions));
+          }
         } else {
-          const created = await base44.entities.DashboardConfig.create({ widgets: JSON.stringify(DEFAULT_WIDGETS) });
+          const DEFAULT_QA = ["promemoria", "appuntamento", "cliente", "collaboratore", "backup"];
+          const created = await base44.entities.DashboardConfig.create({
+            widgets: JSON.stringify(DEFAULT_WIDGETS),
+            quick_actions: JSON.stringify(DEFAULT_QA),
+          });
           setConfig(created);
           setWidgets(DEFAULT_WIDGETS);
+          setQuickActions(DEFAULT_QA);
         }
       } catch { /* ignora */ }
       setLoading(false);
@@ -90,6 +99,15 @@ export default function Dashboard() {
   const removeWidget = (i) => saveWidgets(widgets.filter((_, idx) => idx !== i));
   const addWidget = (type) => { saveWidgets([...widgets, type]); setShowAdd(false); };
 
+  const saveQuickActions = async (newQA) => {
+    setQuickActions(newQA);
+    if (config) {
+      try { await base44.entities.DashboardConfig.update(config.id, { quick_actions: JSON.stringify(newQA) }); } catch { /* ignora */ }
+    }
+  };
+  const removeQuickAction = (type) => saveQuickActions(quickActions.filter((t) => t !== type));
+  const addQuickAction = (type) => saveQuickActions([...quickActions, type]);
+
   return (
     <div>
       {/* Header */}
@@ -108,7 +126,14 @@ export default function Dashboard() {
         </Button>
       </div>
 
-      <QuickActions />
+      <div className="mt-4 mb-5">
+        <QuickActions
+          visibleActions={quickActions}
+          editMode={editMode}
+          onRemove={removeQuickAction}
+          onAdd={addQuickAction}
+        />
+      </div>
 
       {/* Widget grid */}
       {loading ? (
