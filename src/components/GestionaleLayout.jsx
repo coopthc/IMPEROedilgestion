@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { NavLink, useNavigate, Outlet } from "react-router-dom";
 import { useAuth } from "@/lib/AuthContext";
+import { base44 } from "@/api/base44Client";
 import NotificationBell from "@/components/NotificationBell";
 import {
   LayoutDashboard,
@@ -8,7 +9,6 @@ import {
   Users,
   Calendar,
   CalendarDays,
-  Home,
   Download,
   Cloud,
   LogOut,
@@ -24,7 +24,6 @@ export const NAV_ITEMS = [
   { to: "/agenda", icon: Calendar, label: "Agenda", group: "gestionale" },
   { to: "/collaboratori", icon: HardHat, label: "Collaboratori", group: "gestionale" },
   { to: "/presenze", icon: CalendarDays, label: "Presenze", group: "gestionale" },
-  { to: "/area-personale", icon: Home, label: "Area personale", group: "personale" },
   { to: "/esporta", icon: Download, label: "Esporta dati", group: "strumenti" },
   { to: "/storage", icon: Cloud, label: "Storage & Cloud", group: "strumenti" },
   { to: "/impostazioni", icon: Settings, label: "Impostazioni", group: "strumenti" },
@@ -36,41 +35,54 @@ export const MOBILE_TABS = [
   { to: "/cantieri", icon: Building2, label: "Cantieri" },
   { to: "/agenda", icon: Calendar, label: "Agenda" },
   { to: "/clienti", icon: Users, label: "Clienti" },
-  { to: "/area-personale", icon: Home, label: "Profilo" },
+  { to: "/impostazioni", icon: Settings, label: "Impost." },
 ];
 
-const GROUPS = ["gestionale", "personale", "strumenti"];
+const GROUPS = ["gestionale", "strumenti"];
 const GROUP_LABELS = {
   gestionale: "Gestionale",
-  personale: "Personale",
   strumenti: "Strumenti",
 };
 
 export default function GestionaleLayout() {
   const { user, logout } = useAuth();
+  const [azienda, setAzienda] = useState(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const list = await base44.entities.ImpostazioneApp.list();
+        if (list.length > 0) setAzienda(list[0]);
+      } catch {
+        /* ignora */
+      }
+    })();
+  }, []);
 
   const handleLogout = () => {
     logout(false);
     window.location.href = "/login";
   };
 
+  const logoNome = azienda?.ragione_sociale;
+  const logoEmail = azienda?.email_azienda;
+  const logoUrl = azienda?.logo_url;
+
   return (
     <div className="min-h-screen bg-background text-foreground md:flex">
       {/* Sidebar — solo desktop */}
       <aside className="hidden md:flex w-[210px] min-h-screen bg-card border-r border-border flex-col">
-        {/* Avatar area */}
+        {/* Logo / Azienda area */}
         <div className="px-4 pt-5 pb-4 text-center border-b border-border">
           <div className="w-[72px] h-[72px] mx-auto mb-2 rounded-full border-[3px] border-primary overflow-hidden bg-secondary flex items-center justify-center">
-            {user?.full_name ? (
-              <span className="text-xl font-bold text-primary">
-                {user.full_name.charAt(0).toUpperCase()}
-              </span>
+            {logoUrl ? (
+              <img src={logoUrl} alt="logo" className="w-full h-full object-contain" />
             ) : (
-              <Users className="w-8 h-8 text-primary" />
+              <Building2 className="w-8 h-8 text-primary" />
             )}
           </div>
-          <div className="font-bold text-sm leading-tight">{user?.full_name || "Utente"}</div>
-          <div className="text-[11px] text-muted-foreground mt-0.5 break-all">{user?.email}</div>
+          <div className="font-bold text-sm leading-tight">{logoNome || user?.full_name || "EdilGestion"}</div>
+          <div className="text-[11px] text-muted-foreground mt-0.5 break-all">{logoEmail || user?.email}</div>
         </div>
 
         {/* Nav */}
