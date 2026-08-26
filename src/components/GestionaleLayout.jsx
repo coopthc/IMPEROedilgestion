@@ -3,6 +3,7 @@ import { NavLink, useNavigate, Outlet } from "react-router-dom";
 import { useAuth } from "@/lib/AuthContext";
 import { base44 } from "@/api/base44Client";
 import NotificationBell from "@/components/NotificationBell";
+import { applyTema, TEMA_DARK, TEMA_CHIARO } from "@/lib/tema";
 import {
   LayoutDashboard,
   Building2,
@@ -52,7 +53,14 @@ export default function GestionaleLayout() {
     (async () => {
       try {
         const list = await base44.entities.ImpostazioneApp.list();
-        if (list.length > 0) setAzienda(list[0]);
+        if (list.length > 0) {
+          setAzienda(list[0]);
+          if (list[0].tema_json) {
+            const tema = JSON.parse(list[0].tema_json);
+            const preset = tema.mode === "light" ? TEMA_CHIARO : TEMA_DARK;
+            applyTema({ ...preset, ...(tema.colors || {}) });
+          }
+        }
       } catch {
         /* ignora */
       }

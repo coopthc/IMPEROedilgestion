@@ -45,7 +45,10 @@ export default function WidgetAppuntamenti({ offset = 0, title = "Appuntamenti o
               className="w-full flex items-center gap-2 p-2 bg-secondary/40 rounded-lg hover:bg-secondary/70 transition-colors text-left"
             >
               <div className="text-center w-10 flex-shrink-0">
-                <div className="text-xs font-bold text-primary">{app.ora}</div>
+                <div className="text-xs font-bold text-primary flex items-center justify-center gap-1">
+                  {app.ora}
+                  {app.categoria === "personale" && <span className="w-1.5 h-1.5 rounded-full bg-teal-500" />}
+                </div>
                 <div className="text-[9px] text-muted-foreground">{app.durata_minuti || 60}min</div>
               </div>
               <div className="flex-1 min-w-0">

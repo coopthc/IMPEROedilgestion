@@ -20,6 +20,15 @@
       "default": 60,
       "title": "Durata (minuti)"
     },
+    "categoria": {
+      "type": "string",
+      "enum": [
+        "lavorativo",
+        "personale"
+      ],
+      "default": "lavorativo",
+      "title": "Categoria"
+    },
     "tipo": {
       "type": "string",
       "enum": [

@@ -36,6 +36,8 @@ const TIPO_DOT = {
   admin_fissato: "bg-primary",
 };
 
+const CATEGORIA_PERSONALE = "bg-teal-500/15 text-teal-400 border-teal-500/40";
+
 export default function SettimanaView({ appuntamenti, loading, onDayClick, onAppuntamentoClick }) {
   const [weekStart, setWeekStart] = useState(() => getMonday(new Date()));
 
@@ -135,7 +137,7 @@ export default function SettimanaView({ appuntamenti, loading, onDayClick, onApp
                         <button
                           key={a.id}
                           onClick={() => onAppuntamentoClick(a)}
-                          className={`w-full text-left p-1.5 rounded border text-xs ${STATO_COLORS[a.stato] || STATO_COLORS.programmato}`}
+                          className={`w-full text-left p-1.5 rounded border text-xs ${a.categoria === "personale" ? CATEGORIA_PERSONALE : (STATO_COLORS[a.stato] || STATO_COLORS.programmato)}`}
                         >
                           <div className="flex items-center gap-1 font-semibold">
                             <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${TIPO_DOT[a.tipo] || "bg-muted-foreground"}`} />
@@ -162,7 +164,7 @@ export default function SettimanaView({ appuntamenti, loading, onDayClick, onApp
                     <button
                       key={a.id}
                       onClick={() => onAppuntamentoClick(a)}
-                      className={`w-full text-left p-1.5 rounded border text-xs ${STATO_COLORS[a.stato] || STATO_COLORS.programmato}`}
+                      className={`w-full text-left p-1.5 rounded border text-xs ${a.categoria === "personale" ? CATEGORIA_PERSONALE : (STATO_COLORS[a.stato] || STATO_COLORS.programmato)}`}
                     >
                       <span className="font-semibold">{a.ora}</span> — {a.titolo}
                     </button>
@@ -181,6 +183,7 @@ export default function SettimanaView({ appuntamenti, loading, onDayClick, onApp
         <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-purple-500" /> Proposto</span>
         <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-500" /> Confermato</span>
         <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500" /> Annullato</span>
+        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-teal-500" /> Personale</span>
       </div>
     </div>
   );

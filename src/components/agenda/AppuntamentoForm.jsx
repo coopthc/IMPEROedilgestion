@@ -26,6 +26,7 @@ import {
   X,
   Search,
   Trash2,
+  Briefcase,
 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { creaNotifiche } from "@/lib/notifiche";
@@ -54,6 +55,7 @@ const emptyForm = {
   data: "",
   ora: "",
   tipo: "interno",
+  categoria: "lavorativo",
   cliente_id: "",
   cantiere_id: "",
   note: "",
@@ -102,6 +104,7 @@ export default function AppuntamentoForm({
         data: appuntamento.data || "",
         ora: appuntamento.ora || "",
         tipo: appuntamento.tipo || "interno",
+        categoria: appuntamento.categoria || "lavorativo",
         cliente_id: appuntamento.cliente_id || "",
         cantiere_id: appuntamento.cantiere_id || "",
         note: appuntamento.note || "",
@@ -270,6 +273,28 @@ export default function AppuntamentoForm({
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 pt-2">
+          {/* Categoria: Lavorativo / Personale */}
+          <div className="grid grid-cols-2 gap-2 p-1 bg-secondary/50 rounded-lg">
+            <button
+              type="button"
+              onClick={() => update("categoria", "lavorativo")}
+              className={`flex items-center justify-center gap-1.5 py-2 rounded-md text-sm font-medium transition-colors ${
+                form.categoria !== "personale" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Briefcase className="w-4 h-4" /> Lavorativo
+            </button>
+            <button
+              type="button"
+              onClick={() => update("categoria", "personale")}
+              className={`flex items-center justify-center gap-1.5 py-2 rounded-md text-sm font-medium transition-colors ${
+                form.categoria === "personale" ? "bg-teal-500 text-white" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <User className="w-4 h-4" /> Personale
+            </button>
+          </div>
+
           {/* Data + Ora */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">

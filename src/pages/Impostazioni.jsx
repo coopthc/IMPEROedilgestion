@@ -2,7 +2,8 @@ import React from "react";
 import DatiAzienda from "@/components/impostazioni/DatiAzienda";
 import ModelliEmail from "@/components/impostazioni/ModelliEmail";
 import AccountPassword from "@/components/impostazioni/AccountPassword";
-import { Mail, KeyRound } from "lucide-react";
+import TemaGestionale from "@/components/impostazioni/TemaGestionale";
+import { Mail, KeyRound, Palette } from "lucide-react";
 
 export default function Impostazioni() {
   return (
@@ -17,6 +18,16 @@ export default function Impostazioni() {
       </div>
 
       <DatiAzienda />
+
+      <div>
+        <h2 className="text-sm font-semibold flex items-center gap-2 mb-3">
+          <Palette className="w-4 h-4 text-primary" /> Tema e colori
+        </h2>
+        <p className="text-xs text-muted-foreground mb-3">
+          Personalizza l'aspetto del gestionale: scegli un tema predefinito o modifica i singoli colori.
+        </p>
+        <TemaGestionale />
+      </div>
 
       <div>
         <h2 className="text-sm font-semibold flex items-center gap-2 mb-3">

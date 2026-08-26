@@ -49,6 +49,10 @@
       "default": 1,
       "minimum": 1,
       "title": "Appuntamenti contemporanei (capacit\u00e0)"
+    },
+    "tema_json": {
+      "type": "string",
+      "title": "Tema gestionale (JSON: mode + colors)"
     }
   },
   "required": [],

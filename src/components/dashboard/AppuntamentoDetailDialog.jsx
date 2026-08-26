@@ -63,6 +63,7 @@ export default function AppuntamentoDetailDialog({ app, open, onOpenChange }) {
         <div className="space-y-2.5">
           <Field icon={Calendar} label="Data">{new Date(app.data).toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long" })}</Field>
           <Field icon={Clock} label="Orario">{app.ora} — {app.durata_minuti || 60} min</Field>
+          <Field icon={Tag} label="Categoria">{app.categoria === "personale" ? "Personale" : "Lavorativo"}</Field>
           <Field icon={Tag} label="Tipo">{TIPO_LABEL[app.tipo] || app.tipo}</Field>
           <Field icon={Tag} label="Stato">{STATO_LABEL[app.stato] || app.stato}</Field>
           {app.cliente_nome && <Field icon={User} label="Cliente">{app.cliente_nome}</Field>}

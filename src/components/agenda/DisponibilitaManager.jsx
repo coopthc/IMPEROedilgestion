@@ -43,7 +43,7 @@ export default function DisponibilitaManager() {
     ora_fine: "18:00",
     durata_slot: 60,
   });
-  const [nuovoBlocco, setNuovoBlocco] = useState({ data: "", motivo: "" });
+  const [nuovoBlocco, setNuovoBlocco] = useState({ data_inizio: "", data_fine: "", motivo: "" });
   const [savingBlocco, setSavingBlocco] = useState(false);
 
   const load = async () => {
@@ -121,16 +121,37 @@ export default function DisponibilitaManager() {
 
   const addBlocco = async (e) => {
     e.preventDefault();
-    if (!nuovoBlocco.data) return;
+    if (!nuovoBlocco.data_inizio) return;
     setSavingBlocco(true);
     try {
-      await base44.entities.GiornoBloccato.create({
-        data: nuovoBlocco.data,
-        motivo: nuovoBlocco.motivo || "",
-      });
-      setNuovoBlocco({ data: "", motivo: "" });
+      const dates = [];
+      if (nuovoBlocco.data_fine && nuovoBlocco.data_fine >= nuovoBlocco.data_inizio) {
+        const start = new Date(nuovoBlocco.data_inizio + "T00:00");
+        const end = new Date(nuovoBlocco.data_fine + "T00:00");
+        for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+          const y = d.getFullYear();
+          const m = String(d.getMonth() + 1).padStart(2, "0");
+          const day = String(d.getDate()).padStart(2, "0");
+          dates.push(`${y}-${m}-${day}`);
+        }
+      } else {
+        dates.push(nuovoBlocco.data_inizio);
+      }
+
+      const existing = new Set(giorniBloccati.map((g) => g.data));
+      const newDates = dates.filter((d) => !existing.has(d));
+
+      if (newDates.length === 0) {
+        toast({ title: "Tutte le date sono già bloccate" });
+        return;
+      }
+
+      await base44.entities.GiornoBloccato.bulkCreate(
+        newDates.map((d) => ({ data: d, motivo: nuovoBlocco.motivo || "" }))
+      );
+      setNuovoBlocco({ data_inizio: "", data_fine: "", motivo: "" });
       await load();
-      toast({ title: "Giorno bloccato" });
+      toast({ title: `${newDates.length} ${newDates.length === 1 ? "giornata bloccata" : "giornate bloccate"}` });
     } catch (err) {
       toast({ title: "Errore", description: err.message, variant: "destructive" });
     } finally {
@@ -153,6 +174,13 @@ export default function DisponibilitaManager() {
       .filter((s) => s.giorno_settimana === g.value)
       .sort((a, b) => (a.ora_inizio || "").localeCompare(b.ora_inizio || "")),
   }));
+
+  let bloccoCount = 0;
+  if (nuovoBlocco.data_inizio && nuovoBlocco.data_fine && nuovoBlocco.data_fine >= nuovoBlocco.data_inizio) {
+    const start = new Date(nuovoBlocco.data_inizio + "T00:00");
+    const end = new Date(nuovoBlocco.data_fine + "T00:00");
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) bloccoCount++;
+  }
 
   if (loading) {
     return (
@@ -285,22 +313,34 @@ export default function DisponibilitaManager() {
           <Ban className="w-4 h-4 text-destructive" /> Blocca giornate specifiche
         </h3>
         <p className="text-xs text-muted-foreground mb-3">
-          Blocca singole date per ferie, festività o impegni: in quei giorni non
-          sarà possibile prenotare appuntamenti.
+          Blocca date per ferie, festività o impegni: in quei giorni non sarà
+          possibile prenotare appuntamenti. Inserisci una data fine per bloccare
+          un intero periodo (es. una settimana di ferie).
         </p>
         <form onSubmit={addBlocco} className="flex flex-wrap gap-2 items-end">
-          <div className="space-y-1.5 flex-1 min-w-[140px]">
-            <Label className="text-xs">Data</Label>
+          <div className="space-y-1.5 flex-1 min-w-[130px]">
+            <Label className="text-xs">Data inizio</Label>
             <Input
               type="date"
-              value={nuovoBlocco.data}
+              value={nuovoBlocco.data_inizio}
               onChange={(e) =>
-                setNuovoBlocco((f) => ({ ...f, data: e.target.value }))
+                setNuovoBlocco((f) => ({ ...f, data_inizio: e.target.value }))
               }
               required
             />
           </div>
-          <div className="space-y-1.5 flex-1 min-w-[180px]">
+          <div className="space-y-1.5 flex-1 min-w-[130px]">
+            <Label className="text-xs">Data fine (opzionale)</Label>
+            <Input
+              type="date"
+              value={nuovoBlocco.data_fine}
+              min={nuovoBlocco.data_inizio || undefined}
+              onChange={(e) =>
+                setNuovoBlocco((f) => ({ ...f, data_fine: e.target.value }))
+              }
+            />
+          </div>
+          <div className="space-y-1.5 flex-1 min-w-[160px]">
             <Label className="text-xs">Motivo (opzionale)</Label>
             <Input
               value={nuovoBlocco.motivo}
@@ -319,6 +359,11 @@ export default function DisponibilitaManager() {
             Blocca
           </Button>
         </form>
+        {bloccoCount > 0 && (
+          <p className="text-[11px] text-muted-foreground mt-2">
+            Verranno bloccate {bloccoCount} giornate
+          </p>
+        )}
 
         {giorniBloccati.length > 0 && (
           <div className="mt-3 space-y-1.5">
