@@ -1,0 +1,11 @@
+{
+  "name": "DashboardConfig",
+  "type": "object",
+  "properties": {
+    "widgets": {
+      "type": "string",
+      "title": "Widget ordinati (JSON array di tipi)"
+    }
+  },
+  "required": []
+}
