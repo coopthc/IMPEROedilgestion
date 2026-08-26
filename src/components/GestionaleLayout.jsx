@@ -3,6 +3,7 @@ import { NavLink, useNavigate, Outlet } from "react-router-dom";
 import { useAuth } from "@/lib/AuthContext";
 import { base44 } from "@/api/base44Client";
 import NotificationBell from "@/components/NotificationBell";
+import VoiceDictation from "@/components/VoiceDictation";
 import { applyTema, TEMA_DARK, TEMA_CHIARO } from "@/lib/tema";
 import {
   LayoutDashboard,
@@ -142,6 +143,8 @@ export default function GestionaleLayout() {
           <Outlet />
         </div>
       </main>
+
+      <VoiceDictation />
 
       {/* Tab bar mobile — fixed bottom, solo mobile */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border flex justify-around items-center h-[62px] px-1 shadow-[0_-4px_20px_rgba(0,0,0,0.5)]">

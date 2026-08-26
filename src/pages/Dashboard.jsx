@@ -47,7 +47,7 @@ export default function Dashboard() {
   const [azienda, setAzienda] = useState(null);
   const [config, setConfig] = useState(null);
   const [widgets, setWidgets] = useState([]);
-  const [quickActions, setQuickActions] = useState(["promemoria", "appuntamento", "cliente", "collaboratore", "backup"]);
+  const [quickActions, setQuickActions] = useState(["voce", "promemoria", "appuntamento", "cliente", "collaboratore", "backup"]);
   const [loading, setLoading] = useState(true);
   const [editMode, setEditMode] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
@@ -67,7 +67,7 @@ export default function Dashboard() {
             setQuickActions(JSON.parse(configs[0].quick_actions));
           }
         } else {
-          const DEFAULT_QA = ["promemoria", "appuntamento", "cliente", "collaboratore", "backup"];
+          const DEFAULT_QA = ["voce", "promemoria", "appuntamento", "cliente", "collaboratore", "backup"];
           const created = await base44.entities.DashboardConfig.create({
             widgets: JSON.stringify(DEFAULT_WIDGETS),
             quick_actions: JSON.stringify(DEFAULT_QA),

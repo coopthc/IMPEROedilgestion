@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Bell, HardHat, Users, Calendar, Cloud, Plus, Loader2, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { Bell, HardHat, Users, Calendar, Cloud, Plus, Loader2, X, ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
+import VoiceCommandDialog from "@/components/dashboard/VoiceCommandDialog";
 import { Input } from "@/components/ui/input";
 import {
   Dialog,
@@ -14,6 +15,7 @@ import { base44 } from "@/api/base44Client";
 import { useToast } from "@/components/ui/use-toast";
 
 export const ACTION_CONFIG = {
+  voce: { icon: Sparkles, label: "Comando vocale" },
   promemoria: { icon: Bell, label: "Promemoria" },
   appuntamento: { icon: Calendar, label: "Appuntamento", to: "/agenda" },
   cliente: { icon: Users, label: "Cliente", to: "/clienti" },
@@ -28,6 +30,7 @@ export default function QuickActions({ visibleActions, editMode, onRemove, onAdd
   const { toast } = useToast();
   const [promOpen, setPromOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
+  const [voiceOpen, setVoiceOpen] = useState(false);
   const [nuovo, setNuovo] = useState({ titolo: "", data: "", ora: "" });
   const [saving, setSaving] = useState(false);
 
@@ -56,6 +59,8 @@ export default function QuickActions({ visibleActions, editMode, onRemove, onAdd
     const cfg = ACTION_CONFIG[type];
     if (type === "promemoria") {
       setPromOpen(true);
+    } else if (type === "voce") {
+      setVoiceOpen(true);
     } else if (cfg?.to) {
       navigate(cfg.to);
     }
@@ -158,6 +163,9 @@ export default function QuickActions({ visibleActions, editMode, onRemove, onAdd
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Dialog comando vocale */}
+      <VoiceCommandDialog open={voiceOpen} onOpenChange={setVoiceOpen} />
 
       {/* Dialog aggiungi azione */}
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
