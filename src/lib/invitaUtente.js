@@ -5,7 +5,12 @@ import { base44 } from "@/api/base44Client";
 // e poi impostiamo il ruolo specifico sul record utente.
 export async function invitaUtenteConRuolo(email, ruoloCustom, dataExtra = {}) {
   const baseRole = ruoloCustom === "admin" ? "admin" : "user";
-  await base44.users.inviteUser(email, baseRole);
+  try {
+    await base44.users.inviteUser(email, baseRole);
+  } catch (e) {
+    // Utente già esistente: procedo comunque ad aggiornare il ruolo
+    console.warn("inviteUser fallito (utente esistente?):", e);
+  }
   try {
     const users = await base44.entities.User.list();
     const nu = users.find(
@@ -13,9 +18,10 @@ export async function invitaUtenteConRuolo(email, ruoloCustom, dataExtra = {}) {
     );
     if (nu) {
       await base44.entities.User.update(nu.id, { role: ruoloCustom, ...dataExtra });
+      return nu;
     }
-  } catch {
-    /* l'invito è comunque partito */
+  } catch (e) {
+    console.error("Errore aggiornamento ruolo utente:", e);
   }
-  return true;
+  return null;
 }

@@ -87,16 +87,12 @@ export default function ClienteForm({ open, onOpenChange, cliente, onSaved }) {
         // Se c'è una email, crea automaticamente l'account utente con ruolo cliente
         if (form.email) {
           try {
-            await invitaUtenteConRuolo(form.email, "mssg_cliente", {
+            const invitedUser = await invitaUtenteConRuolo(form.email, "mssg_cliente", {
               cliente_id: nuovoCliente.id,
             });
-            const users = await base44.entities.User.list();
-            const found = users.find(
-              (u) => u.email?.toLowerCase() === form.email.toLowerCase()
-            );
-            if (found) {
+            if (invitedUser) {
               await base44.entities.Cliente.update(nuovoCliente.id, {
-                user_id: found.id,
+                user_id: invitedUser.id,
               });
             }
             toast({
