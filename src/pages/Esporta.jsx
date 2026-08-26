@@ -5,6 +5,7 @@ import { useToast } from "@/components/ui/use-toast";
 import ExportButtons from "@/components/esporta/ExportButtons";
 import DiagrammaCollegamenti from "@/components/esporta/DiagrammaCollegamenti";
 import ImportSection from "@/components/esporta/ImportSection";
+import CloudBackup from "@/components/esporta/CloudBackup";
 import { downloadJSON } from "@/lib/exportUtils";
 import {
   Download,
@@ -545,30 +546,7 @@ export default function Esporta() {
         <h2 className="text-sm font-semibold flex items-center gap-2 mb-3">
           <Cloud className="w-4 h-4 text-primary" /> Backup su cloud
         </h2>
-        <div className="bg-card border border-border rounded-lg p-5 space-y-3">
-          <p className="text-xs text-muted-foreground">
-            Salva automaticamente tutti i dati su una cartella cloud scelta dall'utente,
-            suddivisa per cartelle. Configura il backup automatico giornaliero o mensile.
-          </p>
-          <div className="flex flex-wrap gap-2">
-            <Button size="sm" variant="outline" onClick={() => toast({ title: "Configurazione in arrivo", description: "Seleziona il provider nelle opzioni sotto" })}>
-              <Cloud className="w-4 h-4 mr-1" /> Google Drive
-            </Button>
-            <Button size="sm" variant="outline" onClick={() => toast({ title: "Configurazione in arrivo", description: "Seleziona il provider nelle opzioni sotto" })}>
-              <Cloud className="w-4 h-4 mr-1" /> OneDrive
-            </Button>
-            <Button size="sm" variant="outline" onClick={() => toast({ title: "Configurazione in arrivo", description: "Seleziona il provider nelle opzioni sotto" })}>
-              <Cloud className="w-4 h-4 mr-1" /> Dropbox
-            </Button>
-            <Button size="sm" variant="outline" onClick={() => toast({ title: "Configurazione in arrivo", description: "Seleziona il provider nelle opzioni sotto" })}>
-              <Cloud className="w-4 h-4 mr-1" /> Amazon S3
-            </Button>
-          </div>
-          <p className="text-[11px] text-muted-foreground italic">
-            Quale provider cloud preferisci? Dimmi quale vuoi configurare e procedo con il collegamento OAuth,
-            il salvataggio automatico e il backup programmato.
-          </p>
-        </div>
+        <CloudBackup />
       </div>
 
       {/* Import */}

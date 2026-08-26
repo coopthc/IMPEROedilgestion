@@ -1,0 +1,53 @@
+{
+  "name": "CloudBackupConfig",
+  "type": "object",
+  "properties": {
+    "provider": {
+      "type": "string",
+      "enum": [
+        "google_drive",
+        "onedrive",
+        "dropbox",
+        "amazon_s3"
+      ],
+      "title": "Provider cloud"
+    },
+    "credentials_json": {
+      "type": "string",
+      "title": "Credenziali (JSON)"
+    },
+    "folder_path": {
+      "type": "string",
+      "default": "EdilGestion/Backup",
+      "title": "Cartella di destinazione"
+    },
+    "frequency": {
+      "type": "string",
+      "enum": [
+        "manuale",
+        "giornaliero",
+        "settimanale",
+        "mensile"
+      ],
+      "default": "manuale",
+      "title": "Frequenza backup automatico"
+    },
+    "enabled": {
+      "type": "boolean",
+      "default": false,
+      "title": "Backup automatico attivo"
+    },
+    "last_backup_date": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Data ultimo backup"
+    },
+    "last_backup_status": {
+      "type": "string",
+      "title": "Stato ultimo backup"
+    }
+  },
+  "required": [
+    "provider"
+  ]
+}
