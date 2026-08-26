@@ -63,6 +63,38 @@ export default async function(req) {
       }
     }
 
+    // Sincronizza anche utenti_ids su ogni cantiere (membership basata su user.id, robusta per RLS)
+    const collabToUserMap = {};
+    for (const c of collaboratori) {
+      if (c.user_id) collabToUserMap[c.id] = c.user_id;
+    }
+    const clienteToUserMap = {};
+    for (const u of users) {
+      const cid = u.cliente_id || (u.data && u.data.cliente_id);
+      if (cid) clienteToUserMap[cid] = u.id;
+    }
+    const cantieriDaAggiornare = cantiereId
+      ? cantieri.filter((c) => c.id === cantiereId)
+      : cantieri;
+    for (const cant of cantieriDaAggiornare) {
+      const squadIds = (cant.collaboratori_ids || '').split(',').filter(Boolean);
+      if (cant.responsabile_id && !squadIds.includes(cant.responsabile_id)) squadIds.push(cant.responsabile_id);
+      const utentiIds = new Set();
+      for (const cid of squadIds) {
+        const uid = collabToUserMap[cid];
+        if (uid) utentiIds.add(uid);
+      }
+      if (cant.cliente_id) {
+        const cu = clienteToUserMap[cant.cliente_id];
+        if (cu) utentiIds.add(cu);
+      }
+      try {
+        await base44.asServiceRole.entities.Cantiere.update(cant.id, { utenti_ids: Array.from(utentiIds) });
+      } catch (e) {
+        // ignora singoli errori cantiere
+      }
+    }
+
     return Response.json({ synced, affected: affectedUserIds.size });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
