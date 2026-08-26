@@ -22,6 +22,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { invitaUtenteConRuolo } from "@/lib/invitaUtente";
 
 const QUALIFICHE = [
+  { value: "amministratore", label: "Amministratore" },
   { value: "capo_cantiere", label: "Capo cantiere" },
   { value: "operaio", label: "Operaio" },
   { value: "tecnico", label: "Tecnico" },
@@ -29,6 +30,7 @@ const QUALIFICHE = [
 ];
 
 const RUOLO_MAP = {
+  amministratore: "admin",
   capo_cantiere: "mssg_capo",
   operaio: "mssg_operaio",
   tecnico: "mssg_operaio",

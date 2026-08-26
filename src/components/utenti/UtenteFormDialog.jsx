@@ -27,6 +27,8 @@ const LIVELLO_LABEL = LIVELLI.reduce((acc, l) => {
   return acc;
 }, {});
 
+const RUOLO_TO_QUALIFICA = { admin: "amministratore", mssg_admin: "supervisore" };
+
 export default function UtenteFormDialog({ open, onOpenChange, utente, onSaved }) {
   const { toast } = useToast();
   const [email, setEmail] = useState("");
@@ -70,6 +72,16 @@ export default function UtenteFormDialog({ open, onOpenChange, utente, onSaved }
 
       if (utente) {
         await base44.entities.User.update(utente.id, { role, ...dataExtra });
+        if (utente.collaboratore_id) {
+          const qualifica = RUOLO_TO_QUALIFICA[role];
+          if (qualifica) {
+            try {
+              await base44.entities.Collaboratore.update(utente.collaboratore_id, { qualifica });
+            } catch (e) {
+              console.error("Sync qualifica collaboratore fallito:", e);
+            }
+          }
+        }
         toast({ title: "Amministratore aggiornato" });
       } else {
         await invitaUtenteConRuolo(email.trim(), role, dataExtra);

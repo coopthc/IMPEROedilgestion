@@ -33,6 +33,7 @@ const COLONNE_COLLABORATORI = [
 ];
 
 const QUALIFICA_LABELS = {
+  amministratore: "Amministratore",
   capo_cantiere: "Capo cantiere",
   operaio: "Operaio",
   tecnico: "Tecnico",
@@ -122,6 +123,7 @@ export default function Collaboratori() {
       return;
     }
     const RUOLO_MAP = {
+      amministratore: "admin",
       capo_cantiere: "mssg_capo",
       operaio: "mssg_operaio",
       tecnico: "mssg_operaio",
