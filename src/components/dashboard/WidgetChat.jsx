@@ -30,7 +30,7 @@ export default function WidgetChat() {
             return (
               <button
                 key={m.id}
-                onClick={() => clickable && navigate(`/cantieri/${m.cantiere_id}`)}
+                onClick={() => clickable && navigate(`/cantieri/${m.cantiere_id}?tab=chat`)}
                 disabled={!clickable}
                 className={`w-full flex items-start gap-2 p-2 bg-secondary/30 rounded-lg text-left transition-colors ${
                   clickable ? "hover:bg-secondary/60 cursor-pointer" : "cursor-default"

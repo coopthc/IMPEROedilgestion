@@ -15,6 +15,7 @@ import WidgetLavorazioni from "@/components/dashboard/WidgetLavorazioni";
 import WidgetNotifiche from "@/components/dashboard/WidgetNotifiche";
 import WidgetChat from "@/components/dashboard/WidgetChat";
 import WidgetPromemoria from "@/components/dashboard/WidgetPromemoria";
+import QuickActions from "@/components/dashboard/QuickActions";
 import AddWidgetDialog from "@/components/dashboard/AddWidgetDialog";
 
 const WIDGET_REGISTRY = {
@@ -106,6 +107,8 @@ export default function Dashboard() {
           {editMode ? "Fatto" : "Modifica layout"}
         </Button>
       </div>
+
+      <QuickActions />
 
       {/* Widget grid */}
       {loading ? (
