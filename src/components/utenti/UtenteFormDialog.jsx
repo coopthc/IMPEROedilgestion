@@ -72,19 +72,59 @@ export default function UtenteFormDialog({ open, onOpenChange, utente, onSaved }
 
       if (utente) {
         await base44.entities.User.update(utente.id, { role, ...dataExtra });
-        if (utente.collaboratore_id) {
-          const qualifica = RUOLO_TO_QUALIFICA[role];
-          if (qualifica) {
-            try {
-              await base44.entities.Collaboratore.update(utente.collaboratore_id, { qualifica });
-            } catch (e) {
-              console.error("Sync qualifica collaboratore fallito:", e);
+        const qualifica = RUOLO_TO_QUALIFICA[role];
+        if (qualifica && utente.collaboratore_id) {
+          try {
+            await base44.entities.Collaboratore.update(utente.collaboratore_id, { qualifica });
+          } catch (e) {
+            console.error("Sync qualifica collaboratore fallito:", e);
+          }
+        }
+        // Supervisore: crea il record Collaboratore se mancante (o se il link è rotto)
+        if (role === "mssg_admin") {
+          try {
+            let coll = null;
+            if (utente.collaboratore_id) {
+              try { coll = await base44.entities.Collaboratore.get(utente.collaboratore_id); } catch {}
             }
+            if (!coll) {
+              const nuovoColl = await base44.entities.Collaboratore.create({
+                nome: utente.full_name || utente.email,
+                email: utente.email,
+                qualifica: "supervisore",
+                user_id: utente.id,
+                attivo: true,
+              });
+              await base44.entities.User.update(utente.id, { collaboratore_id: nuovoColl.id });
+            }
+          } catch (e) {
+            console.error("Creazione collaboratore per supervisore fallita:", e);
           }
         }
         toast({ title: "Amministratore aggiornato" });
       } else {
         await invitaUtenteConRuolo(email.trim(), role, dataExtra);
+        // Supervisore: crea anche il record Collaboratore
+        if (role === "mssg_admin") {
+          try {
+            const users = await base44.entities.User.list();
+            const nu = users.find(
+              (u) => u.email?.toLowerCase() === email.trim().toLowerCase()
+            );
+            if (nu && !nu.collaboratore_id) {
+              const nuovoColl = await base44.entities.Collaboratore.create({
+                nome: nu.full_name || email.trim(),
+                email: email.trim(),
+                qualifica: "supervisore",
+                user_id: nu.id,
+                attivo: true,
+              });
+              await base44.entities.User.update(nu.id, { collaboratore_id: nuovoColl.id });
+            }
+          } catch (e) {
+            console.error("Creazione collaboratore per nuovo supervisore fallita:", e);
+          }
+        }
         toast({ title: "Invito inviato", description: email.trim() });
       }
       onSaved();
