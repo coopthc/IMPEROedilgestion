@@ -3,7 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { generateCSVBlobFromRecords, exportDiagrammaPDF } from "@/lib/exportUtils";
-import { Database, Loader2, CheckCircle2, FileText, File as FileIcon, Image, Video } from "lucide-react";
+import { Database, Loader2, CheckCircle2, FileText, File as FileIcon, Image, Video, Info } from "lucide-react";
 
 const ENTITIES = [
   { name: "Cliente", label: "Clienti", category: "anagrafiche" },
@@ -53,7 +53,7 @@ export default function BackupInterno() {
           const blob = generateCSVBlobFromRecords(records);
           const file = new File([blob], `${ent.category}_${ent.label.toLowerCase()}.csv`, { type: "text/csv;charset=utf-8" });
           const { file_url } = await base44.integrations.Core.UploadFile({ file });
-          files.push({ name: `${ent.label}.csv`, url: file_url, type: "csv", category: ent.category, count: records.length });
+          files.push({ name: `${ent.label}.csv`, url: file_url, type: "csv", category: ent.category, entity: ent.name, count: records.length });
         }
       }
 
@@ -96,7 +96,7 @@ export default function BackupInterno() {
         status: "completato",
       });
       setLastBackup(record);
-      toast({ title: "Backup interno completato", description: `${files.length} file generati e salvati` });
+      toast({ title: "Backup interno completato", description: `${files.length} file salvati. Vai a "Ripristino e download" per scaricarli.` });
     } catch (err) {
       toast({ title: "Errore backup", description: err.message, variant: "destructive" });
       await base44.entities.BackupRecord.create({
@@ -137,6 +137,11 @@ export default function BackupInterno() {
         <div className="flex items-center gap-1.5 text-xs bg-secondary/30 rounded p-2">
           <Video className="w-4 h-4 text-purple-400" /> Video
         </div>
+      </div>
+
+      <div className="text-[11px] text-muted-foreground bg-primary/5 border border-primary/20 rounded p-2 flex items-start gap-1.5">
+        <Info className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-primary" />
+        <span>I file vengono salvati nello storage dell'app. Vai alla sezione <strong>"Ripristino e download"</strong> in fondo alla pagina per scaricarli, sincronizzarli sul cloud o ripristinarli.</span>
       </div>
 
       {running && (
