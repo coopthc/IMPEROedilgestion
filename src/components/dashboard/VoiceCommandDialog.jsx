@@ -131,12 +131,15 @@ Rispondi SOLO con JSON.`,
           {isListening && (
             <p className="text-xs text-center text-red-500 animate-pulse">In ascolto… parla ora</p>
           )}
-          {transcript && (
-            <div className="bg-secondary/30 rounded-lg p-3 text-sm">
-              <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Trascrizione</div>
-              {transcript}
-            </div>
-          )}
+          <div>
+            <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Comando (parla o scrivi)</div>
+            <textarea
+              value={transcript}
+              onChange={(e) => setTranscript(e.target.value)}
+              placeholder="Es: appuntamento domani alle 14 con Rossi, oppure promemoria venerdì chiamare fornitore"
+              className="w-full min-h-[70px] rounded-md border border-input bg-transparent px-3 py-2 text-sm resize-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            />
+          </div>
           <Button onClick={handleParse} disabled={!transcript.trim() || parsing} className="w-full">
             {parsing ? (
               <>

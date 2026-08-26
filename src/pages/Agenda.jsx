@@ -14,6 +14,7 @@ import { Plus, Calendar, Clock, Inbox, Bell } from "lucide-react";
 export default function Agenda() {
   const { toast } = useToast();
   const [appuntamenti, setAppuntamenti] = useState([]);
+  const [promemoria, setPromemoria] = useState([]);
   const [loading, setLoading] = useState(true);
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -22,8 +23,12 @@ export default function Agenda() {
   const load = async () => {
     setLoading(true);
     try {
-      const data = await base44.entities.Appuntamento.list("-data");
+      const [data, proms] = await Promise.all([
+        base44.entities.Appuntamento.list("-data"),
+        base44.entities.Promemoria.list("-data"),
+      ]);
       setAppuntamenti(data);
+      setPromemoria(proms);
     } catch (err) {
       console.error(err);
     } finally {
@@ -119,6 +124,7 @@ export default function Agenda() {
         <TabsContent value="settimana" className="mt-4 space-y-4">
           <SettimanaView
             appuntamenti={appuntamenti}
+            promemoria={promemoria}
             loading={loading}
             onDayClick={handleNew}
             onAppuntamentoClick={handleEdit}

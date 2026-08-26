@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Plus, Loader2, MapPin } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Loader2, MapPin, Bell } from "lucide-react";
 
 const GIORNI = ["Lun", "Mar", "Mer", "Gio", "Ven", "Sab", "Dom"];
 const MESI = ["gen", "feb", "mar", "apr", "mag", "giu", "lug", "ago", "set", "ott", "nov", "dic"];
@@ -38,7 +38,7 @@ const TIPO_DOT = {
 
 const CATEGORIA_PERSONALE = "bg-teal-500/15 text-teal-400 border-teal-500/40";
 
-export default function SettimanaView({ appuntamenti, loading, onDayClick, onAppuntamentoClick }) {
+export default function SettimanaView({ appuntamenti, promemoria = [], loading, onDayClick, onAppuntamentoClick, onPromemoriaClick }) {
   const [weekStart, setWeekStart] = useState(() => getMonday(new Date()));
   const [selectedDay, setSelectedDay] = useState(() => toISODate(new Date()));
 
@@ -66,6 +66,20 @@ export default function SettimanaView({ appuntamenti, loading, onDayClick, onApp
     return map;
   }, [appuntamenti]);
 
+  const promemoriaPerGiorno = useMemo(() => {
+    const map = {};
+    promemoria.forEach((p) => {
+      if (!p.completato && p.data) {
+        if (!map[p.data]) map[p.data] = [];
+        map[p.data].push(p);
+      }
+    });
+    Object.values(map).forEach((arr) =>
+      arr.sort((a, b) => (a.ora || "").localeCompare(b.ora || ""))
+    );
+    return map;
+  }, [promemoria]);
+
   const weekLabel = `${days[0].getDate()} ${MESI[days[0].getMonth()]} – ${days[6].getDate()} ${MESI[days[6].getMonth()]} ${days[6].getFullYear()}`;
 
   const prevWeek = () => setWeekStart((d) => { const n = new Date(d); n.setDate(n.getDate() - 7); return n; });
@@ -76,6 +90,7 @@ export default function SettimanaView({ appuntamenti, loading, onDayClick, onApp
   };
 
   const selectedApps = appuntamentiPerGiorno[selectedDay] || [];
+  const selectedProms = promemoriaPerGiorno[selectedDay] || [];
   const selectedDate = new Date(selectedDay + "T00:00");
   const selectedDayName = GIORNI[(selectedDate.getDay() + 6) % 7];
 
@@ -120,6 +135,7 @@ export default function SettimanaView({ appuntamenti, loading, onDayClick, onApp
             {days.map((d, i) => {
               const iso = toISODate(d);
               const apps = appuntamentiPerGiorno[iso] || [];
+              const proms = promemoriaPerGiorno[iso] || [];
               const isToday = iso === todayISO;
               return (
                 <div
@@ -127,7 +143,7 @@ export default function SettimanaView({ appuntamenti, loading, onDayClick, onApp
                   className={`rounded-lg border min-h-[140px] ${isToday ? "border-primary" : "border-border"} bg-card`}
                 >
                   <div className="p-1.5">
-                    {apps.length === 0 ? (
+                    {apps.length === 0 && proms.length === 0 ? (
                       <button
                         onClick={() => onDayClick(iso)}
                         className="w-full h-full min-h-[120px] flex items-center justify-center text-muted-foreground hover:text-primary transition-colors"
@@ -151,6 +167,16 @@ export default function SettimanaView({ appuntamenti, loading, onDayClick, onApp
                               <div className="truncate text-[10px] opacity-70">{a.cliente_nome}</div>
                             )}
                           </button>
+                        ))}
+                        {proms.map((p) => (
+                          <div
+                            key={p.id}
+                            onClick={() => onPromemoriaClick?.(p)}
+                            className="flex items-center gap-1 px-1.5 py-1 rounded text-[10px] bg-amber-500/15 text-amber-400 border-l-2 border-amber-500 cursor-pointer"
+                          >
+                            <Bell className="w-2.5 h-2.5 flex-shrink-0" />
+                            <span className="truncate">{p.ora ? `${p.ora} ` : ""}{p.titolo}</span>
+                          </div>
                         ))}
                         <button
                           onClick={() => onDayClick(iso)}
@@ -211,7 +237,7 @@ export default function SettimanaView({ appuntamenti, loading, onDayClick, onApp
                 </Button>
               </div>
 
-              {selectedApps.length === 0 ? (
+              {selectedApps.length === 0 && selectedProms.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-6">
                   Nessun appuntamento per questo giorno
                 </p>
@@ -244,6 +270,22 @@ export default function SettimanaView({ appuntamenti, loading, onDayClick, onApp
                       </div>
                     </button>
                   ))}
+                  {selectedProms.map((p) => (
+                    <div
+                      key={p.id}
+                      onClick={() => onPromemoriaClick?.(p)}
+                      className="flex items-center gap-2 p-2.5 rounded-md border-l-2 border-amber-500 bg-amber-500/10 text-amber-400 cursor-pointer"
+                    >
+                      <Bell className="w-3.5 h-3.5 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium truncate">
+                          {p.ora && <span className="font-bold mr-1.5">{p.ora}</span>}
+                          {p.titolo}
+                        </div>
+                        {p.nota && <div className="text-xs opacity-70 truncate">{p.nota}</div>}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
@@ -259,6 +301,7 @@ export default function SettimanaView({ appuntamenti, loading, onDayClick, onApp
         <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-500" /> Completato</span>
         <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500" /> Annullato</span>
         <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-teal-500" /> Personale</span>
+        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-500" /> Promemoria</span>
       </div>
     </div>
   );
