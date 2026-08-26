@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Plus, Clock, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Loader2, MapPin } from "lucide-react";
 
 const GIORNI = ["Lun", "Mar", "Mer", "Gio", "Ven", "Sab", "Dom"];
 const MESI = ["gen", "feb", "mar", "apr", "mag", "giu", "lug", "ago", "set", "ott", "nov", "dic"];
@@ -29,17 +29,11 @@ const STATO_COLORS = {
   annullato: "bg-red-500/15 text-red-400 border-red-500/30 line-through opacity-60",
 };
 
-const TIPO_DOT = {
-  interno: "bg-muted-foreground",
-  richiesta: "bg-yellow-500",
-  confermato: "bg-green-500",
-  admin_fissato: "bg-primary",
-};
-
 const CATEGORIA_PERSONALE = "bg-teal-500/15 text-teal-400 border-teal-500/40";
 
 export default function SettimanaView({ appuntamenti, loading, onDayClick, onAppuntamentoClick }) {
   const [weekStart, setWeekStart] = useState(() => getMonday(new Date()));
+  const [selectedDay, setSelectedDay] = useState(() => toISODate(new Date()));
 
   const days = useMemo(
     () =>
@@ -65,28 +59,41 @@ export default function SettimanaView({ appuntamenti, loading, onDayClick, onApp
     return map;
   }, [appuntamenti]);
 
-  const mobileDays = useMemo(() => {
-    const arr = [];
-    const start = new Date();
-    start.setHours(0, 0, 0, 0);
-    for (let i = 0; i < 30; i++) {
-      const d = new Date(start);
-      d.setDate(start.getDate() + i);
-      arr.push(d);
-    }
-    return arr;
-  }, []);
-
   const weekLabel = `${days[0].getDate()} ${MESI[days[0].getMonth()]} – ${days[6].getDate()} ${MESI[days[6].getMonth()]} ${days[6].getFullYear()}`;
 
-  const prevWeek = () => setWeekStart((d) => { const n = new Date(d); n.setDate(n.getDate() - 7); return n; });
-  const nextWeek = () => setWeekStart((d) => { const n = new Date(d); n.setDate(n.getDate() + 7); return n; });
-  const goToday = () => setWeekStart(getMonday(new Date()));
+  const goToWeek = (offset) => {
+    setWeekStart((d) => {
+      const n = new Date(d);
+      n.setDate(n.getDate() + offset * 7);
+      const monday = getMonday(n);
+      const sunday = new Date(monday);
+      sunday.setDate(monday.getDate() + 6);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (today >= monday && today <= sunday) {
+        setSelectedDay(toISODate(today));
+      } else {
+        setSelectedDay(toISODate(monday));
+      }
+      return n;
+    });
+  };
+
+  const prevWeek = () => goToWeek(-1);
+  const nextWeek = () => goToWeek(1);
+  const goToday = () => {
+    setWeekStart(getMonday(new Date()));
+    setSelectedDay(toISODate(new Date()));
+  };
+
+  const selectedApps = appuntamentiPerGiorno[selectedDay] || [];
+  const selectedDate = new Date(selectedDay + "T00:00");
+  const selectedDayName = GIORNI[(selectedDate.getDay() + 6) % 7];
 
   return (
     <div>
-      {/* Desktop week navigation */}
-      <div className="hidden md:flex items-center justify-between mb-4 flex-wrap gap-2">
+      {/* Navigazione settimana — visibile su tutti i viewport */}
+      <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
         <div className="flex items-center gap-2">
           <Button variant="outline" size="icon" onClick={prevWeek}>
             <ChevronLeft className="w-4 h-4" />
@@ -99,134 +106,122 @@ export default function SettimanaView({ appuntamenti, loading, onDayClick, onApp
         <h3 className="text-sm font-semibold">{weekLabel}</h3>
       </div>
 
-      {/* Mobile header */}
-      <h3 className="md:hidden text-sm font-semibold mb-2 flex items-center gap-2">
-        <Clock className="w-4 h-4 text-primary" /> Prossimi 30 giorni
-      </h3>
-
-      {/* Header giorni (desktop) */}
-      <div className="hidden md:grid grid-cols-7 gap-1.5 mb-1.5">
+      {/* Selettore giorni — desktop: griglia 7 colonne */}
+      <div className="hidden md:grid grid-cols-7 gap-1.5 mb-3">
         {days.map((d, i) => {
           const iso = toISODate(d);
           const isToday = iso === todayISO;
+          const isSelected = iso === selectedDay;
+          const apps = appuntamentiPerGiorno[iso] || [];
           return (
-            <div key={iso} className={`text-center py-1.5 rounded-md ${isToday ? "bg-primary/15" : "bg-secondary/50"}`}>
-              <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{GIORNI[i]}</div>
-              <div className={`text-sm font-bold ${isToday ? "text-primary" : ""}`}>{d.getDate()}</div>
-            </div>
+            <button
+              key={iso}
+              onClick={() => setSelectedDay(iso)}
+              className={`text-center py-2 rounded-md transition-colors ${
+                isSelected
+                  ? "bg-primary text-primary-foreground"
+                  : isToday
+                  ? "bg-primary/15 hover:bg-primary/20"
+                  : "bg-secondary/50 hover:bg-secondary"
+              }`}
+            >
+              <div className="text-[10px] uppercase tracking-wider opacity-80">{GIORNI[i]}</div>
+              <div className="text-sm font-bold">{d.getDate()}</div>
+              {apps.length > 0 && (
+                <div className={`text-[9px] mt-0.5 ${isSelected ? "opacity-90" : "text-primary"}`}>
+                  {apps.length} app.
+                </div>
+              )}
+            </button>
           );
         })}
       </div>
 
-      {/* Griglia settimana */}
-      {loading ? (
-        <div className="flex justify-center py-16">
-          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-        </div>
-      ) : (
-        <>
-          {/* Desktop grid */}
-          <div className="hidden md:grid md:grid-cols-7 gap-1.5">
-            {days.map((d, i) => {
-              const iso = toISODate(d);
-              const apps = appuntamentiPerGiorno[iso] || [];
-              const isToday = iso === todayISO;
-              return (
-                <div
-                  key={iso}
-                  className={`rounded-lg border min-h-[140px] ${isToday ? "border-primary" : "border-border"} bg-card`}
-                >
-                  <div className="p-1.5">
-                    {apps.length === 0 ? (
-                      <button
-                        onClick={() => onDayClick(iso)}
-                        className="w-full h-full min-h-[120px] flex items-center justify-center text-muted-foreground hover:text-primary transition-colors"
-                      >
-                        <Plus className="w-3.5 h-3.5 opacity-30" />
-                      </button>
-                    ) : (
-                      <div className="space-y-1">
-                        {apps.map((a) => (
-                          <button
-                            key={a.id}
-                            onClick={() => onAppuntamentoClick(a)}
-                            className={`w-full text-left p-1.5 rounded border text-xs ${a.categoria === "personale" ? CATEGORIA_PERSONALE : (STATO_COLORS[a.stato] || STATO_COLORS.programmato)}`}
-                          >
-                            <div className="flex items-center gap-1 font-semibold">
-                              <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${TIPO_DOT[a.tipo] || "bg-muted-foreground"}`} />
-                              {a.ora || "—"}
-                            </div>
-                            <div className="truncate mt-0.5">{a.titolo}</div>
-                            {a.cliente_nome && (
-                              <div className="truncate text-[10px] opacity-70">{a.cliente_nome}</div>
-                            )}
-                          </button>
-                        ))}
-                        <button
-                          onClick={() => onDayClick(iso)}
-                          className="w-full text-center py-0.5 text-[10px] text-muted-foreground hover:text-primary"
-                        >
-                          + aggiungi
-                        </button>
-                      </div>
-                    )}
-                  </div>
+      {/* Selettore giorni — mobile: scroll orizzontale */}
+      <div className="md:hidden flex gap-1.5 overflow-x-auto pb-2 mb-3 -mx-1 px-1">
+        {days.map((d, i) => {
+          const iso = toISODate(d);
+          const isToday = iso === todayISO;
+          const isSelected = iso === selectedDay;
+          const apps = appuntamentiPerGiorno[iso] || [];
+          return (
+            <button
+              key={iso}
+              onClick={() => setSelectedDay(iso)}
+              className={`flex-shrink-0 w-14 py-2 rounded-md text-center transition-colors ${
+                isSelected
+                  ? "bg-primary text-primary-foreground"
+                  : isToday
+                  ? "bg-primary/15 border border-primary/40"
+                  : "bg-secondary/50"
+              }`}
+            >
+              <div className="text-[9px] uppercase tracking-wider opacity-80">{GIORNI[i]}</div>
+              <div className="text-sm font-bold">{d.getDate()}</div>
+              {apps.length > 0 && (
+                <div className={`text-[8px] mt-0.5 ${isSelected ? "opacity-90" : "text-primary"}`}>
+                  {apps.length}
                 </div>
-              );
-            })}
-          </div>
+              )}
+            </button>
+          );
+        })}
+      </div>
 
-          {/* Mobile vertical list — parte da oggi */}
-          <div className="md:hidden space-y-2 max-h-[70vh] overflow-y-auto pb-4">
-            {mobileDays.map((d) => {
-              const iso = toISODate(d);
-              const apps = appuntamentiPerGiorno[iso] || [];
-              const isToday = iso === todayISO;
-              const dayName = GIORNI[(d.getDay() + 6) % 7];
-              return (
-                <div key={iso} className={`rounded-lg border bg-card ${isToday ? "border-primary" : "border-border"}`}>
-                  <div className="px-3 py-2 border-b border-border flex items-center justify-between">
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{dayName}</span>
-                      <span className={`text-sm font-bold ${isToday ? "text-primary" : ""}`}>{d.getDate()} {MESI[d.getMonth()]}</span>
-                      {isToday && <span className="text-[9px] text-primary font-semibold">oggi</span>}
-                    </div>
-                    <button onClick={() => onDayClick(iso)} className="p-1 rounded-md hover:bg-secondary/70">
-                      <Plus className="w-3.5 h-3.5 text-primary" />
-                    </button>
-                  </div>
-                  <div className="p-2 space-y-1.5">
-                    {apps.length === 0 ? (
-                      <button onClick={() => onDayClick(iso)} className="w-full text-[11px] text-muted-foreground hover:text-primary py-2 text-center">
-                        + aggiungi appuntamento
-                      </button>
-                    ) : (
-                      apps.map((a) => (
-                        <button
-                          key={a.id}
-                          onClick={() => onAppuntamentoClick(a)}
-                          className={`w-full flex items-start gap-2 p-2 rounded-md border text-left ${a.categoria === "personale" ? CATEGORIA_PERSONALE : (STATO_COLORS[a.stato] || STATO_COLORS.programmato)}`}
-                        >
-                          <div className="flex flex-col items-center flex-shrink-0 min-w-[34px]">
-                            <span className="text-xs font-bold">{a.ora || "—"}</span>
-                            <span className="text-[9px] opacity-60">{a.durata_minuti || 60}min</span>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="text-xs font-medium truncate">{a.titolo}</div>
-                            {a.cliente_nome && (
-                              <div className="text-[10px] opacity-70 truncate">{a.cliente_nome}</div>
-                            )}
-                          </div>
-                        </button>
-                      ))
-                    )}
-                  </div>
-                </div>
-              );
-            })}
+      {/* Dettaglio giorno selezionato */}
+      <div className="bg-card border border-border rounded-lg p-3">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-semibold capitalize flex items-center gap-2">
+            {selectedDayName} {selectedDate.getDate()} {MESI[selectedDate.getMonth()]}
+            {selectedDay === todayISO && (
+              <span className="text-[10px] text-primary bg-primary/10 px-1.5 py-0.5 rounded-full">oggi</span>
+            )}
+          </h3>
+          <Button variant="outline" size="sm" onClick={() => onDayClick(selectedDay)}>
+            <Plus className="w-3.5 h-3.5" /> Aggiungi
+          </Button>
+        </div>
+
+        {loading ? (
+          <div className="flex justify-center py-8">
+            <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
           </div>
-        </>
-      )}
+        ) : selectedApps.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-6">
+            Nessun appuntamento per questo giorno
+          </p>
+        ) : (
+          <div className="space-y-2">
+            {selectedApps.map((a) => (
+              <button
+                key={a.id}
+                onClick={() => onAppuntamentoClick(a)}
+                className={`w-full flex items-start gap-3 p-3 rounded-md border text-left ${
+                  a.categoria === "personale"
+                    ? CATEGORIA_PERSONALE
+                    : STATO_COLORS[a.stato] || STATO_COLORS.programmato
+                }`}
+              >
+                <div className="flex flex-col items-center flex-shrink-0 min-w-[40px]">
+                  <span className="text-sm font-bold">{a.ora || "—"}</span>
+                  <span className="text-[10px] opacity-60">{a.durata_minuti || 60}min</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium truncate">{a.titolo}</div>
+                  {a.cliente_nome && (
+                    <div className="text-xs opacity-70 truncate">{a.cliente_nome}</div>
+                  )}
+                  {a.cantiere_nome && (
+                    <div className="text-xs opacity-70 truncate flex items-center gap-1">
+                      <MapPin className="w-3 h-3" /> {a.cantiere_nome}
+                    </div>
+                  )}
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Legenda */}
       <div className="flex flex-wrap gap-3 mt-4 text-[10px] text-muted-foreground">
