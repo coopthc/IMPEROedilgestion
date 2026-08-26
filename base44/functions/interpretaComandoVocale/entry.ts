@@ -88,6 +88,7 @@ Data di oggi: ${today} (formato YYYY-MM-DD).
 Prima determina l'AZIONE:
 - "crea" se l'utente vuole creare qualcosa di nuovo (es: "nuovo", "crea", "aggiungi", "registra")
 - "aggiorna" se l'utente vuole modificare un record esistente (es: "apri", "modifica", "aggiorna", "cambia", "imposta", "inserisci")
+- "elimina" se l'utente vuole eliminare un record (es: "elimina", "cancella", "rimuovi")
 
 Poi determina il TIPO tra: "appuntamento", "promemoria", "cliente", "collaboratore", "cantiere", "lavorazione".
 
@@ -114,7 +115,7 @@ Se un campo non è menzionato, usa null. Rispondi SOLO con JSON.`,
       response_json_schema: {
         type: "object",
         properties: {
-          azione: { type: "string", enum: ["crea", "aggiorna"] },
+          azione: { type: "string", enum: ["crea", "aggiorna", "elimina"] },
           tipo: { type: "string", enum: ["appuntamento", "promemoria", "cliente", "collaboratore", "cantiere", "lavorazione"] },
           ricerca_nome: { type: "string" },
           titolo: { type: "string" },
@@ -161,6 +162,42 @@ Se un campo non è menzionato, usa null. Rispondi SOLO con JSON.`,
 
     const tipo: string = res.tipo;
     const azione: string = res.azione || "crea";
+
+    const entityMap: any = {
+      cliente: base44.entities.Cliente,
+      collaboratore: base44.entities.Collaboratore,
+      cantiere: base44.entities.Cantiere,
+      lavorazione: base44.entities.Lavorazione,
+      appuntamento: base44.entities.Appuntamento,
+      promemoria: base44.entities.Promemoria,
+    };
+
+    // === ELIMINA ===
+    if (azione === "elimina") {
+      const searchName = res.ricerca_nome || res.nome || res.titolo;
+      if (!searchName) {
+        return Response.json({ error: "Specifica il nome del record da eliminare." }, { status: 400 });
+      }
+      let found: any = null;
+      if (tipo === "cliente") {
+        found = matchByNome(searchName, await base44.entities.Cliente.list(), ["nome", "azienda"]);
+      } else if (tipo === "collaboratore") {
+        found = matchByNome(searchName, await base44.entities.Collaboratore.list(), ["nome"]);
+      } else if (tipo === "cantiere") {
+        found = matchByNome(searchName, await base44.entities.Cantiere.list(), ["nome"]);
+      } else if (tipo === "lavorazione") {
+        found = matchByNome(searchName, await base44.entities.Lavorazione.list(), ["titolo"]);
+      } else if (tipo === "appuntamento") {
+        found = matchByNome(searchName, await base44.entities.Appuntamento.list(), ["titolo"]);
+      } else if (tipo === "promemoria") {
+        found = matchByNome(searchName, await base44.entities.Promemoria.list(), ["titolo"]);
+      }
+      if (!found) {
+        return Response.json({ error: `${tipo} "${searchName}" non trovato.` }, { status: 400 });
+      }
+      await entityMap[tipo].delete(found.id);
+      return Response.json({ tipo, azione: "elimina", record: found, message: `${tipo} eliminato` });
+    }
 
     // === AGGIORNA ===
     if (azione === "aggiorna") {
@@ -250,14 +287,6 @@ Se un campo non è menzionato, usa null. Rispondi SOLO con JSON.`,
         return Response.json({ error: "Nessun campo da aggiornare specificato nel comando." }, { status: 400 });
       }
 
-      const entityMap: any = {
-        cliente: base44.entities.Cliente,
-        collaboratore: base44.entities.Collaboratore,
-        cantiere: base44.entities.Cantiere,
-        lavorazione: base44.entities.Lavorazione,
-        appuntamento: base44.entities.Appuntamento,
-        promemoria: base44.entities.Promemoria,
-      };
       const record = await entityMap[tipo].update(found.id, updateFields);
       return Response.json({ tipo, azione, record, message: `${tipo} aggiornato` });
     }

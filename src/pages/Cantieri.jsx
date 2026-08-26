@@ -83,6 +83,12 @@ export default function Cantieri() {
     load();
   }, [load]);
 
+  useEffect(() => {
+    const handler = () => load();
+    window.addEventListener("entity-changed", handler);
+    return () => window.removeEventListener("entity-changed", handler);
+  }, [load]);
+
   const cantieriFiltrati = cantieri
     .filter((c) => {
       const matchSearch =

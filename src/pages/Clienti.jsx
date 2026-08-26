@@ -67,6 +67,12 @@ export default function Clienti() {
     load();
   }, [load]);
 
+  useEffect(() => {
+    const handler = () => load();
+    window.addEventListener("entity-changed", handler);
+    return () => window.removeEventListener("entity-changed", handler);
+  }, [load]);
+
   const clientiFiltrati = clienti.filter((c) => {
     if (!search) return true;
     const q = search.toLowerCase();

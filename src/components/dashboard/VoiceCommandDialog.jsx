@@ -55,6 +55,7 @@ export default function VoiceCommandDialog({ open, onOpenChange }) {
 
   const handleParse = async () => {
     if (!transcript.trim()) return;
+    stop();
     setParsing(true);
     setResult(null);
     try {
@@ -65,7 +66,8 @@ export default function VoiceCommandDialog({ open, onOpenChange }) {
         toast({ title: "Errore", description: res.error, variant: "destructive" });
         return;
       }
-      setResult({ tipo: res.tipo, record: res.record, message: res.message });
+      setResult({ tipo: res.tipo, azione: res.azione, record: res.record, message: res.message });
+      window.dispatchEvent(new CustomEvent("entity-changed", { detail: { tipo: res.tipo, azione: res.azione } }));
       const label = res.record?.titolo || res.record?.nome || "";
       toast({ title: res.message, description: label });
     } catch (err) {
@@ -102,7 +104,7 @@ export default function VoiceCommandDialog({ open, onOpenChange }) {
             <Sparkles className="w-4 h-4 text-primary" /> Comando vocale
           </DialogTitle>
           <DialogDescription>
-            Parla o scrivi per creare o aggiornare: appuntamento, promemoria, cliente, collaboratore, cantiere o lavorazione. Es: &laquo;appuntamento domani alle 14 con Rossi&raquo;, &laquo;aggiorna cellulare cliente Mario Rossi con 3331234567&raquo;, &laquo;modifica budget cantiere Ristrutturazione a 15000 euro&raquo;.
+            Parla o scrivi per creare, aggiornare o eliminare: appuntamento, promemoria, cliente, collaboratore, cantiere o lavorazione. Es: &laquo;appuntamento domani alle 14 con Rossi&raquo;, &laquo;aggiorna cellulare cliente Mario Rossi con 3331234567&raquo;, &laquo;elimina cliente Bianchi&raquo;.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">

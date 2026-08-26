@@ -64,6 +64,12 @@ export default function Collaboratori() {
     load();
   }, [load]);
 
+  useEffect(() => {
+    const handler = () => load();
+    window.addEventListener("entity-changed", handler);
+    return () => window.removeEventListener("entity-changed", handler);
+  }, [load]);
+
   const filtrati = collaboratori.filter((c) => {
     if (filtroAttivo === "attivi" && c.attivo === false) return false;
     if (filtroAttivo === "inattivi" && c.attivo !== false) return false;
