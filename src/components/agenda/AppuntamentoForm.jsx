@@ -161,6 +161,14 @@ export default function AppuntamentoForm({
       })
     : "";
 
+  // Collaboratori abbinati al cantiere selezionato (per evidenziazione)
+  const cantiereSelezionato = cantieri.find((c) => c.id === form.cantiere_id);
+  const cantiereCollabIds = cantiereSelezionato
+    ? (cantiereSelezionato.collaboratori_ids || "")
+        .split(",")
+        .filter(Boolean)
+    : [];
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.titolo.trim() || !form.data || !form.ora) return;
@@ -498,10 +506,17 @@ export default function AppuntamentoForm({
                       ? true
                       : s.nome?.toLowerCase().includes(collabSearch.toLowerCase())
                   )
-                  .map((s) => (
+                  .sort((a, b) => {
+                    const aIn = cantiereCollabIds.includes(a.id) ? 0 : 1;
+                    const bIn = cantiereCollabIds.includes(b.id) ? 0 : 1;
+                    return aIn - bIn;
+                  })
+                  .map((s) => {
+                  const abbinato = cantiereCollabIds.includes(s.id);
+                  return (
                   <label
                     key={s.id}
-                    className="flex items-center gap-2.5 p-2 rounded-md hover:bg-secondary/50 cursor-pointer"
+                    className={`flex items-center gap-2.5 p-2 rounded-md hover:bg-secondary/50 cursor-pointer ${abbinato ? "bg-primary/5" : ""}`}
                   >
                     <input
                       type="checkbox"
@@ -511,11 +526,17 @@ export default function AppuntamentoForm({
                     />
                     <HardHat className="w-3.5 h-3.5 text-muted-foreground" />
                     <span className="text-sm">{s.nome}</span>
-                    <span className="text-[10px] text-muted-foreground ml-auto">
+                    <span className="text-[10px] text-muted-foreground ml-auto flex items-center gap-1.5">
+                      {abbinato && (
+                        <span className="px-1.5 py-0.5 rounded bg-primary/15 text-primary text-[9px] font-semibold">
+                          Cantiere
+                        </span>
+                      )}
                       {s.qualifica}
                     </span>
                   </label>
-                ))}
+                  );
+                  })}
               </div>
               {partecipantiIds.length > 0 && (
                 <p className="text-[11px] text-green-500 mt-2 flex items-center gap-1">
