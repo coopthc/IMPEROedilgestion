@@ -85,6 +85,7 @@ export default function CantiereSquadra({ cantiere, clienti = [], onSaved, onOpe
         });
       }
       onSaved();
+      syncSquadra();
     } finally {
       setSaving(false);
     }
@@ -120,6 +121,7 @@ export default function CantiereSquadra({ cantiere, clienti = [], onSaved, onOpe
       }
       await base44.entities.Cantiere.update(cantiere.id, updateData);
       onSaved();
+      syncSquadra();
       toast({ title: "Responsabile aggiunto alla squadra" });
     } finally {
       setSaving(false);
@@ -135,10 +137,15 @@ export default function CantiereSquadra({ cantiere, clienti = [], onSaved, onOpe
         cliente_nome: cli?.nome || "",
       });
       onSaved();
+      syncSquadra();
       toast({ title: "Cliente aggiornato" });
     } finally {
       setSaving(false);
     }
+  };
+
+  const syncSquadra = () => {
+    base44.functions.invoke("sincronizzaCantieriUtente", { cantiere_id: cantiere.id }).catch(() => {});
   };
 
   if (loading) {

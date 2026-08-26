@@ -34,6 +34,14 @@
     "collaboratore_id": {
       "type": "string",
       "title": "Collaboratore collegato"
+    },
+    "cantieri_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [],
+      "title": "Cantieri assegnati (IDs)"
     }
   },
   "required": [
