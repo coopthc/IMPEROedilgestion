@@ -212,7 +212,7 @@ export default function Cantieri() {
           {cantieriFiltrati.map((c) => (
             <div
               key={c.id}
-              className="bg-card border border-border rounded-[12px] p-4 transition-colors hover:border-primary/50 cursor-pointer group"
+              className="bg-card border border-border rounded-[12px] p-4 transition-colors hover:border-primary/50 cursor-pointer group flex flex-col"
               onClick={() => navigate(`/cantieri/${c.id}`)}
             >
               {c.foto_url ? (
@@ -225,6 +225,7 @@ export default function Cantieri() {
                   />
                 </div>
               ) : null}
+              <div className="flex-1 flex flex-col">
               <div className="flex items-start justify-between gap-2 mb-2">
                 <h3 className="font-semibold text-sm leading-tight flex-1 min-w-0 group-hover:text-primary transition-colors">
                   {c.nome}
@@ -312,8 +313,9 @@ export default function Cantieri() {
                 );
               })()}
 
+              </div>
               {/* Azioni */}
-              <div className="flex gap-1 pt-2 border-t border-border items-center">
+              <div className="flex gap-1 pt-2 border-t border-border items-center flex-shrink-0">
                 <Button
                   size="icon"
                   variant="ghost"
