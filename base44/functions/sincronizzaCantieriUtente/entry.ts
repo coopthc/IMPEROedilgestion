@@ -65,8 +65,12 @@ export default async function(req) {
 
     // Sincronizza anche utenti_ids su ogni cantiere (membership basata su user.id, robusta per RLS)
     const collabToUserMap = {};
+    for (const u of users) {
+      const cid = u.collaboratore_id || (u.data && u.data.collaboratore_id);
+      if (cid) collabToUserMap[cid] = u.id;
+    }
     for (const c of collaboratori) {
-      if (c.user_id) collabToUserMap[c.id] = c.user_id;
+      if (c.user_id && !collabToUserMap[c.id]) collabToUserMap[c.id] = c.user_id;
     }
     const clienteToUserMap = {};
     for (const u of users) {
