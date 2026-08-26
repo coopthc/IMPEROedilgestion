@@ -98,6 +98,15 @@ export const AuthProvider = ({ children }) => {
       setIsAuthenticated(true);
       setIsLoadingAuth(false);
       setAuthChecked(true);
+
+      // Avvisa l'admin se un utente senza record collegato (non admin) accede
+      if (currentUser && currentUser.role !== 'admin' && currentUser.role !== 'mssg_admin') {
+        try {
+          await base44.functions.invoke('controllaRecordUtente', {});
+        } catch (e) {
+          console.error('Controllo record utente fallito:', e);
+        }
+      }
     } catch (error) {
       console.error('User auth check failed:', error);
       setIsLoadingAuth(false);
