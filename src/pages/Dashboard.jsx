@@ -10,6 +10,8 @@ import WidgetPresenze from "@/components/dashboard/WidgetPresenze";
 import WidgetClienti from "@/components/dashboard/WidgetClienti";
 import WidgetCollaboratori from "@/components/dashboard/WidgetCollaboratori";
 import WidgetLavorazioni from "@/components/dashboard/WidgetLavorazioni";
+import WidgetNotifiche from "@/components/dashboard/WidgetNotifiche";
+import WidgetChat from "@/components/dashboard/WidgetChat";
 import AddWidgetDialog from "@/components/dashboard/AddWidgetDialog";
 
 const WIDGET_REGISTRY = {
@@ -20,6 +22,8 @@ const WIDGET_REGISTRY = {
   clienti: { label: "Clienti", component: WidgetClienti },
   collaboratori: { label: "Collaboratori", component: WidgetCollaboratori },
   lavorazioni: { label: "Lavorazioni", component: WidgetLavorazioni },
+  notifiche: { label: "Notifiche", component: WidgetNotifiche },
+  chat: { label: "Ultime chat", component: WidgetChat },
 };
 
 const DEFAULT_WIDGETS = ["cantieri", "appuntamenti", "pagamenti", "presenze", "clienti", "collaboratori"];

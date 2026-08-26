@@ -1,15 +1,17 @@
 import React from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Building2, Calendar, Wallet, Clock, Users, HardHat, TrendingUp, Plus } from "lucide-react";
+import { Building2, Calendar, Wallet, Clock, Users, HardHat, TrendingUp, Plus, Bell, MessageSquare } from "lucide-react";
 
 const AVAILABLE = [
-  { type: "cantieri", label: "Cantieri", icon: Building2, color: "text-blue-400", desc: "Totale, attivi, per stato" },
+  { type: "cantieri", label: "Cantieri", icon: Building2, color: "text-blue-400", desc: "Totale, attivi, ultimi movimenti" },
   { type: "appuntamenti", label: "Appuntamenti oggi", icon: Calendar, color: "text-primary", desc: "Lista cliccabile con dettaglio e Maps" },
-  { type: "pagamenti", label: "Pagamenti", icon: Wallet, color: "text-yellow-400", desc: "Incassato, atteso, per stato" },
+  { type: "pagamenti", label: "Pagamenti (mese)", icon: Wallet, color: "text-yellow-400", desc: "Incassato e da incassare questo mese" },
   { type: "presenze", label: "Presenze oggi", icon: Clock, color: "text-orange-400", desc: "Presenti, ore totali, straordinari" },
   { type: "clienti", label: "Clienti", icon: Users, color: "text-purple-400", desc: "Totale, aziende, privati" },
   { type: "collaboratori", label: "Collaboratori", icon: HardHat, color: "text-green-400", desc: "Attivi, capi, operai" },
   { type: "lavorazioni", label: "Lavorazioni", icon: TrendingUp, color: "text-orange-400", desc: "Avanzamento medio, per stato" },
+  { type: "notifiche", label: "Notifiche", icon: Bell, color: "text-primary", desc: "Ultime notifiche ricevute" },
+  { type: "chat", label: "Ultime chat", icon: MessageSquare, color: "text-pink-400", desc: "Ultimi messaggi delle chat cantieri" },
 ];
 
 export default function AddWidgetDialog({ open, onOpenChange, onAdd, existing }) {

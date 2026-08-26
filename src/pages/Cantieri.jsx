@@ -13,8 +13,11 @@ import {
   Pencil,
   Trash2,
   Loader2,
+  Pin,
+  PinOff,
 } from "lucide-react";
 import CantiereForm from "@/components/cantieri/CantiereForm";
+import ShareMenu from "@/components/dashboard/ShareMenu";
 import { useToast } from "@/components/ui/use-toast";
 import { Image as UIImage } from "@/components/ui/image";
 
@@ -80,15 +83,21 @@ export default function Cantieri() {
     load();
   }, [load]);
 
-  const cantieriFiltrati = cantieri.filter((c) => {
-    const matchSearch =
-      !search ||
-      c.nome?.toLowerCase().includes(search.toLowerCase()) ||
-      c.cliente_nome?.toLowerCase().includes(search.toLowerCase()) ||
-      c.citta?.toLowerCase().includes(search.toLowerCase());
-    const matchFiltro = filtro === "tutti" || c.stato === filtro;
-    return matchSearch && matchFiltro;
-  });
+  const cantieriFiltrati = cantieri
+    .filter((c) => {
+      const matchSearch =
+        !search ||
+        c.nome?.toLowerCase().includes(search.toLowerCase()) ||
+        c.cliente_nome?.toLowerCase().includes(search.toLowerCase()) ||
+        c.citta?.toLowerCase().includes(search.toLowerCase());
+      const matchFiltro = filtro === "tutti" || c.stato === filtro;
+      return matchSearch && matchFiltro;
+    })
+    .sort((a, b) => {
+      if (a.pinned && !b.pinned) return -1;
+      if (!a.pinned && b.pinned) return 1;
+      return 0;
+    });
 
   const getAvanzamento = (cantiere) => {
     if (cantiere.modalita_avanzamento === "pronostico") {
@@ -129,6 +138,15 @@ export default function Cantieri() {
       load();
     } catch (err) {
       toast({ title: "Errore durante l'eliminazione", variant: "destructive" });
+    }
+  };
+
+  const handlePin = async (cantiere) => {
+    try {
+      await base44.entities.Cantiere.update(cantiere.id, { pinned: !cantiere.pinned });
+      load();
+    } catch {
+      toast({ title: "Errore", variant: "destructive" });
     }
   };
 
@@ -279,16 +297,37 @@ export default function Cantieri() {
                 </div>
               </div>
 
-              {/* Azioni rapide */}
-              <div className="flex gap-1.5 pt-2 border-t border-border opacity-0 group-hover:opacity-100 transition-opacity">
+              {/* Riepilogo lavorazioni */}
+              {(() => {
+                const lavs = lavorazioni.filter((l) => l.cantiere_id === c.id);
+                const fatte = lavs.filter((l) => l.stato === "completata").length;
+                const nonFatte = lavs.filter((l) => l.stato !== "completata" && l.stato !== "annullata").length;
+                if (lavs.length === 0) return null;
+                return (
+                  <div className="flex items-center gap-2 text-[11px] mb-3">
+                    <span className="text-green-500">✓ {fatte} fatte</span>
+                    <span className="text-muted-foreground">·</span>
+                    <span className="text-yellow-500">{nonFatte} da fare</span>
+                  </div>
+                );
+              })()}
+
+              {/* Azioni */}
+              <div className="flex gap-1 pt-2 border-t border-border items-center">
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className={`h-7 w-7 ${c.pinned ? "text-primary" : "text-muted-foreground"}`}
+                  onClick={(e) => { e.stopPropagation(); handlePin(c); }}
+                  title={c.pinned ? "Rimuovi dai fissati" : "Fissa in cima"}
+                >
+                  {c.pinned ? <PinOff className="w-3.5 h-3.5" /> : <Pin className="w-3.5 h-3.5" />}
+                </Button>
                 <Button
                   size="icon"
                   variant="ghost"
                   className="h-7 w-7"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleEdit(c);
-                  }}
+                  onClick={(e) => { e.stopPropagation(); handleEdit(c); }}
                 >
                   <Pencil className="w-3.5 h-3.5" />
                 </Button>
@@ -296,13 +335,23 @@ export default function Cantieri() {
                   size="icon"
                   variant="ghost"
                   className="h-7 w-7 text-destructive hover:text-destructive"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDelete(c);
-                  }}
+                  onClick={(e) => { e.stopPropagation(); handleDelete(c); }}
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </Button>
+                <div className="ml-auto" onClick={(e) => e.stopPropagation()}>
+                  <ShareMenu
+                    title={`Cantiere: ${c.nome}`}
+                    text={[
+                      `Cliente: ${c.cliente_nome || "—"}`,
+                      `Stato: ${STATO_LABEL[c.stato] || c.stato}`,
+                      `Avanzamento: ${getAvanzamento(c)}%`,
+                      `Pagamenti: ${getPagamentiPct(c)}%`,
+                      c.budget != null && `Budget: € ${Number(c.budget).toLocaleString("it-IT")}`,
+                      c.indirizzo && `Indirizzo: ${c.indirizzo}, ${c.citta || ""}`,
+                    ].filter(Boolean).join("\n")}
+                  />
+                </div>
               </div>
             </div>
           ))}

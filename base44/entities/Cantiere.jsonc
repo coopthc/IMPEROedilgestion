@@ -95,6 +95,11 @@
       "type": "boolean",
       "default": false,
       "title": "Archiviato"
+    },
+    "pinned": {
+      "type": "boolean",
+      "default": false,
+      "title": "Fissato in cima"
     }
   },
   "required": [
