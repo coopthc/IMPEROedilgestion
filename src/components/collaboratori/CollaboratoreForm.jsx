@@ -20,6 +20,7 @@ import { Loader2, Mail, Check } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useToast } from "@/components/ui/use-toast";
 import { invitaUtenteConRuolo } from "@/lib/invitaUtente";
+import { creaNotifiche } from "@/lib/notifiche";
 
 const QUALIFICHE = [
   { value: "amministratore", label: "Amministratore" },
@@ -172,6 +173,18 @@ export default function CollaboratoreForm({ open, onOpenChange, collaboratore, o
             await base44.entities.Cantiere.update(cantiere.id, {
               collaboratori_ids: newIds.join(","),
               collaboratori_ruoli: JSON.stringify(ruoli),
+            });
+            // Sincronizza cantieri_ids sull'utente e utenti_ids sul cantiere (necessario per RLS operaio)
+            base44.functions
+              .invoke("sincronizzaCantieriUtente", { cantiere_id: cantiere.id })
+              .catch(() => {});
+            // Notifica il collaboratore appena abbinato
+            creaNotifiche({
+              collaboratoriIds: [saved.id],
+              tipo: "aggiornamento",
+              titolo: `Abbinato al cantiere: ${cantiere.nome}`,
+              testo: `Sei stato abbinato al cantiere "${cantiere.nome}".`,
+              url: `/cantieri/${cantiere.id}`,
             });
             toast({ title: `Abbinato al cantiere: ${cantiere.nome}` });
           }
