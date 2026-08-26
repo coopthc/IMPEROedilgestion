@@ -1,12 +1,15 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 
-export function useSpeechRecognition({ lang = "it-IT", continuous = false, onResult } = {}) {
+export function useSpeechRecognition({ lang = "it-IT", continuous = false, onResult, onError } = {}) {
   const [isListening, setIsListening] = useState(false);
   const [interim, setInterim] = useState("");
+  const [error, setError] = useState(null);
   const recRef = useRef(null);
   const onResultRef = useRef(onResult);
+  const onErrorRef = useRef(onError);
 
   useEffect(() => { onResultRef.current = onResult; }, [onResult]);
+  useEffect(() => { onErrorRef.current = onError; }, [onError]);
 
   const supported =
     typeof window !== "undefined" &&
@@ -31,7 +34,12 @@ export function useSpeechRecognition({ lang = "it-IT", continuous = false, onRes
       if (finalText && onResultRef.current) onResultRef.current(finalText.trim(), interimText);
     };
     rec.onend = () => { setIsListening(false); setInterim(""); };
-    rec.onerror = () => { setIsListening(false); setInterim(""); };
+    rec.onerror = (e) => {
+      setIsListening(false);
+      setInterim("");
+      setError(e.error || "errore");
+      if (onErrorRef.current) onErrorRef.current(e.error || "errore");
+    };
     rec.start();
     recRef.current = rec;
     setIsListening(true);
@@ -47,5 +55,5 @@ export function useSpeechRecognition({ lang = "it-IT", continuous = false, onRes
 
   useEffect(() => () => { if (recRef.current) { try { recRef.current.stop(); } catch { /* ignora */ } } }, []);
 
-  return { isListening, interim, supported, start, stop };
+  return { isListening, interim, error, supported, start, stop };
 }

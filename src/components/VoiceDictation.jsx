@@ -1,8 +1,10 @@
 import React from "react";
 import { Mic, Square } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
 import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
 
 export default function VoiceDictation() {
+  const { toast } = useToast();
   const { isListening, start, stop, supported } = useSpeechRecognition({
     continuous: true,
     onResult: (finalText) => {
@@ -15,6 +17,13 @@ export default function VoiceDictation() {
       const newVal = (el.value || "") + finalText + " ";
       setter.call(el, newVal);
       el.dispatchEvent(new Event("input", { bubbles: true }));
+    },
+    onError: () => {
+      toast({
+        title: "Microfono non disponibile",
+        description: "Permesso bloccato nell'anteprima. Apri l'app pubblicata per usare la dettatura.",
+        variant: "destructive",
+      });
     },
   });
 
