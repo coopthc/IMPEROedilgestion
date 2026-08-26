@@ -145,30 +145,18 @@
                 {
                   "$and": [
                     {
-                      "user_condition": {
-                        "role": "mssg_capo"
-                      }
-                    },
-                    {
                       "$or": [
                         {
-                          "data.cantiere_id": {
-                            "$in": "{{user.data.cantieri_ids}}"
+                          "user_condition": {
+                            "role": "mssg_capo"
                           }
                         },
                         {
-                          "data.utenti_ids": "{{user.id}}"
+                          "user_condition": {
+                            "role": "mssg_operaio"
+                          }
                         }
                       ]
-                    }
-                  ]
-                },
-                {
-                  "$and": [
-                    {
-                      "user_condition": {
-                        "role": "mssg_operaio"
-                      }
                     },
                     {
                       "data.utenti_ids": "{{user.id}}"
