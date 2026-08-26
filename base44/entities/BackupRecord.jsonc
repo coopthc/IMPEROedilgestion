@@ -1,0 +1,54 @@
+{
+  "name": "BackupRecord",
+  "type": "object",
+  "properties": {
+    "tipo": {
+      "type": "string",
+      "enum": [
+        "interno",
+        "esterno"
+      ],
+      "title": "Tipo backup"
+    },
+    "data": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Data backup"
+    },
+    "files_json": {
+      "type": "string",
+      "title": "Elenco file (JSON array: name, url, type, category)"
+    },
+    "file_count": {
+      "type": "number",
+      "default": 0,
+      "title": "Numero file"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "in_corso",
+        "completato",
+        "errore"
+      ],
+      "default": "in_corso",
+      "title": "Stato"
+    },
+    "error_message": {
+      "type": "string",
+      "title": "Messaggio errore"
+    },
+    "provider": {
+      "type": "string",
+      "title": "Provider cloud (per backup esterno)"
+    },
+    "cloud_folder": {
+      "type": "string",
+      "title": "Cartella cloud di destinazione"
+    }
+  },
+  "required": [
+    "tipo",
+    "data"
+  ]
+}

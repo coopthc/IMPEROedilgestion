@@ -25,7 +25,7 @@ export const NAV_ITEMS = [
   { to: "/collaboratori", icon: HardHat, label: "Collaboratori", group: "gestionale" },
   { to: "/presenze", icon: CalendarDays, label: "Presenze", group: "gestionale" },
   { to: "/esporta", icon: Download, label: "Esporta dati", group: "strumenti" },
-  { to: "/storage", icon: Cloud, label: "Storage & Cloud", group: "strumenti" },
+  { to: "/backup-cloud", icon: Cloud, label: "Backup e Cloud", group: "strumenti" },
   { to: "/impostazioni", icon: Settings, label: "Impostazioni", group: "strumenti" },
 ];
 

@@ -5,7 +5,6 @@ import { useToast } from "@/components/ui/use-toast";
 import ExportButtons from "@/components/esporta/ExportButtons";
 import DiagrammaCollegamenti from "@/components/esporta/DiagrammaCollegamenti";
 import ImportSection from "@/components/esporta/ImportSection";
-import CloudBackup from "@/components/esporta/CloudBackup";
 import { downloadJSON } from "@/lib/exportUtils";
 import {
   Download,
@@ -539,14 +538,6 @@ export default function Esporta() {
             documenti={data.documenti || []}
           />
         </div>
-      </div>
-
-      {/* Backup su cloud */}
-      <div>
-        <h2 className="text-sm font-semibold flex items-center gap-2 mb-3">
-          <Cloud className="w-4 h-4 text-primary" /> Backup su cloud
-        </h2>
-        <CloudBackup />
       </div>
 
       {/* Import */}

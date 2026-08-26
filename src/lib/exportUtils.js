@@ -23,6 +23,18 @@ export function downloadCSV(filename, data, columns) {
   triggerDownload(blob, filename.endsWith(".csv") ? filename : filename + ".csv");
 }
 
+export function generateCSVBlob(data, columns) {
+  const csv = toCSV(data, columns);
+  return new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+}
+
+export function generateCSVBlobFromRecords(records, excludeFields = ["id", "created_date", "updated_date", "created_by_id"]) {
+  if (!records || records.length === 0) return new Blob([""], { type: "text/csv;charset=utf-8;" });
+  const keys = Object.keys(records[0]).filter((k) => !excludeFields.includes(k));
+  const columns = keys.map((k) => ({ key: k, label: k }));
+  return generateCSVBlob(records, columns);
+}
+
 export function downloadJSON(filename, obj) {
   const blob = new Blob([JSON.stringify(obj, null, 2)], { type: "application/json" });
   triggerDownload(blob, filename.endsWith(".json") ? filename : filename + ".json");
@@ -39,7 +51,7 @@ function triggerDownload(blob, filename) {
 
 /* ============ PDF ============ */
 
-export function exportTablePDF({ title, subtitle, columns, data, filename }) {
+export function exportTablePDF({ title, subtitle, columns, data, filename, silent }) {
   const doc = new jsPDF({ orientation: "landscape" });
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
@@ -105,6 +117,7 @@ export function exportTablePDF({ title, subtitle, columns, data, filename }) {
     );
   }
 
+  if (silent) return doc.output("blob");
   doc.save(filename.endsWith(".pdf") ? filename : filename + ".pdf");
 }
 
@@ -169,7 +182,7 @@ const STATO_CANT_LABEL = { bozza: "Bozza", attivo: "Attivo", sospeso: "Sospeso",
 const QUALIFICA_LABEL = { capo_cantiere: "Capo cantiere", operaio: "Operaio", tecnico: "Tecnico", amministrazione: "Amministrazione", altro: "Altro" };
 const CATEGORIA_DOC_LABEL = { contratto: "Contratto", planimetria: "Planimetria", permesso: "Permesso", sicurezza: "Sicurezza", foto: "Foto", video: "Video", fattura: "Fattura", preventivo: "Preventivo", altro: "Altro" };
 
-export function exportDiagrammaPDF({ cantiere, cliente, responsabile, collaboratori, documenti, filename }) {
+export function exportDiagrammaPDF({ cantiere, cliente, responsabile, collaboratori, documenti, filename, silent }) {
   const doc = new jsPDF();
   const margin = 14;
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -288,6 +301,7 @@ export function exportDiagrammaPDF({ cantiere, cliente, responsabile, collaborat
     );
   }
 
+  if (silent) return doc.output("blob");
   doc.save(filename.endsWith(".pdf") ? filename : filename + ".pdf");
 }
 

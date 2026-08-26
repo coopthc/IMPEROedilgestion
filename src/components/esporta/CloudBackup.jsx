@@ -22,6 +22,7 @@ const PROVIDERS = {
       { key: "client_id", label: "Client ID (Azure AD)", type: "text" },
       { key: "client_secret", label: "Client Secret", type: "password" },
       { key: "tenant_id", label: "Tenant ID", type: "text" },
+      { key: "user_email", label: "Email account OneDrive", type: "text" },
     ],
   },
   dropbox: {

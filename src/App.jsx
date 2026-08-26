@@ -17,6 +17,7 @@ import Agenda from '@/pages/Agenda';
 import Presenze from '@/pages/Presenze';
 import Impostazioni from '@/pages/Impostazioni';
 import Esporta from '@/pages/Esporta';
+import BackupCloud from '@/pages/BackupCloud';
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
 import ForgotPassword from '@/pages/ForgotPassword';
@@ -66,6 +67,7 @@ const AuthenticatedApp = () => {
           <Route path="/presenze" element={<Presenze />} />
           <Route path="/impostazioni" element={<Impostazioni />} />
           <Route path="/esporta" element={<Esporta />} />
+          <Route path="/backup-cloud" element={<BackupCloud />} />
         </Route>
       </Route>
       <Route path="*" element={<PageNotFound />} />
