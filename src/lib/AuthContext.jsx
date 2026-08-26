@@ -99,10 +99,15 @@ export const AuthProvider = ({ children }) => {
       setIsLoadingAuth(false);
       setAuthChecked(true);
 
-      // Avvisa l'admin se un utente senza record collegato (non admin) accede
+      // Abbinamento automatico utente -> Cliente/Collaboratore (tramite email).
+      // Se l'utente viene abbinato, ricarica per applicare il nuovo ruolo.
       if (currentUser && currentUser.role !== 'admin' && currentUser.role !== 'mssg_admin') {
         try {
-          await base44.functions.invoke('controllaRecordUtente', {});
+          const res = await base44.functions.invoke('controllaRecordUtente', {});
+          if (res && res.abbinato) {
+            window.location.reload();
+            return;
+          }
         } catch (e) {
           console.error('Controllo record utente fallito:', e);
         }

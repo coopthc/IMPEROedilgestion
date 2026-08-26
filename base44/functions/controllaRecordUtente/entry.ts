@@ -1,39 +1,103 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 
+const RUOLO_MAP = {
+  capo_cantiere: 'mssg_capo',
+  operaio: 'mssg_operaio',
+  tecnico: 'mssg_operaio',
+  amministrazione: 'mssg_admin',
+  altro: 'mssg_operaio',
+};
+
 export default async function(req: Request): Promise<Response> {
   try {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    // Amministratori e supervisori non necessitano di record collegati
+    // Amministratori e supervisori non necessitano di abbinamento
     if (user.role === 'admin' || user.role === 'mssg_admin') {
       return Response.json({ has_record: true, role: user.role });
     }
 
-    // Verifica record collegato via campi utente o query diretta (RLS-safe via service role)
-    if (user.collaboratore_id || user.cliente_id) {
-      return Response.json({ has_record: true });
+    const myClienteId = user.cliente_id || (user.data && user.data.cliente_id);
+    const myCollabId = user.collaboratore_id || (user.data && user.data.collaboratore_id);
+    if (myClienteId || myCollabId) {
+      return Response.json({ has_record: true, already: true });
     }
 
-    const [collaboratori, clienti] = await Promise.all([
-      base44.asServiceRole.entities.Collaboratore.filter({ user_id: user.id }),
-      base44.asServiceRole.entities.Cliente.filter({ user_id: user.id }),
+    const [clienti, collaboratori, cantieri, users] = await Promise.all([
+      base44.asServiceRole.entities.Cliente.list(),
+      base44.asServiceRole.entities.Collaboratore.list(),
+      base44.asServiceRole.entities.Cantiere.list(),
+      base44.asServiceRole.entities.User.list(),
     ]);
-    if (collaboratori.length > 0 || clienti.length > 0) {
-      return Response.json({ has_record: true });
+
+    // 1. Abbinamento per email come Cliente
+    const clienteMatch = clienti.find(
+      (c) => c.email && c.email.toLowerCase() === user.email.toLowerCase()
+    );
+    if (clienteMatch && (!clienteMatch.user_id || clienteMatch.user_id === user.id)) {
+      const cantieriIds = cantieri
+        .filter((c) => c.cliente_id === clienteMatch.id)
+        .map((c) => c.id);
+      await base44.asServiceRole.entities.User.update(user.id, {
+        role: 'mssg_cliente',
+        cliente_id: clienteMatch.id,
+        cantieri_ids: cantieriIds,
+      });
+      if (!clienteMatch.user_id) {
+        await base44.asServiceRole.entities.Cliente.update(clienteMatch.id, { user_id: user.id });
+      }
+      for (const cant of cantieri.filter((c) => c.cliente_id === clienteMatch.id)) {
+        const existing = Array.isArray(cant.utenti_ids) ? cant.utenti_ids : [];
+        if (!existing.includes(user.id)) {
+          await base44.asServiceRole.entities.Cantiere.update(cant.id, {
+            utenti_ids: [...existing, user.id],
+          });
+        }
+      }
+      return Response.json({ abbinato: true, tipo: 'cliente', cantieri: cantieriIds.length });
     }
 
-    // Nessun record: notifica gli amministratori (una sola volta per email)
-    const admins = await base44.asServiceRole.entities.User.list();
-    const adminTargets = admins.filter(
-      (u) => u.role === 'admin' || u.role === 'mssg_admin'
+    // 2. Abbinamento per email come Collaboratore
+    const collabMatch = collaboratori.find(
+      (c) => c.email && c.email.toLowerCase() === user.email.toLowerCase()
     );
+    if (collabMatch && (!collabMatch.user_id || collabMatch.user_id === user.id)) {
+      const ruolo = RUOLO_MAP[collabMatch.qualifica] || 'mssg_operaio';
+      const cantieriIds = cantieri
+        .filter((c) => {
+          const squadIds = (c.collaboratori_ids || '').split(',').filter(Boolean);
+          return squadIds.includes(collabMatch.id) || c.responsabile_id === collabMatch.id;
+        })
+        .map((c) => c.id);
+      await base44.asServiceRole.entities.User.update(user.id, {
+        role: ruolo,
+        collaboratore_id: collabMatch.id,
+        cantieri_ids: cantieriIds,
+      });
+      if (!collabMatch.user_id) {
+        await base44.asServiceRole.entities.Collaboratore.update(collabMatch.id, { user_id: user.id });
+      }
+      for (const cant of cantieri) {
+        const squadIds = (cant.collaboratori_ids || '').split(',').filter(Boolean);
+        if (squadIds.includes(collabMatch.id) || cant.responsabile_id === collabMatch.id) {
+          const existing = Array.isArray(cant.utenti_ids) ? cant.utenti_ids : [];
+          if (!existing.includes(user.id)) {
+            await base44.asServiceRole.entities.Cantiere.update(cant.id, {
+              utenti_ids: [...existing, user.id],
+            });
+          }
+        }
+      }
+      return Response.json({ abbinato: true, tipo: 'collaboratore', cantieri: cantieriIds.length });
+    }
+
+    // 3. Nessun abbinamento possibile: notifica gli amministratori (una sola volta)
+    const adminTargets = users.filter((u) => u.role === 'admin' || u.role === 'mssg_admin');
     if (adminTargets.length === 0) {
       return Response.json({ has_record: false, notified: 0 });
     }
-
-    // Dedupe: salta se esiste già una notifica per questa email
     const existing = await base44.asServiceRole.entities.Notifica.filter({
       url: '/utenti',
       testo: user.email,
@@ -41,8 +105,6 @@ export default async function(req: Request): Promise<Response> {
     if (existing.length > 0) {
       return Response.json({ has_record: false, notified: 0, already: true });
     }
-
-    const nome = user.full_name || user.email;
     await base44.asServiceRole.entities.Notifica.bulkCreate(
       adminTargets.map((a) => ({
         user_id: a.id,
@@ -53,8 +115,7 @@ export default async function(req: Request): Promise<Response> {
         letto: false,
       }))
     );
-
-    return Response.json({ has_record: false, notified: adminTargets.length, nome });
+    return Response.json({ has_record: false, notified: adminTargets.length });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
