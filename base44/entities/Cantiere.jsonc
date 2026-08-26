@@ -73,6 +73,14 @@
       "type": "string",
       "title": "Ruoli collaboratori (JSON id->ruolo)"
     },
+    "utenti_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [],
+      "title": "ID utenti assegnati (per accesso RLS)"
+    },
     "modalita_avanzamento": {
       "type": "string",
       "enum": [
@@ -119,46 +127,7 @@
           }
         },
         {
-          "$and": [
-            {
-              "user_condition": {
-                "role": "mssg_capo"
-              }
-            },
-            {
-              "id": {
-                "$in": "{{user.data.cantieri_ids}}"
-              }
-            }
-          ]
-        },
-        {
-          "$and": [
-            {
-              "user_condition": {
-                "role": "mssg_operaio"
-              }
-            },
-            {
-              "id": {
-                "$in": "{{user.data.cantieri_ids}}"
-              }
-            }
-          ]
-        },
-        {
-          "$and": [
-            {
-              "user_condition": {
-                "role": "mssg_cliente"
-              }
-            },
-            {
-              "id": {
-                "$in": "{{user.data.cantieri_ids}}"
-              }
-            }
-          ]
+          "data.utenti_ids": "{{user.id}}"
         }
       ]
     },
