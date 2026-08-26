@@ -51,6 +51,10 @@
     "note": {
       "type": "string",
       "title": "Note"
+    },
+    "user_id": {
+      "type": "string",
+      "title": "Utente collegato"
     }
   },
   "required": [

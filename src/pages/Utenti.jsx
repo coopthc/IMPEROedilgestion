@@ -12,9 +12,8 @@ import {
   Pencil,
   Mail,
   Loader2,
-  Shield,
   ShieldCheck,
-  ShieldAlert,
+  Shield,
   Lock,
 } from "lucide-react";
 import UtenteFormDialog, { LIVELLO_LABEL } from "@/components/utenti/UtenteFormDialog";
@@ -22,10 +21,6 @@ import UtenteFormDialog, { LIVELLO_LABEL } from "@/components/utenti/UtenteFormD
 const RUOLO_STILE = {
   admin: { icon: ShieldCheck, cls: "bg-primary/20 text-primary border-primary/40" },
   mssg_admin: { icon: Shield, cls: "bg-blue-500/20 text-blue-400 border-blue-500/40" },
-  mssg_capo: { icon: ShieldAlert, cls: "bg-green-500/20 text-green-400 border-green-500/40" },
-  mssg_operaio: { icon: ShieldAlert, cls: "bg-amber-500/20 text-amber-400 border-amber-500/40" },
-  mssg_cliente: { icon: Lock, cls: "bg-purple-500/20 text-purple-400 border-purple-500/40" },
-  user: { icon: UserCog, cls: "bg-muted text-muted-foreground border-border" },
 };
 
 export default function Utenti() {
@@ -42,7 +37,8 @@ export default function Utenti() {
     setLoading(true);
     try {
       const data = await base44.entities.User.list("-created_date");
-      setUtenti(data);
+      // Solo amministratori e supervisori; clienti/collaboratori si gestiscono dalle rispettive sezioni
+      setUtenti(data.filter((u) => u.role === "admin" || u.role === "mssg_admin"));
     } catch (err) {
       console.error("Errore caricamento utenti:", err);
       toast({ title: "Errore caricamento utenti", variant: "destructive" });
@@ -92,7 +88,7 @@ export default function Utenti() {
 
   const reinvita = async (u) => {
     try {
-      await base44.users.inviteUser(u.email, u.role);
+      await base44.users.inviteUser(u.email, u.role === "admin" ? "admin" : "user");
       toast({ title: "Email re-inviata", description: u.email });
     } catch (err) {
       toast({ title: "Errore invio email", variant: "destructive" });
@@ -110,32 +106,40 @@ export default function Utenti() {
 
   return (
     <div>
-      {/* Header */}
       <div className="flex items-center justify-between gap-3 mb-5 pb-4 border-b border-border">
         <div>
           <h1 className="text-xl font-bold flex items-center gap-2">
             <UserCog className="w-5 h-5 text-primary" />
-            Utenti
+            Amministratori
           </h1>
           <p className="text-[13px] text-muted-foreground mt-0.5">
-            {utenti.length} utenti registrati
+            {utenti.length} amministratori e supervisori
           </p>
         </div>
         <Button onClick={handleNew} size="sm">
           <Plus className="w-4 h-4 mr-1" />
-          Nuovo utente
+          Nuovo amministratore
         </Button>
       </div>
 
-      {/* Legenda livelli */}
       <div className="mb-4 rounded-lg border border-border bg-secondary/20 p-3 text-[12px] text-muted-foreground space-y-1">
-        <p><strong className="text-foreground">Amministratore</strong> — accesso completo a tutto il gestionale.</p>
-        <p><strong className="text-foreground">Supervisore</strong> — vede tutti i cantieri. Le spunte <em>Pagamenti</em> e <em>Chat</em> sbloccano la gestione completa di quelle sezioni.</p>
-        <p><strong className="text-foreground">Capocantiere / Operaio / Tecnico</strong> — vedono solo i cantieri assegnati; niente pagamenti, niente chat cliente. Possono gestire la squadra, caricare foto e documenti.</p>
-        <p><strong className="text-foreground">Cliente</strong> — vede il proprio cantiere, avanzamento, pagamenti (sola visione), documenti visibili e chat. Agenda in sola prenotazione.</p>
+        <p>
+          <strong className="text-foreground">Amministratore</strong> — accesso
+          completo a tutto il gestionale.
+        </p>
+        <p>
+          <strong className="text-foreground">Supervisore</strong> — vede tutti i
+          cantieri. Le spunte <em>Pagamenti</em> e <em>Chat</em> sbloccano la
+          gestione completa di quelle sezioni.
+        </p>
+        <p className="pt-1 text-[11px]">
+          I clienti si creano in <strong>Clienti</strong>, i collaboratori in{" "}
+          <strong>Collaboratori</strong>: ricevono automaticamente l'account con
+          il ruolo corretto. Da Clienti puoi promuovere un cliente a supervisore
+          o operaio.
+        </p>
       </div>
 
-      {/* Ricerca */}
       <div className="relative mb-4">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <Input
@@ -146,7 +150,6 @@ export default function Utenti() {
         />
       </div>
 
-      {/* Lista */}
       {loading ? (
         <div className="flex items-center justify-center py-20">
           <Loader2 className="w-6 h-6 text-primary animate-spin" />
@@ -154,12 +157,12 @@ export default function Utenti() {
       ) : filtrati.length === 0 ? (
         <div className="text-center py-20 text-muted-foreground">
           <UserCog className="w-12 h-12 mx-auto mb-3 opacity-30" />
-          <p className="text-sm">Nessun utente trovato.</p>
+          <p className="text-sm">Nessun amministratore trovato.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {filtrati.map((u) => {
-            const stile = RUOLO_STILE[u.role] || RUOLO_STILE.user;
+            const stile = RUOLO_STILE[u.role] || RUOLO_STILE.mssg_admin;
             const Icona = stile.icon;
             const isSupervisore = u.role === "mssg_admin";
             const etichetta = u.ruolo_personalizzato || LIVELLO_LABEL[u.role] || u.role;
@@ -192,7 +195,6 @@ export default function Utenti() {
                   </div>
                 </div>
 
-                {/* Spunte supervisore inline */}
                 {isSupervisore && (
                   <div className="flex items-center gap-2 mb-3">
                     <button

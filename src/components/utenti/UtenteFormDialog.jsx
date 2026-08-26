@@ -16,13 +16,10 @@ import { useToast } from "@/components/ui/use-toast";
 import { Loader2, Mail } from "lucide-react";
 import { invitaUtenteConRuolo } from "@/lib/invitaUtente";
 
-// Livelli di accesso -> role
+// Solo amministratori: clienti e collaboratori si creano dalle rispettive sezioni.
 const LIVELLI = [
   { value: "admin", label: "Amministratore" },
   { value: "mssg_admin", label: "Supervisore" },
-  { value: "mssg_capo", label: "Capocantiere" },
-  { value: "mssg_operaio", label: "Operaio" },
-  { value: "mssg_cliente", label: "Cliente" },
 ];
 
 const LIVELLO_LABEL = LIVELLI.reduce((acc, l) => {
@@ -33,46 +30,30 @@ const LIVELLO_LABEL = LIVELLI.reduce((acc, l) => {
 export default function UtenteFormDialog({ open, onOpenChange, utente, onSaved }) {
   const { toast } = useToast();
   const [email, setEmail] = useState("");
-  const [role, setRole] = useState("mssg_capo");
+  const [role, setRole] = useState("mssg_admin");
   const [ruoloPersonalizzato, setRuoloPersonalizzato] = useState("");
   const [supPagamenti, setSupPagamenti] = useState(false);
   const [supChat, setSupChat] = useState(false);
-  const [clienteId, setClienteId] = useState("");
-  const [collaboratoreId, setCollaboratoreId] = useState("");
-  const [clienti, setClienti] = useState([]);
-  const [collaboratori, setCollaboratori] = useState([]);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!open) return;
     if (utente) {
       setEmail(utente.email || "");
-      setRole(utente.role || "mssg_capo");
+      setRole(utente.role === "admin" ? "admin" : "mssg_admin");
       setRuoloPersonalizzato(utente.ruolo_personalizzato || "");
       setSupPagamenti(!!utente.supervisore_pagamenti);
       setSupChat(!!utente.supervisore_chat);
-      setClienteId(utente.cliente_id || "");
-      setCollaboratoreId(utente.collaboratore_id || "");
     } else {
       setEmail("");
-      setRole("mssg_capo");
+      setRole("mssg_admin");
       setRuoloPersonalizzato("");
       setSupPagamenti(false);
       setSupChat(false);
-      setClienteId("");
-      setCollaboratoreId("");
     }
   }, [open, utente]);
 
-  useEffect(() => {
-    if (!open) return;
-    base44.entities.Cliente.list().then(setClienti).catch(() => {});
-    base44.entities.Collaboratore.list().then(setCollaboratori).catch(() => {});
-  }, [open]);
-
   const isSupervisore = role === "mssg_admin";
-  const isCliente = role === "mssg_cliente";
-  const isInterno = role === "mssg_capo" || role === "mssg_operaio";
 
   const handleSave = async () => {
     if (!utente && !email.trim()) {
@@ -85,19 +66,14 @@ export default function UtenteFormDialog({ open, onOpenChange, utente, onSaved }
         ruolo_personalizzato: ruoloPersonalizzato.trim() || undefined,
         supervisore_pagamenti: isSupervisore ? supPagamenti : false,
         supervisore_chat: isSupervisore ? supChat : false,
-        cliente_id: isCliente ? clienteId || undefined : undefined,
-        collaboratore_id: isInterno ? collaboratoreId || undefined : undefined,
       };
 
       if (utente) {
         await base44.entities.User.update(utente.id, { role, ...dataExtra });
-        toast({ title: "Utente aggiornato" });
+        toast({ title: "Amministratore aggiornato" });
       } else {
         await invitaUtenteConRuolo(email.trim(), role, dataExtra);
-        toast({
-          title: "Invito inviato",
-          description: email.trim(),
-        });
+        toast({ title: "Invito inviato", description: email.trim() });
       }
       onSaved();
       onOpenChange(false);
@@ -126,16 +102,17 @@ export default function UtenteFormDialog({ open, onOpenChange, utente, onSaved }
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>{utente ? "Modifica utente" : "Nuovo utente"}</DialogTitle>
+          <DialogTitle>
+            {utente ? "Modifica amministratore" : "Nuovo amministratore"}
+          </DialogTitle>
           <DialogDescription>
             {utente
-              ? "Modifica livello di accesso e permessi del supervisore."
-              : "Invita un nuovo utente e assegnagli un livello di accesso."}
+              ? "Modifica livello di accesso e permessi."
+              : "Invita un nuovo amministratore o supervisore. Clienti e collaboratori si creano dalle rispettive sezioni."}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Email */}
           <div className="space-y-1.5">
             <Label>Email</Label>
             <Input
@@ -155,7 +132,6 @@ export default function UtenteFormDialog({ open, onOpenChange, utente, onSaved }
             )}
           </div>
 
-          {/* Livello di accesso */}
           <div className="space-y-1.5">
             <Label>Livello di accesso</Label>
             <select
@@ -171,20 +147,15 @@ export default function UtenteFormDialog({ open, onOpenChange, utente, onSaved }
             </select>
           </div>
 
-          {/* Etichetta personalizzata */}
           <div className="space-y-1.5">
             <Label>Etichetta personalizzata (opzionale)</Label>
             <Input
               value={ruoloPersonalizzato}
               onChange={(e) => setRuoloPersonalizzato(e.target.value)}
-              placeholder="es. Tecnico esterno, Geometra, Caposquadra..."
+              placeholder="es. Direttore, Capoarea..."
             />
-            <p className="text-[11px] text-muted-foreground">
-              Sovrascrive l'etichetta del ruolo nell'interfaccia.
-            </p>
           </div>
 
-          {/* Toggles supervisore */}
           {isSupervisore && (
             <div className="space-y-3 rounded-lg border border-border p-3 bg-secondary/30">
               <p className="text-xs font-semibold text-primary">
@@ -203,51 +174,9 @@ export default function UtenteFormDialog({ open, onOpenChange, utente, onSaved }
                 <Switch checked={supChat} onCheckedChange={setSupChat} />
               </div>
               <p className="text-[11px] text-muted-foreground">
-                Se attivi, il supervisore può vedere, scrivere nella chat e saldare
-                i pagamenti come un amministratore.
+                Se attivi, il supervisore può vedere, scrivere nella chat e
+                saldare i pagamenti come un amministratore.
               </p>
-            </div>
-          )}
-
-          {/* Collegamento cliente */}
-          {isCliente && (
-            <div className="space-y-1.5">
-              <Label>Cliente collegato</Label>
-              <select
-                value={clienteId}
-                onChange={(e) => setClienteId(e.target.value)}
-                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-              >
-                <option value="" className="bg-card">
-                  — Seleziona cliente —
-                </option>
-                {clienti.map((c) => (
-                  <option key={c.id} value={c.id} className="bg-card">
-                    {c.nome} {c.azienda ? `(${c.azienda})` : ""}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          {/* Collegamento collaboratore */}
-          {isInterno && (
-            <div className="space-y-1.5">
-              <Label>Collaboratore collegato (opzionale)</Label>
-              <select
-                value={collaboratoreId}
-                onChange={(e) => setCollaboratoreId(e.target.value)}
-                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-              >
-                <option value="" className="bg-card">
-                  — Nessuno —
-                </option>
-                {collaboratori.map((c) => (
-                  <option key={c.id} value={c.id} className="bg-card">
-                    {c.nome}
-                  </option>
-                ))}
-              </select>
             </div>
           )}
         </div>

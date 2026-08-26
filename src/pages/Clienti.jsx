@@ -16,11 +16,13 @@ import {
   Building,
   MessageCircle,
   HardHat,
+  ArrowUpCircle,
 } from "lucide-react";
 
 const waLink = (phone) =>
   "https://wa.me/" + (phone || "").replace(/[^0-9]/g, "");
 import ClienteForm from "@/components/clienti/ClienteForm";
+import PromozioneDialog from "@/components/clienti/PromozioneDialog";
 import ExportButtons from "@/components/esporta/ExportButtons";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -43,6 +45,7 @@ export default function Clienti() {
   const [search, setSearch] = useState("");
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState(null);
+  const [promoCliente, setPromoCliente] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -250,22 +253,33 @@ export default function Clienti() {
               })()}
 
               <div className="flex gap-1.5 pt-2 border-t border-border">
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="h-7 w-7"
-                  onClick={() => handleEdit(c)}
-                >
-                  <Pencil className="w-3.5 h-3.5" />
-                </Button>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="h-7 w-7 text-destructive hover:text-destructive"
-                  onClick={() => handleDelete(c)}
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </Button>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-7 w-7"
+                onClick={() => handleEdit(c)}
+                title="Modifica"
+              >
+                <Pencil className="w-3.5 h-3.5" />
+              </Button>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-7 w-7"
+                onClick={() => setPromoCliente(c)}
+                title="Promuovi a supervisore / operaio"
+              >
+                <ArrowUpCircle className="w-3.5 h-3.5" />
+              </Button>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-7 w-7 text-destructive hover:text-destructive"
+                onClick={() => handleDelete(c)}
+                title="Elimina"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </Button>
               </div>
             </div>
           ))}
@@ -276,6 +290,13 @@ export default function Clienti() {
         open={formOpen}
         onOpenChange={setFormOpen}
         cliente={editing}
+        onSaved={load}
+      />
+
+      <PromozioneDialog
+        open={!!promoCliente}
+        onOpenChange={(v) => !v && setPromoCliente(null)}
+        cliente={promoCliente}
         onSaved={load}
       />
     </div>

@@ -29,7 +29,7 @@ export const NAV_ITEMS = [
   { to: "/presenze", icon: CalendarDays, label: "Presenze", group: "gestionale" },
   { to: "/esporta", icon: Download, label: "Esporta dati", group: "strumenti" },
   { to: "/backup-cloud", icon: Cloud, label: "Backup e Cloud", group: "strumenti" },
-  { to: "/utenti", icon: UserCog, label: "Utenti", group: "strumenti", roles: ["admin"] },
+  { to: "/utenti", icon: UserCog, label: "Amministratori", group: "strumenti", roles: ["admin"] },
   { to: "/impostazioni", icon: Settings, label: "Impostazioni", group: "strumenti" },
 ];
 

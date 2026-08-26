@@ -13,6 +13,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Loader2, HardHat, ExternalLink } from "lucide-react";
 import { base44 } from "@/api/base44Client";
+import { useToast } from "@/components/ui/use-toast";
+import { invitaUtenteConRuolo } from "@/lib/invitaUtente";
 
 const emptyForm = {
   nome: "",
@@ -30,6 +32,7 @@ const emptyForm = {
 };
 
 export default function ClienteForm({ open, onOpenChange, cliente, onSaved }) {
+  const { toast } = useToast();
   const [form, setForm] = useState(emptyForm);
   const [loading, setLoading] = useState(false);
   const [cantieri, setCantieri] = useState([]);
@@ -81,6 +84,34 @@ export default function ClienteForm({ open, onOpenChange, cliente, onSaved }) {
           citta: form.citta || "",
           stato: "bozza",
         });
+        // Se c'è una email, crea automaticamente l'account utente con ruolo cliente
+        if (form.email) {
+          try {
+            await invitaUtenteConRuolo(form.email, "mssg_cliente", {
+              cliente_id: nuovoCliente.id,
+            });
+            const users = await base44.entities.User.list();
+            const found = users.find(
+              (u) => u.email?.toLowerCase() === form.email.toLowerCase()
+            );
+            if (found) {
+              await base44.entities.Cliente.update(nuovoCliente.id, {
+                user_id: found.id,
+              });
+            }
+            toast({
+              title: "Account cliente creato",
+              description: `Invito inviato a ${form.email}`,
+            });
+          } catch (err) {
+            console.error("Errore invito utente cliente:", err);
+            toast({
+              title: "Cliente creato, invito non inviato",
+              description: "Verifica l'email o reinvia più tardi.",
+              variant: "destructive",
+            });
+          }
+        }
       }
       onSaved();
       onOpenChange(false);

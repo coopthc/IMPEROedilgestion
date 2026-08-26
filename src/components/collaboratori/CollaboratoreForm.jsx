@@ -98,18 +98,6 @@ export default function CollaboratoreForm({ open, onOpenChange, collaboratore, o
 
   const update = (field, value) => setForm((f) => ({ ...f, [field]: value }));
 
-  const invitaUtente = async (email, qualifica) => {
-    const ruolo = RUOLO_MAP[qualifica] || "mssg_operaio";
-    try {
-      await invitaUtenteConRuolo(email, ruolo);
-      return true;
-    } catch (err) {
-      // Se l'utente esiste già, non è un errore bloccante
-      console.error("Errore invito utente:", err);
-      return false;
-    }
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.nome.trim()) return;
@@ -130,20 +118,34 @@ export default function CollaboratoreForm({ open, onOpenChange, collaboratore, o
 
       // Invita utente se richiesto e c'è una email
       if (form.invita_utente && form.email) {
-        const ok = await invitaUtente(form.email, form.qualifica);
-        if (ok) {
+        const ruolo = RUOLO_MAP[form.qualifica] || "mssg_operaio";
+        try {
+          await invitaUtenteConRuolo(form.email, ruolo, {
+            collaboratore_id: saved.id,
+          });
           toast({ title: "Email di benvenuto inviata", description: form.email });
-          // Tenta di collegare lo user_id
+          // Collega lo user_id sul collaboratore
           try {
             const users = await base44.entities.User.list();
-            const found = users.find((u) => u.email === form.email);
+            const found = users.find(
+              (u) => u.email?.toLowerCase() === form.email.toLowerCase()
+            );
             if (found) {
-              await base44.entities.Collaboratore.update(saved.id, { user_id: found.id });
+              await base44.entities.Collaboratore.update(saved.id, {
+                user_id: found.id,
+              });
               setInvited(true);
             }
           } catch (e) {
             console.error("Collegamento user_id fallito:", e);
           }
+        } catch (err) {
+          console.error("Errore invito utente:", err);
+          toast({
+            title: "Collaboratore creato, invito non inviato",
+            description: "Verifica l'email o reinvia più tardi.",
+            variant: "destructive",
+          });
         }
       }
 
