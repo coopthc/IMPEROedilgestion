@@ -33,13 +33,7 @@ export default function Agenda() {
         base44.entities.Appuntamento.list("-data"),
         base44.entities.Promemoria.list("-data"),
       ]);
-      // Ogni utente vede la propria agenda personale + gli appuntamenti condivisi che lo riguardano.
-      // Gli appuntamenti personali (categoria "personale") sono visibili solo al creatore.
-      const miei = data.filter((a) => {
-        if (a.categoria === "personale" && a.created_by_id !== user.id) return false;
-        return true;
-      });
-      setAppuntamenti(miei);
+      setAppuntamenti(data);
       setPromemoria(proms);
     } catch (err) {
       console.error(err);
