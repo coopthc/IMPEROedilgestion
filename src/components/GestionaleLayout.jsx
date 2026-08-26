@@ -16,6 +16,7 @@ import {
   LogOut,
   HardHat,
   Settings,
+  UserCog,
 } from "lucide-react";
 
 // Voci di navigazione — replicate dal plugin WordPress
@@ -28,6 +29,7 @@ export const NAV_ITEMS = [
   { to: "/presenze", icon: CalendarDays, label: "Presenze", group: "gestionale" },
   { to: "/esporta", icon: Download, label: "Esporta dati", group: "strumenti" },
   { to: "/backup-cloud", icon: Cloud, label: "Backup e Cloud", group: "strumenti" },
+  { to: "/utenti", icon: UserCog, label: "Utenti", group: "strumenti", roles: ["admin"] },
   { to: "/impostazioni", icon: Settings, label: "Impostazioni", group: "strumenti" },
 ];
 
@@ -101,7 +103,7 @@ export default function GestionaleLayout() {
               <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-4 pt-3 pb-1 opacity-60">
                 {GROUP_LABELS[group]}
               </div>
-              {NAV_ITEMS.filter((item) => item.group === group).map((item) => (
+              {NAV_ITEMS.filter((item) => item.group === group && (!item.roles || item.roles.includes(user?.role))).map((item) => (
                 <NavLink
                   key={item.to}
                   to={item.to}

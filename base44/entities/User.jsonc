@@ -11,6 +11,29 @@
         "mssg_cliente",
         "user"
       ]
+    },
+    "ruolo_personalizzato": {
+      "type": "string",
+      "title": "Etichetta ruolo personalizzata",
+      "description": "Eventuale etichetta personalizzata (es. Tecnico esterno, Geometra)"
+    },
+    "supervisore_pagamenti": {
+      "type": "boolean",
+      "default": false,
+      "title": "Supervisore: pagamenti visibili"
+    },
+    "supervisore_chat": {
+      "type": "boolean",
+      "default": false,
+      "title": "Supervisore: chat cliente visibili"
+    },
+    "cliente_id": {
+      "type": "string",
+      "title": "Cliente collegato (per ruolo cliente)"
+    },
+    "collaboratore_id": {
+      "type": "string",
+      "title": "Collaboratore collegato"
     }
   },
   "required": [

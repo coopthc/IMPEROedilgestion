@@ -22,6 +22,7 @@ import Login from '@/pages/Login';
 import Register from '@/pages/Register';
 import ForgotPassword from '@/pages/ForgotPassword';
 import ResetPassword from '@/pages/ResetPassword';
+import Utenti from '@/pages/Utenti';
 // Add page imports here
 
 const AuthenticatedApp = () => {
@@ -68,6 +69,7 @@ const AuthenticatedApp = () => {
           <Route path="/impostazioni" element={<Impostazioni />} />
           <Route path="/esporta" element={<Esporta />} />
           <Route path="/backup-cloud" element={<BackupCloud />} />
+          <Route path="/utenti" element={<Utenti />} />
         </Route>
       </Route>
       <Route path="*" element={<PageNotFound />} />
