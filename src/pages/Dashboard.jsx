@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Plus, Settings2, ArrowUp, ArrowDown, X, GripVertical } from "lucide-react";
 import WidgetCantieri from "@/components/dashboard/WidgetCantieri";
 import WidgetAppuntamenti from "@/components/dashboard/WidgetAppuntamenti";
+import WidgetAppuntamentiDomani from "@/components/dashboard/WidgetAppuntamentiDomani";
+import WidgetSettimana from "@/components/dashboard/WidgetSettimana";
 import WidgetPagamenti from "@/components/dashboard/WidgetPagamenti";
 import WidgetPresenze from "@/components/dashboard/WidgetPresenze";
 import WidgetClienti from "@/components/dashboard/WidgetClienti";
@@ -17,6 +19,8 @@ import AddWidgetDialog from "@/components/dashboard/AddWidgetDialog";
 const WIDGET_REGISTRY = {
   cantieri: { label: "Cantieri", component: WidgetCantieri },
   appuntamenti: { label: "Appuntamenti", component: WidgetAppuntamenti },
+  appuntamenti_domani: { label: "Appuntamenti domani", component: WidgetAppuntamentiDomani },
+  settimana: { label: "Pienezza settimana", component: WidgetSettimana },
   pagamenti: { label: "Pagamenti", component: WidgetPagamenti },
   presenze: { label: "Presenze", component: WidgetPresenze },
   clienti: { label: "Clienti", component: WidgetClienti },

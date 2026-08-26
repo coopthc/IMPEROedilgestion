@@ -1,10 +1,12 @@
 import React from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Building2, Calendar, Wallet, Clock, Users, HardHat, TrendingUp, Plus, Bell, MessageSquare } from "lucide-react";
+import { Building2, Calendar, CalendarDays, Wallet, Clock, Users, HardHat, TrendingUp, Plus, Bell, MessageSquare } from "lucide-react";
 
 const AVAILABLE = [
   { type: "cantieri", label: "Cantieri", icon: Building2, color: "text-blue-400", desc: "Totale, attivi, ultimi movimenti" },
   { type: "appuntamenti", label: "Appuntamenti oggi", icon: Calendar, color: "text-primary", desc: "Lista cliccabile con dettaglio e Maps" },
+  { type: "appuntamenti_domani", label: "Appuntamenti domani", icon: Calendar, color: "text-primary", desc: "Appuntamenti di domani, cliccabili" },
+  { type: "settimana", label: "Pienezza settimana", icon: CalendarDays, color: "text-primary", desc: "Barre di pienezza per giorno (lavoro/personale)" },
   { type: "pagamenti", label: "Pagamenti (mese)", icon: Wallet, color: "text-yellow-400", desc: "Incassato e da incassare questo mese" },
   { type: "presenze", label: "Presenze oggi", icon: Clock, color: "text-orange-400", desc: "Presenti, ore totali, straordinari" },
   { type: "clienti", label: "Clienti", icon: Users, color: "text-purple-400", desc: "Totale, aziende, privati" },
