@@ -106,47 +106,70 @@
     "read": {
       "$or": [
         {
-          "user_condition": {
-            "role": "admin"
-          }
-        },
-        {
-          "user_condition": {
-            "role": "mssg_admin"
-          }
-        },
-        {
           "$and": [
             {
-              "$or": [
-                {
-                  "user_condition": {
-                    "role": "mssg_capo"
-                  }
-                },
-                {
-                  "user_condition": {
-                    "role": "mssg_operaio"
-                  }
-                }
-              ]
+              "data.categoria": "personale"
             },
             {
-              "data.cantiere_id": {
-                "$in": "{{user.data.cantieri_ids}}"
-              }
+              "created_by_id": "{{user.id}}"
             }
           ]
         },
         {
           "$and": [
             {
-              "user_condition": {
-                "role": "mssg_cliente"
+              "data.categoria": {
+                "$ne": "personale"
               }
             },
             {
-              "data.cliente_id": "{{user.data.cliente_id}}"
+              "$or": [
+                {
+                  "user_condition": {
+                    "role": "admin"
+                  }
+                },
+                {
+                  "user_condition": {
+                    "role": "mssg_admin"
+                  }
+                },
+                {
+                  "$and": [
+                    {
+                      "$or": [
+                        {
+                          "user_condition": {
+                            "role": "mssg_capo"
+                          }
+                        },
+                        {
+                          "user_condition": {
+                            "role": "mssg_operaio"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "data.cantiere_id": {
+                        "$in": "{{user.data.cantieri_ids}}"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "$and": [
+                    {
+                      "user_condition": {
+                        "role": "mssg_cliente"
+                      }
+                    },
+                    {
+                      "data.cliente_id": "{{user.data.cliente_id}}"
+                    }
+                  ]
+                }
+              ]
             }
           ]
         }
@@ -184,38 +207,84 @@
     "update": {
       "$or": [
         {
-          "user_condition": {
-            "role": "admin"
-          }
+          "$and": [
+            {
+              "data.categoria": "personale"
+            },
+            {
+              "created_by_id": "{{user.id}}"
+            }
+          ]
         },
         {
-          "user_condition": {
-            "role": "mssg_admin"
-          }
-        },
-        {
-          "user_condition": {
-            "role": "mssg_capo"
-          }
+          "$and": [
+            {
+              "data.categoria": {
+                "$ne": "personale"
+              }
+            },
+            {
+              "$or": [
+                {
+                  "user_condition": {
+                    "role": "admin"
+                  }
+                },
+                {
+                  "user_condition": {
+                    "role": "mssg_admin"
+                  }
+                },
+                {
+                  "user_condition": {
+                    "role": "mssg_capo"
+                  }
+                }
+              ]
+            }
+          ]
         }
       ]
     },
     "delete": {
       "$or": [
         {
-          "user_condition": {
-            "role": "admin"
-          }
+          "$and": [
+            {
+              "data.categoria": "personale"
+            },
+            {
+              "created_by_id": "{{user.id}}"
+            }
+          ]
         },
         {
-          "user_condition": {
-            "role": "mssg_admin"
-          }
-        },
-        {
-          "user_condition": {
-            "role": "mssg_capo"
-          }
+          "$and": [
+            {
+              "data.categoria": {
+                "$ne": "personale"
+              }
+            },
+            {
+              "$or": [
+                {
+                  "user_condition": {
+                    "role": "admin"
+                  }
+                },
+                {
+                  "user_condition": {
+                    "role": "mssg_admin"
+                  }
+                },
+                {
+                  "user_condition": {
+                    "role": "mssg_capo"
+                  }
+                }
+              ]
+            }
+          ]
         }
       ]
     }
