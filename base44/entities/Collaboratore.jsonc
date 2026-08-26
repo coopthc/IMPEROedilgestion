@@ -22,6 +22,8 @@
         "operaio",
         "tecnico",
         "amministrazione",
+        "supervisore",
+        "amministratore",
         "altro"
       ],
       "default": "operaio",
