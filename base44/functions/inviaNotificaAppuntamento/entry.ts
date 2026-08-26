@@ -26,11 +26,31 @@ export default async function(req: Request): Promise<Response> {
     }
 
     const collabIds = (appuntamento.partecipanti_ids || '').split(',').filter(Boolean);
+    const notificheInApp: { user_id: string; tipo: string; titolo: string; testo: string; url: string; letto: boolean }[] = [];
     if (collabIds.length > 0) {
       const collaboratori = await base44.asServiceRole.entities.Collaboratore.list();
       for (const c of collaboratori) {
-        if (collabIds.includes(c.id) && c.email) {
+        if (!collabIds.includes(c.id)) continue;
+        if (c.email) {
           destinatari.push({ email: c.email, nome: c.nome || '' });
+        }
+        if (c.user_id) {
+          notificheInApp.push({
+            user_id: c.user_id,
+            tipo: 'appuntamento',
+            titolo: `Appuntamento: ${appuntamento.titolo || ''}`,
+            testo: `${appuntamento.data || ''} alle ${appuntamento.ora || ''}${appuntamento.cantiere_nome ? ' — ' + appuntamento.cantiere_nome : ''}`,
+            url: '/agenda',
+            letto: false,
+          });
+        }
+      }
+      // Crea le notifiche in-app lato server (affidabile, bypassa RLS)
+      if (notificheInApp.length > 0) {
+        try {
+          await base44.asServiceRole.entities.Notifica.bulkCreate(notificheInApp);
+        } catch (e) {
+          console.error('Errore creazione notifiche in-app:', e);
         }
       }
     }

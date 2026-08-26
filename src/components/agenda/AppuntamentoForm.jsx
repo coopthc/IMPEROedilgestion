@@ -29,7 +29,6 @@ import {
   Briefcase,
 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
-import { creaNotifiche } from "@/lib/notifiche";
 import { useAuth } from "@/lib/AuthContext";
 import Combobox from "@/components/agenda/Combobox";
 import TimeSlotPicker from "@/components/agenda/TimeSlotPicker";
@@ -221,16 +220,7 @@ export default function AppuntamentoForm({
         savedId = created.id;
       }
 
-      // Notifica in-app collaboratori
-      await creaNotifiche({
-        collaboratoriIds: partecipantiIds,
-        tipo: "appuntamento",
-        titolo: `Appuntamento: ${form.titolo}`,
-        testo: `${form.data} alle ${form.ora}${cantiereNome ? " — " + cantiereNome : ""}`,
-        url: "/agenda",
-      });
-
-      // Invia email individuali a tutti i partecipanti (cliente + collaboratori)
+      // Invia email + crea notifiche in-app (server-side) a tutti i partecipanti (cliente + collaboratori)
       if (partecipantiIds.length > 0 || form.cliente_id) {
         setSendingEmail(true);
         try {
