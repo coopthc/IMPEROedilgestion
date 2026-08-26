@@ -55,15 +55,27 @@ export default function SettimanaView({ appuntamenti, loading, onDayClick, onApp
 
   const appuntamentiPerGiorno = useMemo(() => {
     const map = {};
-    days.forEach((d) => { map[toISODate(d)] = []; });
     appuntamenti.forEach((a) => {
-      if (map[a.data]) map[a.data].push(a);
+      if (!map[a.data]) map[a.data] = [];
+      map[a.data].push(a);
     });
     Object.values(map).forEach((arr) =>
       arr.sort((a, b) => (a.ora || "").localeCompare(b.ora || ""))
     );
     return map;
-  }, [days, appuntamenti]);
+  }, [appuntamenti]);
+
+  const mobileDays = useMemo(() => {
+    const arr = [];
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    for (let i = 0; i < 30; i++) {
+      const d = new Date(start);
+      d.setDate(start.getDate() + i);
+      arr.push(d);
+    }
+    return arr;
+  }, []);
 
   const weekLabel = `${days[0].getDate()} ${MESI[days[0].getMonth()]} – ${days[6].getDate()} ${MESI[days[6].getMonth()]} ${days[6].getFullYear()}`;
 
@@ -73,7 +85,8 @@ export default function SettimanaView({ appuntamenti, loading, onDayClick, onApp
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+      {/* Desktop week navigation */}
+      <div className="hidden md:flex items-center justify-between mb-4 flex-wrap gap-2">
         <div className="flex items-center gap-2">
           <Button variant="outline" size="icon" onClick={prevWeek}>
             <ChevronLeft className="w-4 h-4" />
@@ -86,8 +99,13 @@ export default function SettimanaView({ appuntamenti, loading, onDayClick, onApp
         <h3 className="text-sm font-semibold">{weekLabel}</h3>
       </div>
 
-      {/* Header giorni */}
-      <div className="grid grid-cols-7 gap-1.5 mb-1.5">
+      {/* Mobile header */}
+      <h3 className="md:hidden text-sm font-semibold mb-2 flex items-center gap-2">
+        <Clock className="w-4 h-4 text-primary" /> Prossimi 30 giorni
+      </h3>
+
+      {/* Header giorni (desktop) */}
+      <div className="hidden md:grid grid-cols-7 gap-1.5 mb-1.5">
         {days.map((d, i) => {
           const iso = toISODate(d);
           const isToday = iso === todayISO;
@@ -106,96 +124,108 @@ export default function SettimanaView({ appuntamenti, loading, onDayClick, onApp
           <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-7 gap-1.5">
-          {days.map((d, i) => {
-            const iso = toISODate(d);
-            const apps = appuntamentiPerGiorno[iso] || [];
-            const isToday = iso === todayISO;
-            const isPast = iso < todayISO;
-            return (
-              <div
-                key={iso}
-                className={`rounded-lg border md:min-h-[140px] ${isToday ? "border-primary" : "border-border"} bg-card`}
-              >
-                <div className="md:hidden px-3 py-2 border-b border-border flex items-center justify-between">
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{GIORNI[i]}</span>
-                    <span className={`text-sm font-bold ${isToday ? "text-primary" : ""}`}>{d.getDate()}</span>
-                    {isPast && <span className="text-[9px] text-muted-foreground/60">passato</span>}
+        <>
+          {/* Desktop grid */}
+          <div className="hidden md:grid md:grid-cols-7 gap-1.5">
+            {days.map((d, i) => {
+              const iso = toISODate(d);
+              const apps = appuntamentiPerGiorno[iso] || [];
+              const isToday = iso === todayISO;
+              return (
+                <div
+                  key={iso}
+                  className={`rounded-lg border min-h-[140px] ${isToday ? "border-primary" : "border-border"} bg-card`}
+                >
+                  <div className="p-1.5">
+                    {apps.length === 0 ? (
+                      <button
+                        onClick={() => onDayClick(iso)}
+                        className="w-full h-full min-h-[120px] flex items-center justify-center text-muted-foreground hover:text-primary transition-colors"
+                      >
+                        <Plus className="w-3.5 h-3.5 opacity-30" />
+                      </button>
+                    ) : (
+                      <div className="space-y-1">
+                        {apps.map((a) => (
+                          <button
+                            key={a.id}
+                            onClick={() => onAppuntamentoClick(a)}
+                            className={`w-full text-left p-1.5 rounded border text-xs ${a.categoria === "personale" ? CATEGORIA_PERSONALE : (STATO_COLORS[a.stato] || STATO_COLORS.programmato)}`}
+                          >
+                            <div className="flex items-center gap-1 font-semibold">
+                              <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${TIPO_DOT[a.tipo] || "bg-muted-foreground"}`} />
+                              {a.ora || "—"}
+                            </div>
+                            <div className="truncate mt-0.5">{a.titolo}</div>
+                            {a.cliente_nome && (
+                              <div className="truncate text-[10px] opacity-70">{a.cliente_nome}</div>
+                            )}
+                          </button>
+                        ))}
+                        <button
+                          onClick={() => onDayClick(iso)}
+                          className="w-full text-center py-0.5 text-[10px] text-muted-foreground hover:text-primary"
+                        >
+                          + aggiungi
+                        </button>
+                      </div>
+                    )}
                   </div>
-                  <button onClick={() => onDayClick(iso)} className="p-1 rounded-md hover:bg-secondary/70">
-                    <Plus className="w-3.5 h-3.5 text-primary" />
-                  </button>
                 </div>
-                <div className="hidden md:block p-1.5">
-                  {apps.length === 0 ? (
-                    <button
-                      onClick={() => onDayClick(iso)}
-                      className="w-full h-full min-h-[120px] flex items-center justify-center text-muted-foreground hover:text-primary transition-colors"
-                    >
-                      <Plus className="w-3.5 h-3.5 opacity-30" />
+              );
+            })}
+          </div>
+
+          {/* Mobile vertical list — parte da oggi */}
+          <div className="md:hidden space-y-2 max-h-[70vh] overflow-y-auto pb-4">
+            {mobileDays.map((d) => {
+              const iso = toISODate(d);
+              const apps = appuntamentiPerGiorno[iso] || [];
+              const isToday = iso === todayISO;
+              const dayName = GIORNI[(d.getDay() + 6) % 7];
+              return (
+                <div key={iso} className={`rounded-lg border bg-card ${isToday ? "border-primary" : "border-border"}`}>
+                  <div className="px-3 py-2 border-b border-border flex items-center justify-between">
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{dayName}</span>
+                      <span className={`text-sm font-bold ${isToday ? "text-primary" : ""}`}>{d.getDate()} {MESI[d.getMonth()]}</span>
+                      {isToday && <span className="text-[9px] text-primary font-semibold">oggi</span>}
+                    </div>
+                    <button onClick={() => onDayClick(iso)} className="p-1 rounded-md hover:bg-secondary/70">
+                      <Plus className="w-3.5 h-3.5 text-primary" />
                     </button>
-                  ) : (
-                    <div className="space-y-1">
-                      {apps.map((a) => (
+                  </div>
+                  <div className="p-2 space-y-1.5">
+                    {apps.length === 0 ? (
+                      <button onClick={() => onDayClick(iso)} className="w-full text-[11px] text-muted-foreground hover:text-primary py-2 text-center">
+                        + aggiungi appuntamento
+                      </button>
+                    ) : (
+                      apps.map((a) => (
                         <button
                           key={a.id}
                           onClick={() => onAppuntamentoClick(a)}
-                          className={`w-full text-left p-1.5 rounded border text-xs ${a.categoria === "personale" ? CATEGORIA_PERSONALE : (STATO_COLORS[a.stato] || STATO_COLORS.programmato)}`}
+                          className={`w-full flex items-start gap-2 p-2 rounded-md border text-left ${a.categoria === "personale" ? CATEGORIA_PERSONALE : (STATO_COLORS[a.stato] || STATO_COLORS.programmato)}`}
                         >
-                          <div className="flex items-center gap-1 font-semibold">
-                            <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${TIPO_DOT[a.tipo] || "bg-muted-foreground"}`} />
-                            {a.ora || "—"}
+                          <div className="flex flex-col items-center flex-shrink-0 min-w-[34px]">
+                            <span className="text-xs font-bold">{a.ora || "—"}</span>
+                            <span className="text-[9px] opacity-60">{a.durata_minuti || 60}min</span>
                           </div>
-                          <div className="truncate mt-0.5">{a.titolo}</div>
-                          {a.cliente_nome && (
-                            <div className="truncate text-[10px] opacity-70">{a.cliente_nome}</div>
-                          )}
+                          <div className="flex-1 min-w-0">
+                            <div className="text-xs font-medium truncate">{a.titolo}</div>
+                            {a.cliente_nome && (
+                              <div className="text-[10px] opacity-70 truncate">{a.cliente_nome}</div>
+                            )}
+                          </div>
                         </button>
-                      ))}
-                      <button
-                        onClick={() => onDayClick(iso)}
-                        className="w-full text-center py-0.5 text-[10px] text-muted-foreground hover:text-primary"
-                      >
-                        + aggiungi
-                      </button>
-                    </div>
-                  )}
+                      ))
+                    )}
+                  </div>
                 </div>
-                {/* Mobile list */}
-                <div className="md:hidden p-2 space-y-1.5">
-                  {apps.length === 0 ? (
-                    <button
-                      onClick={() => onDayClick(iso)}
-                      className="w-full text-[11px] text-muted-foreground hover:text-primary py-2 text-center"
-                    >
-                      + aggiungi appuntamento
-                    </button>
-                  ) : (
-                    apps.map((a) => (
-                      <button
-                        key={a.id}
-                        onClick={() => onAppuntamentoClick(a)}
-                        className={`w-full flex items-start gap-2 p-2 rounded-md border text-left ${a.categoria === "personale" ? CATEGORIA_PERSONALE : (STATO_COLORS[a.stato] || STATO_COLORS.programmato)}`}
-                      >
-                        <div className="flex flex-col items-center flex-shrink-0 min-w-[34px]">
-                          <span className="text-xs font-bold">{a.ora || "—"}</span>
-                          <span className="text-[9px] opacity-60">{a.durata_minuti || 60}min</span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-xs font-medium truncate">{a.titolo}</div>
-                          {a.cliente_nome && (
-                            <div className="text-[10px] opacity-70 truncate">{a.cliente_nome}</div>
-                          )}
-                        </div>
-                      </button>
-                    ))
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        </>
       )}
 
       {/* Legenda */}
