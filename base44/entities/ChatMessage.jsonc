@@ -49,27 +49,66 @@
           }
         },
         {
-          "user_condition": {
-            "role": "mssg_admin"
-          }
-        },
-        {
-          "user_condition": {
-            "role": "mssg_capo"
-          }
-        },
-        {
-          "user_condition": {
-            "role": "mssg_operaio"
-          }
+          "$and": [
+            {
+              "user_condition": {
+                "role": "mssg_admin"
+              }
+            },
+            {
+              "$or": [
+                {
+                  "data.canale": "squadra"
+                },
+                {
+                  "user_condition": {
+                    "data.supervisore_chat": true
+                  }
+                }
+              ]
+            }
+          ]
         },
         {
           "$and": [
             {
+              "$or": [
+                {
+                  "user_condition": {
+                    "role": "mssg_capo"
+                  }
+                },
+                {
+                  "user_condition": {
+                    "role": "mssg_operaio"
+                  }
+                }
+              ]
+            },
+            {
+              "data.canale": "squadra"
+            },
+            {
+              "data.cantiere_id": {
+                "$in": "{{user.data.cantieri_ids}}"
+              }
+            }
+          ]
+        },
+        {
+          "$and": [
+            {
+              "user_condition": {
+                "role": "mssg_cliente"
+              }
+            },
+            {
               "data.canale": "cliente"
             },
             {
-              "data.cliente_id": "{{user.data.cliente_id}}"
+              "data.cantiere_id": {
+                "$in": "{{user.data.cantieri_ids}}"
+              }
             }
           ]
         }
