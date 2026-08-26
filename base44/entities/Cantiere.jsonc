@@ -119,12 +119,46 @@
           }
         },
         {
-          "user_condition": {
-            "role": "mssg_capo"
-          }
+          "$and": [
+            {
+              "user_condition": {
+                "role": "mssg_capo"
+              }
+            },
+            {
+              "id": {
+                "$in": "{{user.data.cantieri_ids}}"
+              }
+            }
+          ]
         },
         {
-          "data.cliente_id": "{{user.data.cliente_id}}"
+          "$and": [
+            {
+              "user_condition": {
+                "role": "mssg_operaio"
+              }
+            },
+            {
+              "id": {
+                "$in": "{{user.data.cantieri_ids}}"
+              }
+            }
+          ]
+        },
+        {
+          "$and": [
+            {
+              "user_condition": {
+                "role": "mssg_cliente"
+              }
+            },
+            {
+              "id": {
+                "$in": "{{user.data.cantieri_ids}}"
+              }
+            }
+          ]
         }
       ]
     },
@@ -138,11 +172,6 @@
         {
           "user_condition": {
             "role": "mssg_admin"
-          }
-        },
-        {
-          "user_condition": {
-            "role": "mssg_capo"
           }
         }
       ]
