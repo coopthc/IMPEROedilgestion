@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
+import { useAuth } from "@/lib/AuthContext";
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -14,6 +15,7 @@ import PromemoriaDetailDialog from "@/components/agenda/PromemoriaDetailDialog";
 import { Plus, Calendar, Clock, Inbox, Bell } from "lucide-react";
 
 export default function Agenda() {
+  const { user } = useAuth();
   const { toast } = useToast();
   const [appuntamenti, setAppuntamenti] = useState([]);
   const [promemoria, setPromemoria] = useState([]);
@@ -31,7 +33,13 @@ export default function Agenda() {
         base44.entities.Appuntamento.list("-data"),
         base44.entities.Promemoria.list("-data"),
       ]);
-      setAppuntamenti(data);
+      // Ogni utente vede la propria agenda personale + gli appuntamenti condivisi che lo riguardano.
+      // Gli appuntamenti personali (categoria "personale") sono visibili solo al creatore.
+      const miei = data.filter((a) => {
+        if (a.categoria === "personale" && a.created_by_id !== user.id) return false;
+        return true;
+      });
+      setAppuntamenti(miei);
       setPromemoria(proms);
     } catch (err) {
       console.error(err);

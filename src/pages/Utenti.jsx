@@ -95,7 +95,7 @@ export default function Utenti() {
     }
   };
 
-  if (me?.role !== "admin") {
+  if (me?.role !== "admin" && me?.role !== "mssg_admin") {
     return (
       <div className="text-center py-20 text-muted-foreground">
         <Lock className="w-12 h-12 mx-auto mb-3 opacity-30" />
