@@ -5,7 +5,6 @@ import { useToast } from "@/components/ui/use-toast";
 import ExportButtons from "@/components/esporta/ExportButtons";
 import DiagrammaCollegamenti from "@/components/esporta/DiagrammaCollegamenti";
 import ImportSection from "@/components/esporta/ImportSection";
-import { downloadJSON } from "@/lib/exportUtils";
 import {
   Download,
   Users,
@@ -15,16 +14,11 @@ import {
   Wallet,
   CalendarDays,
   Calendar,
-  Database,
   Loader2,
   Network,
   FileText,
   MessageSquare,
   Bell,
-  Settings,
-  StickyNote,
-  Cloud,
-  FolderArchive,
 } from "lucide-react";
 
 const STATO_LABEL = {
@@ -61,8 +55,6 @@ const AGG_TIPO_LABEL = { aggiornamento: "Aggiornamento", avviso: "Avviso", compl
 export default function Esporta() {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
-  const [backupLoading, setBackupLoading] = useState(false);
-  const [docBackupLoading, setDocBackupLoading] = useState(false);
   const [data, setData] = useState({});
 
   const load = useCallback(async () => {
@@ -139,106 +131,6 @@ export default function Esporta() {
       .reduce((sum, l) => sum + (Number(l.costo) || 0), 0);
     return { ...c, costo_lavorazioni: `€ ${costoLavorazioni.toLocaleString("it-IT")}` };
   });
-
-  const handleBackup = async () => {
-    setBackupLoading(true);
-    try {
-      const backup = {
-        data_esportazione: new Date().toISOString(),
-        versione: "2.0",
-        cartelle: {
-          anagrafiche: {
-            clienti: data.clienti || [],
-            collaboratori: data.collaboratori || [],
-          },
-          cantieri: {
-            cantieri: data.cantieri || [],
-            lavorazioni: data.lavorazioni || [],
-            documenti: data.documenti || [],
-            aggiornamenti: data.aggiornamenti || [],
-          },
-          agenda: {
-            appuntamenti: data.appuntamenti || [],
-            disponibilita: data.disponibilita || [],
-            giorni_bloccati: data.giorniBloccati || [],
-            promemoria: data.promemoria || [],
-          },
-          presenze: {
-            presenze: data.presenze || [],
-          },
-          pagamenti: {
-            pagamenti: data.pagamenti || [],
-          },
-          comunicazioni: {
-            chat: data.chatMessages || [],
-            notifiche: data.notifiche || [],
-          },
-          sistema: {
-            impostazioni: data.impostazioni || [],
-            modelli_email: data.modelliEmail || [],
-          },
-        },
-      };
-      downloadJSON(`backup-totale-edilgestion-${new Date().toISOString().slice(0, 10)}`, backup);
-      toast({ title: "Backup totale generato" });
-    } catch {
-      toast({ title: "Errore backup", variant: "destructive" });
-    } finally {
-      setBackupLoading(false);
-    }
-  };
-
-  const handleDocBackup = async () => {
-    setDocBackupLoading(true);
-    try {
-      const cantieri = data.cantieri || [];
-      const documenti = data.documenti || [];
-      const cartelle = {};
-      cantieri.forEach((c) => {
-        const docs = documenti
-          .filter((d) => d.cantiere_id === c.id)
-          .map((d) => ({
-            nome: d.nome,
-            categoria: CATEGORIA_DOC_LABEL[d.categoria] || d.categoria,
-            file_url: d.file_url,
-            note: d.note,
-            visibile_cliente: d.visibile_cliente,
-          }));
-        const safeName = (c.nome || "senza-nome").replace(/[\/\\]/g, "-");
-        cartelle[safeName] = {
-          cantiere_id: c.id,
-          cantiere_nome: c.nome,
-          n_documenti: docs.length,
-          documenti: docs,
-        };
-      });
-      // Documenti senza cantiere
-      const orfani = documenti
-        .filter((d) => !d.cantiere_id || !cantieri.find((c) => c.id === d.cantiere_id))
-        .map((d) => ({
-          nome: d.nome,
-          categoria: CATEGORIA_DOC_LABEL[d.categoria] || d.categoria,
-          file_url: d.file_url,
-          note: d.note,
-        }));
-      if (orfani.length > 0) {
-        cartelle["_senza_cantiere"] = { n_documenti: orfani.length, documenti: orfani };
-      }
-      const backup = {
-        data_esportazione: new Date().toISOString(),
-        tipo: "backup_documenti_per_cantiere",
-        n_cantieri: Object.keys(cartelle).length,
-        n_documenti_totali: documenti.length,
-        cartelle,
-      };
-      downloadJSON(`backup-documenti-cantieri-${new Date().toISOString().slice(0, 10)}`, backup);
-      toast({ title: "Backup documenti generato" });
-    } catch {
-      toast({ title: "Errore backup documenti", variant: "destructive" });
-    } finally {
-      setDocBackupLoading(false);
-    }
-  };
 
   if (loading) {
     return (
@@ -432,55 +324,6 @@ export default function Esporta() {
         <p className="text-sm text-muted-foreground mt-1">
           Esporta i dati del gestionale in CSV o PDF, genera backup completi o importa nuovi record.
         </p>
-      </div>
-
-      {/* Backup generale + Backup documenti */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="bg-gradient-to-r from-primary/10 to-transparent border border-primary/30 rounded-lg p-5 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-lg bg-primary/15 flex items-center justify-center">
-              <Database className="w-6 h-6 text-primary" />
-            </div>
-            <div>
-              <h2 className="text-sm font-semibold">Backup totale (diviso per cartelle)</h2>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Tutti i dati: anagrafiche, cantieri, documenti, chat, aggiornamenti,
-                impostazioni, modelli email, promemoria, disponibilità, pagamenti e presenze.
-              </p>
-            </div>
-          </div>
-          <Button onClick={handleBackup} disabled={backupLoading} size="sm" className="flex-shrink-0">
-            {backupLoading ? (
-              <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-            ) : (
-              <Database className="w-4 h-4 mr-1" />
-            )}
-            Backup JSON
-          </Button>
-        </div>
-
-        <div className="bg-gradient-to-r from-indigo-500/10 to-transparent border border-indigo-500/30 rounded-lg p-5 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-lg bg-indigo-500/15 flex items-center justify-center">
-              <FolderArchive className="w-6 h-6 text-indigo-400" />
-            </div>
-            <div>
-              <h2 className="text-sm font-semibold">Backup documenti (per cantiere)</h2>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Esporta tutti i documenti organizzati in cartelle per cantiere,
-                con nome, categoria, URL e note.
-              </p>
-            </div>
-          </div>
-          <Button onClick={handleDocBackup} disabled={docBackupLoading} size="sm" variant="outline" className="flex-shrink-0">
-            {docBackupLoading ? (
-              <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-            ) : (
-              <FolderArchive className="w-4 h-4 mr-1" />
-            )}
-            Backup documenti
-          </Button>
-        </div>
       </div>
 
       {/* Export cards */}

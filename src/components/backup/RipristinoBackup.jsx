@@ -258,24 +258,14 @@ export default function RipristinoBackup() {
                       {downloadingAll === rec.id ? "Download..." : "Scarica tutti"}
                     </Button>
                     {rec.tipo === "interno" && (
-                      <>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleRestoreClick(rec, false)}
-                          disabled={restoring || csvCount === 0}
-                        >
-                          <ArchiveRestore className="w-4 h-4 mr-1" /> Ripristina (aggiungi)
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => handleRestoreClick(rec, true)}
-                          disabled={restoring || csvCount === 0}
-                        >
-                          <AlertTriangle className="w-4 h-4 mr-1" /> Ripristina (sostituisci)
-                        </Button>
-                      </>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => handleRestoreClick(rec, true)}
+                        disabled={restoring || csvCount === 0}
+                      >
+                        <AlertTriangle className="w-4 h-4 mr-1" /> Ripristina dati
+                      </Button>
                     )}
                   </div>
 
