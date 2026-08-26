@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { Clock, Ban, Loader2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
 
 function timeToMinutes(t) {
   if (!t) return 0;
@@ -28,13 +29,16 @@ export default function TimeSlotPicker({
   ora,
   onChange,
   excludeId,
+  isAdmin,
 }) {
   const [slots, setSlots] = useState([]);
   const [loading, setLoading] = useState(false);
   const [noAvailability, setNoAvailability] = useState(false);
   const [giornoBloccato, setGiornoBloccato] = useState(null);
+  const [forceMode, setForceMode] = useState(false);
 
   useEffect(() => {
+    setForceMode(false);
     if (!data) {
       setSlots([]);
       setNoAvailability(false);
@@ -131,11 +135,40 @@ export default function TimeSlotPicker({
   }
 
   if (giornoBloccato) {
+    if (isAdmin && forceMode) {
+      return (
+        <div>
+          <p className="text-xs text-destructive mb-1.5 flex items-center gap-1.5">
+            <Ban className="w-3.5 h-3.5" />
+            Giorno bloccato — forzato dall'admin
+          </p>
+          <Input type="time" value={ora} onChange={(e) => onChange(e.target.value)} />
+          <button
+            type="button"
+            onClick={() => { setForceMode(false); onChange(""); }}
+            className="text-[10px] text-muted-foreground hover:text-foreground mt-1.5"
+          >
+            Annulla forzatura
+          </button>
+        </div>
+      );
+    }
     return (
-      <p className="text-xs text-destructive py-2 flex items-center gap-1.5">
-        <Ban className="w-3.5 h-3.5" />
-        Giorno bloccato{giornoBloccato.motivo ? `: ${giornoBloccato.motivo}` : ""}
-      </p>
+      <div>
+        <p className="text-xs text-destructive py-1 flex items-center gap-1.5">
+          <Ban className="w-3.5 h-3.5" />
+          Giorno bloccato{giornoBloccato.motivo ? `: ${giornoBloccato.motivo}` : ""}
+        </p>
+        {isAdmin && (
+          <button
+            type="button"
+            onClick={() => setForceMode(true)}
+            className="text-[11px] text-primary hover:underline"
+          >
+            Forza appuntamento su giorno bloccato
+          </button>
+        )}
+      </div>
     );
   }
 

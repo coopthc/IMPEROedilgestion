@@ -8,7 +8,8 @@ import DisponibilitaManager from "@/components/agenda/DisponibilitaManager";
 import RichiesteList from "@/components/agenda/RichiesteList";
 import AppuntamentoForm from "@/components/agenda/AppuntamentoForm";
 import ListaAppuntamenti from "@/components/agenda/ListaAppuntamenti";
-import { Plus, Calendar, Clock, Inbox } from "lucide-react";
+import PromemoriaManager from "@/components/agenda/PromemoriaManager";
+import { Plus, Calendar, Clock, Inbox, Bell } from "lucide-react";
 
 export default function Agenda() {
   const { toast } = useToast();
@@ -110,6 +111,9 @@ export default function Agenda() {
           <TabsTrigger value="disponibilita" className="flex items-center gap-1.5">
             <Clock className="w-3.5 h-3.5" /> Disponibilità
           </TabsTrigger>
+          <TabsTrigger value="promemoria" className="flex items-center gap-1.5">
+            <Bell className="w-3.5 h-3.5" /> Promemoria
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="settimana" className="mt-4 space-y-4">
@@ -137,6 +141,10 @@ export default function Agenda() {
 
         <TabsContent value="disponibilita" className="mt-4">
           <DisponibilitaManager />
+        </TabsContent>
+
+        <TabsContent value="promemoria" className="mt-4">
+          <PromemoriaManager />
         </TabsContent>
       </Tabs>
 

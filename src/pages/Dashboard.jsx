@@ -14,6 +14,7 @@ import WidgetCollaboratori from "@/components/dashboard/WidgetCollaboratori";
 import WidgetLavorazioni from "@/components/dashboard/WidgetLavorazioni";
 import WidgetNotifiche from "@/components/dashboard/WidgetNotifiche";
 import WidgetChat from "@/components/dashboard/WidgetChat";
+import WidgetPromemoria from "@/components/dashboard/WidgetPromemoria";
 import AddWidgetDialog from "@/components/dashboard/AddWidgetDialog";
 
 const WIDGET_REGISTRY = {
@@ -28,9 +29,10 @@ const WIDGET_REGISTRY = {
   lavorazioni: { label: "Lavorazioni", component: WidgetLavorazioni },
   notifiche: { label: "Notifiche", component: WidgetNotifiche },
   chat: { label: "Ultime chat", component: WidgetChat },
+  promemoria: { label: "Promemoria", component: WidgetPromemoria },
 };
 
-const DEFAULT_WIDGETS = ["cantieri", "appuntamenti", "pagamenti", "presenze", "clienti", "collaboratori"];
+const DEFAULT_WIDGETS = ["cantieri", "appuntamenti", "promemoria", "pagamenti", "presenze", "clienti", "collaboratori"];
 
 function getGreeting() {
   const h = new Date().getHours();

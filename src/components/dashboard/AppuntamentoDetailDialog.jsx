@@ -82,6 +82,10 @@ export default function AppuntamentoDetailDialog({ app, open, onOpenChange }) {
           </a>
         )}
 
+        <Link to="/agenda" className="flex items-center gap-2 text-sm text-primary hover:underline bg-primary/5 rounded-lg p-2">
+          <Calendar className="w-4 h-4" /> Vai all'agenda
+        </Link>
+
         <div className="pt-2 border-t border-border">
           <ShareButton title={`Appuntamento: ${app.titolo}`} text={shareText} />
         </div>

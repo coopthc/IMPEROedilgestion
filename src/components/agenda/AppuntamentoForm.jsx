@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { creaNotifiche } from "@/lib/notifiche";
+import { useAuth } from "@/lib/AuthContext";
 import Combobox from "@/components/agenda/Combobox";
 import TimeSlotPicker from "@/components/agenda/TimeSlotPicker";
 
@@ -85,6 +86,8 @@ export default function AppuntamentoForm({
   defaultData,
   onSaved,
 }) {
+  const { user } = useAuth();
+  const isAdmin = ["admin", "mssg_admin"].includes(user?.role);
   const [form, setForm] = useState(emptyForm);
   const [loading, setLoading] = useState(false);
   const [sendingEmail, setSendingEmail] = useState(false);
@@ -320,6 +323,7 @@ export default function AppuntamentoForm({
                 ora={form.ora}
                 onChange={(v) => update("ora", v)}
                 excludeId={appuntamento?.id}
+                isAdmin={isAdmin}
               />
               {!form.ora && form.data && (
                 <p className="text-[10px] text-muted-foreground">

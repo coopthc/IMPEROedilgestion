@@ -14,6 +14,7 @@ const AVAILABLE = [
   { type: "lavorazioni", label: "Lavorazioni", icon: TrendingUp, color: "text-orange-400", desc: "Avanzamento medio, per stato" },
   { type: "notifiche", label: "Notifiche", icon: Bell, color: "text-primary", desc: "Ultime notifiche ricevute" },
   { type: "chat", label: "Ultime chat", icon: MessageSquare, color: "text-pink-400", desc: "Ultimi messaggi delle chat cantieri" },
+  { type: "promemoria", label: "Promemoria", icon: Bell, color: "text-primary", desc: "Promemoria veloci di oggi con aggiunta rapida" },
 ];
 
 export default function AddWidgetDialog({ open, onOpenChange, onAdd, existing }) {
