@@ -19,6 +19,7 @@ import { Switch } from "@/components/ui/switch";
 import { Loader2, Mail, Check } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useToast } from "@/components/ui/use-toast";
+import { invitaUtenteConRuolo } from "@/lib/invitaUtente";
 
 const QUALIFICHE = [
   { value: "capo_cantiere", label: "Capo cantiere" },
@@ -100,7 +101,7 @@ export default function CollaboratoreForm({ open, onOpenChange, collaboratore, o
   const invitaUtente = async (email, qualifica) => {
     const ruolo = RUOLO_MAP[qualifica] || "mssg_operaio";
     try {
-      await base44.users.inviteUser(email, ruolo);
+      await invitaUtenteConRuolo(email, ruolo);
       return true;
     } catch (err) {
       // Se l'utente esiste già, non è un errore bloccante

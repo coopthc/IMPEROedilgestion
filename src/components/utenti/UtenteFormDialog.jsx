@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2, Mail } from "lucide-react";
+import { invitaUtenteConRuolo } from "@/lib/invitaUtente";
 
 // Livelli di accesso -> role
 const LIVELLI = [
@@ -92,19 +93,7 @@ export default function UtenteFormDialog({ open, onOpenChange, utente, onSaved }
         await base44.entities.User.update(utente.id, { role, ...dataExtra });
         toast({ title: "Utente aggiornato" });
       } else {
-        await base44.users.inviteUser(email.trim(), role);
-        // Aggiorna i dati extra sul record utente appena creato
-        try {
-          const users = await base44.entities.User.list();
-          const nu = users.find(
-            (u) => u.email?.toLowerCase() === email.trim().toLowerCase()
-          );
-          if (nu) {
-            await base44.entities.User.update(nu.id, dataExtra);
-          }
-        } catch {
-          /* l'invito è comunque partito */
-        }
+        await invitaUtenteConRuolo(email.trim(), role, dataExtra);
         toast({
           title: "Invito inviato",
           description: email.trim(),
@@ -126,7 +115,7 @@ export default function UtenteFormDialog({ open, onOpenChange, utente, onSaved }
   const reinvita = async () => {
     if (!utente?.email) return;
     try {
-      await base44.users.inviteUser(utente.email, utente.role);
+      await invitaUtenteConRuolo(utente.email, utente.role);
       toast({ title: "Email re-inviata", description: utente.email });
     } catch (err) {
       toast({ title: "Errore invio email", variant: "destructive" });
