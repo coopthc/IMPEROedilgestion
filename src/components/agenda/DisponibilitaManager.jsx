@@ -45,6 +45,7 @@ export default function DisponibilitaManager() {
   });
   const [nuovoBlocco, setNuovoBlocco] = useState({ data_inizio: "", data_fine: "", motivo: "" });
   const [savingBlocco, setSavingBlocco] = useState(false);
+  const [fissaInAgenda, setFissaInAgenda] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -146,12 +147,31 @@ export default function DisponibilitaManager() {
         return;
       }
 
+      const wasFissa = fissaInAgenda;
+
       await base44.entities.GiornoBloccato.bulkCreate(
         newDates.map((d) => ({ data: d, motivo: nuovoBlocco.motivo || "" }))
       );
+
+      if (wasFissa) {
+        await base44.entities.Appuntamento.bulkCreate(
+          newDates.map((d) => ({
+            titolo: nuovoBlocco.motivo || "Giorno bloccato",
+            data: d,
+            ora: "09:00",
+            durata_minuti: 480,
+            categoria: "personale",
+            tipo: "interno",
+            stato: "programmato",
+            note: "Bloccato automaticamente dalla disponibilità",
+          }))
+        );
+      }
+
       setNuovoBlocco({ data_inizio: "", data_fine: "", motivo: "" });
+      setFissaInAgenda(false);
       await load();
-      toast({ title: `${newDates.length} ${newDates.length === 1 ? "giornata bloccata" : "giornate bloccate"}` });
+      toast({ title: `${newDates.length} ${newDates.length === 1 ? "giornata bloccata" : "giornate bloccate"}${wasFissa ? " e fissate in agenda" : ""}` });
     } catch (err) {
       toast({ title: "Errore", description: err.message, variant: "destructive" });
     } finally {
@@ -359,6 +379,18 @@ export default function DisponibilitaManager() {
             Blocca
           </Button>
         </form>
+        <label className="flex items-center gap-2.5 mt-2 cursor-pointer">
+          <Switch
+            checked={fissaInAgenda}
+            onCheckedChange={setFissaInAgenda}
+          />
+          <div>
+            <span className="text-sm font-medium">Fissa anche in agenda</span>
+            <p className="text-[10px] text-muted-foreground">
+              Crea un appuntamento (personale) per ogni data bloccata
+            </p>
+          </div>
+        </label>
         {bloccoCount > 0 && (
           <p className="text-[11px] text-muted-foreground mt-2">
             Verranno bloccate {bloccoCount} giornate

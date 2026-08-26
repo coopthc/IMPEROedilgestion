@@ -7,6 +7,7 @@ import SettimanaView from "@/components/agenda/SettimanaView";
 import DisponibilitaManager from "@/components/agenda/DisponibilitaManager";
 import RichiesteList from "@/components/agenda/RichiesteList";
 import AppuntamentoForm from "@/components/agenda/AppuntamentoForm";
+import ListaAppuntamenti from "@/components/agenda/ListaAppuntamenti";
 import { Plus, Calendar, Clock, Inbox } from "lucide-react";
 
 export default function Agenda() {
@@ -111,11 +112,15 @@ export default function Agenda() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="settimana" className="mt-4">
+        <TabsContent value="settimana" className="mt-4 space-y-4">
           <SettimanaView
             appuntamenti={appuntamenti}
             loading={loading}
             onDayClick={handleNew}
+            onAppuntamentoClick={handleEdit}
+          />
+          <ListaAppuntamenti
+            appuntamenti={appuntamenti}
             onAppuntamentoClick={handleEdit}
           />
         </TabsContent>
