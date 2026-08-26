@@ -115,12 +115,16 @@ export default function SettimanaView({ appuntamenti, loading, onDayClick, onApp
             return (
               <div
                 key={iso}
-                className={`rounded-lg border min-h-[140px] ${isToday ? "border-primary" : "border-border"} bg-card`}
+                className={`rounded-lg border md:min-h-[140px] ${isToday ? "border-primary" : "border-border"} bg-card`}
               >
-                <div className="md:hidden px-2 py-1.5 border-b border-border flex items-center justify-between">
-                  <span className="text-xs font-semibold">{GIORNI[i]} {d.getDate()}</span>
-                  <button onClick={() => onDayClick(iso)} className="p-1 rounded hover:bg-secondary">
-                    <Plus className="w-3 h-3 text-muted-foreground" />
+                <div className="md:hidden px-3 py-2 border-b border-border flex items-center justify-between">
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{GIORNI[i]}</span>
+                    <span className={`text-sm font-bold ${isToday ? "text-primary" : ""}`}>{d.getDate()}</span>
+                    {isPast && <span className="text-[9px] text-muted-foreground/60">passato</span>}
+                  </div>
+                  <button onClick={() => onDayClick(iso)} className="p-1 rounded-md hover:bg-secondary/70">
+                    <Plus className="w-3.5 h-3.5 text-primary" />
                   </button>
                 </div>
                 <div className="hidden md:block p-1.5">
@@ -159,16 +163,34 @@ export default function SettimanaView({ appuntamenti, loading, onDayClick, onApp
                   )}
                 </div>
                 {/* Mobile list */}
-                <div className="md:hidden p-1.5 space-y-1">
-                  {apps.map((a) => (
+                <div className="md:hidden p-2 space-y-1.5">
+                  {apps.length === 0 ? (
                     <button
-                      key={a.id}
-                      onClick={() => onAppuntamentoClick(a)}
-                      className={`w-full text-left p-1.5 rounded border text-xs ${a.categoria === "personale" ? CATEGORIA_PERSONALE : (STATO_COLORS[a.stato] || STATO_COLORS.programmato)}`}
+                      onClick={() => onDayClick(iso)}
+                      className="w-full text-[11px] text-muted-foreground hover:text-primary py-2 text-center"
                     >
-                      <span className="font-semibold">{a.ora}</span> — {a.titolo}
+                      + aggiungi appuntamento
                     </button>
-                  ))}
+                  ) : (
+                    apps.map((a) => (
+                      <button
+                        key={a.id}
+                        onClick={() => onAppuntamentoClick(a)}
+                        className={`w-full flex items-start gap-2 p-2 rounded-md border text-left ${a.categoria === "personale" ? CATEGORIA_PERSONALE : (STATO_COLORS[a.stato] || STATO_COLORS.programmato)}`}
+                      >
+                        <div className="flex flex-col items-center flex-shrink-0 min-w-[34px]">
+                          <span className="text-xs font-bold">{a.ora || "—"}</span>
+                          <span className="text-[9px] opacity-60">{a.durata_minuti || 60}min</span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-xs font-medium truncate">{a.titolo}</div>
+                          {a.cliente_nome && (
+                            <div className="text-[10px] opacity-70 truncate">{a.cliente_nome}</div>
+                          )}
+                        </div>
+                      </button>
+                    ))
+                  )}
                 </div>
               </div>
             );

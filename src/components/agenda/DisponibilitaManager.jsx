@@ -18,6 +18,8 @@ import {
   Loader2,
   Ban,
   CalendarX,
+  CalendarPlus,
+  Check,
 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -45,17 +47,26 @@ export default function DisponibilitaManager() {
   });
   const [nuovoBlocco, setNuovoBlocco] = useState({ data_inizio: "", data_fine: "", motivo: "" });
   const [savingBlocco, setSavingBlocco] = useState(false);
-  const [fissaInAgenda, setFissaInAgenda] = useState(false);
+  const [agendaDates, setAgendaDates] = useState(new Set());
+  const [fissando, setFissando] = useState(null);
 
   const load = async () => {
     setLoading(true);
     try {
-      const [data, bloccati] = await Promise.all([
+      const [data, bloccati, apps] = await Promise.all([
         base44.entities.Disponibilita.list(),
         base44.entities.GiornoBloccato.list("-data"),
+        base44.entities.Appuntamento.list(),
       ]);
       setSlots(data);
       setGiorniBloccati(bloccati);
+      setAgendaDates(
+        new Set(
+          apps
+            .filter((a) => a.note === "Bloccato automaticamente dalla disponibilità")
+            .map((a) => a.data)
+        )
+      );
     } catch (err) {
       toast({
         title: "Errore caricamento",
@@ -147,31 +158,12 @@ export default function DisponibilitaManager() {
         return;
       }
 
-      const wasFissa = fissaInAgenda;
-
       await base44.entities.GiornoBloccato.bulkCreate(
         newDates.map((d) => ({ data: d, motivo: nuovoBlocco.motivo || "" }))
       );
-
-      if (wasFissa) {
-        await base44.entities.Appuntamento.bulkCreate(
-          newDates.map((d) => ({
-            titolo: nuovoBlocco.motivo || "Giorno bloccato",
-            data: d,
-            ora: "09:00",
-            durata_minuti: 480,
-            categoria: "personale",
-            tipo: "interno",
-            stato: "programmato",
-            note: "Bloccato automaticamente dalla disponibilità",
-          }))
-        );
-      }
-
       setNuovoBlocco({ data_inizio: "", data_fine: "", motivo: "" });
-      setFissaInAgenda(false);
       await load();
-      toast({ title: `${newDates.length} ${newDates.length === 1 ? "giornata bloccata" : "giornate bloccate"}${wasFissa ? " e fissate in agenda" : ""}` });
+      toast({ title: `${newDates.length} ${newDates.length === 1 ? "giornata bloccata" : "giornate bloccate"}` });
     } catch (err) {
       toast({ title: "Errore", description: err.message, variant: "destructive" });
     } finally {
@@ -185,6 +177,28 @@ export default function DisponibilitaManager() {
       setGiorniBloccati((prev) => prev.filter((x) => x.id !== g.id));
     } catch (err) {
       toast({ title: "Errore", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const fissaInAgendaSlot = async (g) => {
+    setFissando(g.id);
+    try {
+      await base44.entities.Appuntamento.create({
+        titolo: g.motivo || "Giorno bloccato",
+        data: g.data,
+        ora: "09:00",
+        durata_minuti: 480,
+        categoria: "personale",
+        tipo: "interno",
+        stato: "programmato",
+        note: "Bloccato automaticamente dalla disponibilità",
+      });
+      setAgendaDates((prev) => new Set([...prev, g.data]));
+      toast({ title: "Fissato in agenda" });
+    } catch (err) {
+      toast({ title: "Errore", description: err.message, variant: "destructive" });
+    } finally {
+      setFissando(null);
     }
   };
 
@@ -379,18 +393,6 @@ export default function DisponibilitaManager() {
             Blocca
           </Button>
         </form>
-        <label className="flex items-center gap-2.5 mt-2 cursor-pointer">
-          <Switch
-            checked={fissaInAgenda}
-            onCheckedChange={setFissaInAgenda}
-          />
-          <div>
-            <span className="text-sm font-medium">Fissa anche in agenda</span>
-            <p className="text-[10px] text-muted-foreground">
-              Crea un appuntamento (personale) per ogni data bloccata
-            </p>
-          </div>
-        </label>
         {bloccoCount > 0 && (
           <p className="text-[11px] text-muted-foreground mt-2">
             Verranno bloccate {bloccoCount} giornate
@@ -404,8 +406,8 @@ export default function DisponibilitaManager() {
                 key={g.id}
                 className="flex items-center justify-between gap-2 px-3 py-2 rounded-md bg-destructive/10 border border-destructive/20"
               >
-                <div className="flex items-center gap-2">
-                  <CalendarX className="w-3.5 h-3.5 text-destructive" />
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                  <CalendarX className="w-3.5 h-3.5 text-destructive flex-shrink-0" />
                   <span className="text-sm font-medium">
                     {new Date(g.data + "T00:00").toLocaleDateString("it-IT", {
                       weekday: "short",
@@ -414,17 +416,33 @@ export default function DisponibilitaManager() {
                     })}
                   </span>
                   {g.motivo && (
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-xs text-muted-foreground truncate">
                       — {g.motivo}
                     </span>
                   )}
                 </div>
-                <button
-                  onClick={() => removeBlocco(g)}
-                  className="p-1 rounded hover:bg-destructive/20 text-destructive"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  {agendaDates.has(g.data) ? (
+                    <span className="text-[10px] text-teal-500 flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-teal-500/10 whitespace-nowrap">
+                      <Check className="w-3 h-3" /> In agenda
+                    </span>
+                  ) : (
+                    <button
+                      onClick={() => fissaInAgendaSlot(g)}
+                      disabled={fissando === g.id}
+                      className="text-[10px] text-primary flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-primary/10 hover:bg-primary/20 transition-colors whitespace-nowrap"
+                    >
+                      {fissando === g.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <CalendarPlus className="w-3 h-3" />}
+                      Fissa
+                    </button>
+                  )}
+                  <button
+                    onClick={() => removeBlocco(g)}
+                    className="p-1 rounded hover:bg-destructive/20 text-destructive"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
             ))}
           </div>

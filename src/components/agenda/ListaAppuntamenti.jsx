@@ -1,13 +1,4 @@
 import React, { useMemo, useState } from "react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectGroup,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Calendar, MapPin, Clock } from "lucide-react";
 
 const STATO_COLORS = {
@@ -68,27 +59,24 @@ export default function ListaAppuntamenti({ appuntamenti, onAppuntamentoClick })
             ({filtrati.length})
           </span>
         </h3>
-        <Select value={filtro} onValueChange={setFiltro}>
-          <SelectTrigger className="w-[200px] h-8 text-xs">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="tutti">Tutti</SelectItem>
-            <SelectGroup>
-              <SelectLabel>Categoria</SelectLabel>
-              <SelectItem value="lavorativo">Lavorativo</SelectItem>
-              <SelectItem value="personale">Personale</SelectItem>
-            </SelectGroup>
-            <SelectGroup>
-              <SelectLabel>Stato</SelectLabel>
-              <SelectItem value="in_attesa">In attesa</SelectItem>
-              <SelectItem value="programmato">Programmato</SelectItem>
-              <SelectItem value="proposto">Proposto</SelectItem>
-              <SelectItem value="completato">Completato</SelectItem>
-              <SelectItem value="annullato">Annullato</SelectItem>
-            </SelectGroup>
-          </SelectContent>
-        </Select>
+        <select
+          value={filtro}
+          onChange={(e) => setFiltro(e.target.value)}
+          className="h-8 px-2 text-xs rounded-md border border-input bg-transparent cursor-pointer"
+        >
+          <option value="tutti">Tutti</option>
+          <optgroup label="Categoria">
+            <option value="lavorativo">Lavorativo</option>
+            <option value="personale">Personale</option>
+          </optgroup>
+          <optgroup label="Stato">
+            <option value="in_attesa">In attesa</option>
+            <option value="programmato">Programmato</option>
+            <option value="proposto">Proposto</option>
+            <option value="completato">Completato</option>
+            <option value="annullato">Annullato</option>
+          </optgroup>
+        </select>
       </div>
 
       {grouped.length === 0 ? (
