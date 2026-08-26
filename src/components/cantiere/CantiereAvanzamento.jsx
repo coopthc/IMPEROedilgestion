@@ -57,6 +57,7 @@ function parseIds(str) {
 
 export default function CantiereAvanzamento({ cantiere, onCantiereUpdate, isCliente = false }) {
   const { user } = useAuth();
+  const isOperaio = user?.role === "mssg_operaio";
   const [percentuale, setPercentuale] = useState(cantiere.avanzamento_percentuale || 0);
   const [aggiornamenti, setAggiornamenti] = useState([]);
   const [lavorazioni, setLavorazioni] = useState([]);
@@ -105,7 +106,11 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate, isClie
   );
   const totaleCosti = lavorazioni.reduce((sum, l) => sum + (l.costo || 0), 0);
   const totaleAggiunte = lavorazioni.filter((l) => l.aggiunta_al_budget).reduce((sum, l) => sum + (l.costo || 0), 0);
-  const lavorazioniVisibili = isCliente ? lavorazioni.filter((l) => l.visibile_cliente) : lavorazioni;
+  const lavorazioniVisibili = isCliente
+    ? lavorazioni.filter((l) => l.visibile_cliente)
+    : isOperaio
+    ? lavorazioni.filter((l) => l.stato === "da_fare")
+    : lavorazioni;
 
   const savePercentuale = async () => {
     setSavingPct(true);
@@ -329,7 +334,7 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate, isClie
   return (
     <div className="space-y-6">
       {/* Selettore modalità */}
-      {!isCliente && (
+      {!isCliente && !isOperaio && (
       <div className="bg-card border border-border rounded-lg p-4">
         <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
           <Gauge className="w-4 h-4 text-primary" />
@@ -373,7 +378,7 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate, isClie
             <Gauge className="w-4 h-4 text-primary" />
             Avanzamento
           </h3>
-          {isCliente ? (
+          {(isCliente || isOperaio) ? (
             <>
               <div className="flex items-baseline gap-2 mb-2">
                 <span className="text-2xl font-bold">{percentuale}%</span>
@@ -482,7 +487,7 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate, isClie
         </div>
 
         {/* Riepilogo budget */}
-        {!isCliente && lavorazioni.length > 0 && (
+        {!isCliente && !isOperaio && lavorazioni.length > 0 && (
           <div className="bg-secondary/30 rounded-lg p-3 mb-4 text-sm">
             <div className="flex items-center gap-1.5 mb-2 text-xs text-muted-foreground">
               <Euro className="w-3.5 h-3.5" />
@@ -505,7 +510,7 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate, isClie
           </div>
         )}
         {/* Form nuova lavorazione */}
-        {!isCliente && (
+        {!isCliente && !isOperaio && (
         <div className="space-y-2 mb-4 bg-secondary/30 rounded-lg p-3">
           <Input
             placeholder="Titolo fase (es. Demolizione bagno) *"
@@ -593,11 +598,13 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate, isClie
         </div>
         )}
 
-        {lavorazioni.length === 0 && !isCliente ? (
+        {lavorazioniVisibili.length === 0 ? (
           <p className="text-xs text-muted-foreground py-3 text-center">
-            Nessuna lavorazione. Le lavorazioni create qui compariranno nella sezione Presenze.
+            {isOperaio
+              ? "Nessuna lavorazione da fare assegnata."
+              : "Nessuna lavorazione. Le lavorazioni create qui compariranno nella sezione Presenze."}
           </p>
-        ) : lavorazioniVisibili.length > 0 && (!isCliente || showFasi) ? (
+        ) : (!isCliente || showFasi) ? (
           <div className="space-y-2 mt-4">
             {lavorazioniVisibili.map((l) => {
               const statoInfo = STATI_LAV.find((s) => s.value === l.stato) || STATI_LAV[0];
@@ -729,7 +736,7 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate, isClie
                             )}
                           </div>
                         </div>
-                        {!isCliente && (
+                        {!isCliente && !isOperaio && (
                         <div className="flex gap-0.5">
                           <button
                             onClick={() => startEditLav(l)}
@@ -777,7 +784,7 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate, isClie
                         </span>
                       </div>
                       <div className="flex items-center gap-2 mt-2">
-                        {isCliente ? (
+                        {(isCliente || isOperaio) ? (
                           <span className={`text-[10px] px-2 py-0.5 rounded ${statoInfo.color}`}>
                             {statoInfo.label}
                           </span>
@@ -807,7 +814,7 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate, isClie
                         )}
                       </div>
                       {/* Costo + aggiunta al budget */}
-                      {l.costo > 0 && !isCliente && (
+                      {l.costo > 0 && !isCliente && !isOperaio && (
                         <div className="flex items-center justify-between mt-2 bg-secondary/50 rounded-md px-2.5 py-1.5">
                           <span className="text-xs text-muted-foreground">Costo</span>
                           <div className="flex items-center gap-2">
@@ -835,7 +842,7 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate, isClie
                           </div>
                         </div>
                       )}
-                      {l.costo > 0 && !isCliente && (
+                      {l.costo > 0 && !isCliente && !isOperaio && (
                         <button
                           onClick={() => removePagamentoLav(l)}
                           className="text-[10px] text-muted-foreground hover:text-destructive mt-1.5 flex items-center gap-1"
@@ -887,6 +894,7 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate, isClie
             onChange={(e) => setNuovoAgg((f) => ({ ...f, testo: e.target.value }))}
           />
           <div className="flex items-center justify-between">
+            {!isOperaio && (
             <label className="flex items-center gap-2 text-xs cursor-pointer">
               <Switch
                 checked={nuovoAgg.visibile_cliente}
@@ -894,6 +902,7 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate, isClie
               />
               Visibile al cliente
             </label>
+            )}
             <Button size="sm" onClick={addAggiornamento} disabled={!nuovoAgg.titolo.trim()}>
               <Plus className="w-4 h-4 mr-1" />
               Pubblica
@@ -943,6 +952,7 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate, isClie
                         placeholder="Descrizione..."
                       />
                       <div className="flex items-center justify-between">
+                        {!isOperaio && (
                         <label className="flex items-center gap-2 text-xs cursor-pointer">
                           <Switch
                             checked={editForm.visibile_cliente}
@@ -950,6 +960,7 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate, isClie
                           />
                           Visibile al cliente
                         </label>
+                        )}
                         <div className="flex gap-1">
                           <Button size="sm" onClick={() => saveEdit(a.id)}>
                             Salva
