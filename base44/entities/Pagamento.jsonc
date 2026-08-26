@@ -73,5 +73,81 @@
   "required": [
     "cantiere_id",
     "titolo"
-  ]
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "mssg_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "mssg_capo"
+          }
+        },
+        {
+          "data.cliente_id": "{{user.data.cliente_id}}"
+        }
+      ]
+    },
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "mssg_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "mssg_capo"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "mssg_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "mssg_capo"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "mssg_admin"
+          }
+        }
+      ]
+    }
+  }
 }

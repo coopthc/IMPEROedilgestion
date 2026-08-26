@@ -92,5 +92,101 @@
     "titolo",
     "data",
     "ora"
-  ]
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "mssg_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "mssg_capo"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "mssg_operaio"
+          }
+        },
+        {
+          "data.cliente_id": "{{user.data.cliente_id}}"
+        }
+      ]
+    },
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "mssg_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "mssg_capo"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "mssg_operaio"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "mssg_cliente"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "mssg_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "mssg_capo"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "mssg_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "mssg_capo"
+          }
+        }
+      ]
+    }
+  }
 }

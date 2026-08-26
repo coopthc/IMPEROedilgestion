@@ -1,11 +1,12 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
-import { buildFirmaHtml, getImpostazioni, getModello, fillTemplate } from '../../shared/firmaEmail.ts';
+import { buildFirmaHtml, getImpostazioni, getModello, fillTemplate, escapeHtml } from '../../shared/firmaEmail.ts';
 
 export default async function(req: Request): Promise<Response> {
   try {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!['admin', 'mssg_admin', 'mssg_capo'].includes(user.role)) return Response.json({ error: 'Forbidden' }, { status: 403 });
 
     const body = await req.json();
     const collaboratoriIds: string[] = body?.collaboratoriIds || [];
@@ -37,7 +38,7 @@ export default async function(req: Request): Promise<Response> {
     };
     const oggetto = fillTemplate(modello?.oggetto || titolo, vars);
     const corpoBase = fillTemplate(modello?.corpo || testo, vars);
-    const link = url ? `<p><a href="${url}">Apri nell'app</a></p>` : '';
+    const link = url ? `<p><a href="${escapeHtml(url)}">Apri nell'app</a></p>` : '';
 
     const bodyHtml = `
       <div style="font-family:sans-serif;max-width:560px;margin:auto">

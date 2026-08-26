@@ -1,3 +1,7 @@
+export function escapeHtml(str: string): string {
+  return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+}
+
 export function buildFirmaHtml(imp: any): string {
   const riga = (label: string, val: string) =>
     val
@@ -29,8 +33,8 @@ export function buildFirmaHtml(imp: any): string {
 
 export function buildEmailHtml(oggetto: string, corpo: string, imp: any): string {
   return `<div style="font-family:sans-serif;max-width:560px;margin:auto">
-    <h2 style="color:#e23a8c">${oggetto}</h2>
-    <p style="white-space:pre-line">${(corpo || '').replace(/\n/g, '<br>')}</p>
+    <h2 style="color:#e23a8c">${escapeHtml(oggetto)}</h2>
+    <p style="white-space:pre-line">${escapeHtml(corpo).replace(/\n/g, '<br>')}</p>
     ${buildFirmaHtml(imp)}
   </div>`;
 }
@@ -46,5 +50,5 @@ export async function getModello(base44: any, chiave: string): Promise<any> {
 }
 
 export function fillTemplate(text: string, vars: Record<string, string>): string {
-  return Object.keys(vars).reduce((acc, k) => acc.split(k).join(vars[k]), text || '');
+  return Object.keys(vars).reduce((acc, k) => acc.split(k).join(escapeHtml(vars[k])), text || '');
 }
