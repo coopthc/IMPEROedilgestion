@@ -175,6 +175,17 @@ export default function AppuntamentoForm({
       if (partecipantiIds.includes(s.id)) nomi.push(s.nome);
     });
 
+    // RLS: raccoglie gli user_id dei partecipanti + creatore
+    const utentiIds = [];
+    collaboratori.forEach((s) => {
+      if (partecipantiIds.includes(s.id) && s.user_id) {
+        utentiIds.push(s.user_id);
+      }
+    });
+    if (user?.id && !utentiIds.includes(user.id)) {
+      utentiIds.push(user.id);
+    }
+
     const payload = {
       ...form,
       durata_minuti: durataTotale || 60,
@@ -182,6 +193,7 @@ export default function AppuntamentoForm({
       cantiere_nome: cantiere?.nome || "",
       partecipanti_ids: partecipantiIds.join(","),
       partecipanti_nomi: nomi.join(", "),
+      utenti_ids: utentiIds,
     };
 
     try {
