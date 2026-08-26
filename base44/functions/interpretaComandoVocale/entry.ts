@@ -28,24 +28,20 @@ function levenshtein(a: string, b: string): number {
   return d[n];
 }
 
-// Trova il miglior match per nome tra una lista di record, provando più strategie
 function matchByNome(search: string, items: any[], fields: string[]): any | null {
   if (!search || !items.length) return null;
   const normSearch = normalizzaNome(search);
   if (!normSearch) return null;
 
-  // 1. Match esatto (normalizzato)
   let match = items.find((c: any) => fields.some((f: string) => normalizzaNome(String(c[f] || "")) === normSearch));
   if (match) return match;
 
-  // 2. Match per contenuto (normalizzato)
   match = items.find((c: any) => fields.some((f: string) => {
     const v = normalizzaNome(String(c[f] || ""));
     return v && (v.includes(normSearch) || normSearch.includes(v));
   }));
   if (match) return match;
 
-  // 3. Match per token — tutti i token significativi della ricerca appaiono nel campo
   const searchTokens = normSearch.split(" ").filter((t: string) => t.length > 2);
   if (searchTokens.length > 0) {
     match = items.find((c: any) => fields.some((f: string) => {
@@ -55,7 +51,6 @@ function matchByNome(search: string, items: any[], fields: string[]): any | null
     if (match) return match;
   }
 
-  // 4. Match fuzzy — distanza di Levenshtein entro il 30% della lunghezza
   let bestMatch: any = null;
   let bestDist = Infinity;
   for (const c of items) {
@@ -90,22 +85,38 @@ export default async function(req: Request): Promise<Response> {
 Comando dell'utente: "${transcript}"
 Data di oggi: ${today} (formato YYYY-MM-DD).
 
-Determina cosa vuole creare l'utente tra: "appuntamento", "promemoria", "cliente", "collaboratore", "cantiere", "lavorazione".
+Prima determina l'AZIONE:
+- "crea" se l'utente vuole creare qualcosa di nuovo (es: "nuovo", "crea", "aggiungi", "registra")
+- "aggiorna" se l'utente vuole modificare un record esistente (es: "apri", "modifica", "aggiorna", "cambia", "imposta", "inserisci")
 
-Regole per tipo:
-- appuntamento: titolo, data (YYYY-MM-DD, risolvi "domani"/"lunedì"/"25 agosto" ecc.), ora (HH:MM default "09:00"), durata_minuti (default 60), categoria ("lavorativo" o "personale" default "lavorativo").
-- promemoria: titolo, data (YYYY-MM-DD), ora (HH:MM se menzionata altrimenti stringa vuota).
-- cliente: nome (obbligatorio, SOLO nome e cognome senza articoli), azienda, is_azienda (true se nomina un'azienda), email, telefono, indirizzo, citta, cap, provincia, piva, codice_fiscale, note.
-- collaboratore: nome (obbligatorio, SOLO nome e cognome senza articoli), qualifica ("capo_cantiere"/"operaio"/"tecnico"/"amministrazione"/"altro"), costo_orario, email, telefono, is_azienda, azienda.
-- cantiere: titolo (usato come nome cantiere), cliente_nome (SOLO il nome del cliente esistente, SENZA articoli o preposizioni — es. "Bianchi" non "il Bianchi" o "e Bianchi"), indirizzo, citta, stato ("attivo" default), data_inizio, data_fine, budget, descrizione.
-- lavorazione: titolo, cantiere_nome (SOLO il nome del cantiere esistente, senza articoli), descrizione, percentuale_prevista (numero 0-100), costo.
+Poi determina il TIPO tra: "appuntamento", "promemoria", "cliente", "collaboratore", "cantiere", "lavorazione".
 
-IMPORTANTISSIMO: per cliente_nome e cantiere_nome estrai SOLO il nome proprio senza articoli ("il", "la", "l'", "e", "per", "di", "del"). Se il comando dice "per il cliente Bianchi", estrai solo "Bianchi".
+Per AGGIORNA, estrai "ricerca_nome" = il nome del record da trovare (SOLO il nome proprio, senza articoli). Es: "modifica budget cantiere Ristrutturazione Bagno" → ricerca_nome="Ristrutturazione Bagno", budget=X. "aggiorna cellulare cliente Mario Rossi con 333" → ricerca_nome="Mario Rossi", telefono="333".
+
+Regole per tipo (campi aggiornabili in parentesi):
+- cliente: ricerca_nome (nome/azienda), telefono, email, indirizzo, citta, cap, provincia, piva, codice_fiscale, note, azienda, is_azienda.
+- collaboratore: ricerca_nome (nome), telefono, email, costo_orario, qualifica ("capo_cantiere"/"operaio"/"tecnico"/"amministrazione"/"altro"), indirizzo, citta.
+- cantiere: ricerca_nome (nome), budget, stato ("bozza"/"attivo"/"sospeso"/"completato"/"chiuso"), data_inizio, data_fine, indirizzo, citta, descrizione.
+- lavorazione: ricerca_nome (titolo), stato ("da_fare"/"in_corso"/"completata"/"bloccata"/"annullata"), percentuale_completata, percentuale_prevista, costo, descrizione.
+- appuntamento: ricerca_nome (titolo), data, ora, durata_minuti, categoria, stato, note.
+- promemoria: ricerca_nome (titolo), data, ora, completato (boolean), nota.
+
+Per CREA, usa le stesse regole di prima:
+- appuntamento: titolo, data (YYYY-MM-DD), ora (HH:MM default "09:00"), durata_minuti (default 60), categoria ("lavorativo"/"personale").
+- promemoria: titolo, data (YYYY-MM-DD), ora (HH:MM o "").
+- cliente: nome, azienda, is_azienda, email, telefono, indirizzo, citta, cap, provincia, piva, codice_fiscale, note.
+- collaboratore: nome, qualifica, costo_orario, email, telefono, is_azienda, azienda.
+- cantiere: titolo (nome cantiere), cliente_nome (SOLO nome cliente, senza articoli), indirizzo, citta, stato, data_inizio, data_fine, budget, descrizione.
+- lavorazione: titolo, cantiere_nome (SOLO nome cantiere esistente), descrizione, percentuale_prevista, costo.
+
+IMPORTANTISSIMO: per ricerca_nome, cliente_nome e cantiere_nome estrai SOLO il nome proprio senza articoli ("il", "la", "l'", "e", "per", "di", "del"). Se il comando dice "per il cliente Bianchi", estrai solo "Bianchi".
 Se un campo non è menzionato, usa null. Rispondi SOLO con JSON.`,
       response_json_schema: {
         type: "object",
         properties: {
+          azione: { type: "string", enum: ["crea", "aggiorna"] },
           tipo: { type: "string", enum: ["appuntamento", "promemoria", "cliente", "collaboratore", "cantiere", "lavorazione"] },
+          ricerca_nome: { type: "string" },
           titolo: { type: "string" },
           data: { type: "string" },
           ora: { type: "string" },
@@ -125,6 +136,8 @@ Se un campo non è menzionato, usa null. Rispondi SOLO con JSON.`,
           qualifica: { type: "string" },
           costo_orario: { type: "number" },
           note: { type: "string" },
+          nota: { type: "string" },
+          completato: { type: "boolean" },
           cliente_nome: { type: "string" },
           stato: { type: "string" },
           data_inizio: { type: "string" },
@@ -133,19 +146,123 @@ Se un campo non è menzionato, usa null. Rispondi SOLO con JSON.`,
           descrizione: { type: "string" },
           cantiere_nome: { type: "string" },
           percentuale_prevista: { type: "number" },
+          percentuale_completata: { type: "number" },
           costo: { type: "number" },
         },
-        required: ["tipo"],
+        required: ["azione", "tipo"],
       },
     });
 
-    // Pulisci valori "null"/"undefined" stringa restituiti dall'LLM per i campi vuoti
+    // Pulisci valori "null"/"undefined" stringa
     Object.keys(res).forEach((k: string) => {
       const v = res[k];
       if (v === "null" || v === "undefined" || v === null || v === "") delete res[k];
     });
 
     const tipo: string = res.tipo;
+    const azione: string = res.azione || "crea";
+
+    // === AGGIORNA ===
+    if (azione === "aggiorna") {
+      const searchName = res.ricerca_nome || res.nome || res.titolo;
+      if (!searchName) {
+        return Response.json({ error: "Specifica il nome del record da aggiornare." }, { status: 400 });
+      }
+
+      let found: any = null;
+      let updateFields: any = {};
+
+      if (tipo === "cliente") {
+        const list = await base44.entities.Cliente.list();
+        found = matchByNome(searchName, list, ["nome", "azienda"]);
+        updateFields = {
+          ...(res.telefono ? { telefono: res.telefono } : {}),
+          ...(res.email ? { email: res.email } : {}),
+          ...(res.indirizzo ? { indirizzo: res.indirizzo } : {}),
+          ...(res.citta ? { citta: res.citta } : {}),
+          ...(res.cap ? { cap: res.cap } : {}),
+          ...(res.provincia ? { provincia: res.provincia } : {}),
+          ...(res.piva ? { piva: res.piva } : {}),
+          ...(res.codice_fiscale ? { codice_fiscale: res.codice_fiscale } : {}),
+          ...(res.note ? { note: res.note } : {}),
+          ...(res.azienda ? { azienda: res.azienda } : {}),
+          ...(res.is_azienda !== undefined ? { is_azienda: res.is_azienda } : {}),
+        };
+      } else if (tipo === "collaboratore") {
+        const list = await base44.entities.Collaboratore.list();
+        found = matchByNome(searchName, list, ["nome"]);
+        updateFields = {
+          ...(res.telefono ? { telefono: res.telefono } : {}),
+          ...(res.email ? { email: res.email } : {}),
+          ...(res.costo_orario !== undefined ? { costo_orario: res.costo_orario } : {}),
+          ...(res.qualifica ? { qualifica: res.qualifica } : {}),
+          ...(res.indirizzo ? { indirizzo: res.indirizzo } : {}),
+          ...(res.citta ? { citta: res.citta } : {}),
+        };
+      } else if (tipo === "cantiere") {
+        const list = await base44.entities.Cantiere.list();
+        found = matchByNome(searchName, list, ["nome"]);
+        updateFields = {
+          ...(res.budget !== undefined ? { budget: res.budget } : {}),
+          ...(res.stato ? { stato: res.stato } : {}),
+          ...(res.data_inizio ? { data_inizio: res.data_inizio } : {}),
+          ...(res.data_fine ? { data_fine: res.data_fine } : {}),
+          ...(res.indirizzo ? { indirizzo: res.indirizzo } : {}),
+          ...(res.citta ? { citta: res.citta } : {}),
+          ...(res.descrizione ? { descrizione: res.descrizione } : {}),
+        };
+      } else if (tipo === "lavorazione") {
+        const list = await base44.entities.Lavorazione.list();
+        found = matchByNome(searchName, list, ["titolo"]);
+        updateFields = {
+          ...(res.stato ? { stato: res.stato } : {}),
+          ...(res.percentuale_completata !== undefined ? { percentuale_completata: res.percentuale_completata } : {}),
+          ...(res.percentuale_prevista !== undefined ? { percentuale_prevista: res.percentuale_prevista } : {}),
+          ...(res.costo !== undefined ? { costo: res.costo } : {}),
+          ...(res.descrizione ? { descrizione: res.descrizione } : {}),
+        };
+      } else if (tipo === "appuntamento") {
+        const list = await base44.entities.Appuntamento.list();
+        found = matchByNome(searchName, list, ["titolo"]);
+        updateFields = {
+          ...(res.data ? { data: res.data } : {}),
+          ...(res.ora ? { ora: res.ora } : {}),
+          ...(res.durata_minuti ? { durata_minuti: res.durata_minuti } : {}),
+          ...(res.categoria ? { categoria: res.categoria } : {}),
+          ...(res.stato ? { stato: res.stato } : {}),
+          ...(res.note ? { note: res.note } : {}),
+        };
+      } else if (tipo === "promemoria") {
+        const list = await base44.entities.Promemoria.list();
+        found = matchByNome(searchName, list, ["titolo"]);
+        updateFields = {
+          ...(res.data ? { data: res.data } : {}),
+          ...(res.ora ? { ora: res.ora } : {}),
+          ...(res.completato !== undefined ? { completato: res.completato } : {}),
+          ...(res.nota ? { nota: res.nota } : {}),
+        };
+      }
+
+      if (!found) {
+        return Response.json({ error: `${tipo} "${searchName}" non trovato.` }, { status: 400 });
+      }
+      if (Object.keys(updateFields).length === 0) {
+        return Response.json({ error: "Nessun campo da aggiornare specificato nel comando." }, { status: 400 });
+      }
+
+      const entityMap: any = {
+        cliente: base44.entities.Cliente,
+        collaboratore: base44.entities.Collaboratore,
+        cantiere: base44.entities.Cantiere,
+        lavorazione: base44.entities.Lavorazione,
+        appuntamento: base44.entities.Appuntamento,
+        promemoria: base44.entities.Promemoria,
+      };
+      const record = await entityMap[tipo].update(found.id, updateFields);
+      return Response.json({ tipo, azione, record, message: `${tipo} aggiornato` });
+    }
+
+    // === CREA ===
     let record: any;
     let message: string;
 
@@ -244,7 +361,7 @@ Se un campo non è menzionato, usa null. Rispondi SOLO con JSON.`,
       return Response.json({ error: "Tipo non riconosciuto" }, { status: 400 });
     }
 
-    return Response.json({ tipo, record, message });
+    return Response.json({ tipo, azione: "crea", record, message });
   } catch (error) {
     return Response.json({ error: (error as Error).message }, { status: 500 });
   }

@@ -102,7 +102,7 @@ export default function VoiceCommandDialog({ open, onOpenChange }) {
             <Sparkles className="w-4 h-4 text-primary" /> Comando vocale
           </DialogTitle>
           <DialogDescription>
-            Parla o scrivi per creare: appuntamento, promemoria, cliente, collaboratore, cantiere o lavorazione. Es: &laquo;appuntamento domani alle 14 con Rossi&raquo;, &laquo;nuovo cliente Mario Rossi email mario@email.it&raquo;, &laquo;crea cantiere ristrutturazione Bagno per il cliente Bianchi&raquo;.
+            Parla o scrivi per creare o aggiornare: appuntamento, promemoria, cliente, collaboratore, cantiere o lavorazione. Es: &laquo;appuntamento domani alle 14 con Rossi&raquo;, &laquo;aggiorna cellulare cliente Mario Rossi con 3331234567&raquo;, &laquo;modifica budget cantiere Ristrutturazione a 15000 euro&raquo;.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
