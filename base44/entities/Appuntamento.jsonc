@@ -64,6 +64,14 @@
       "type": "string",
       "title": "Nomi partecipanti (separati da virgola)"
     },
+    "utenti_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [],
+      "title": "ID utenti partecipanti (per accesso RLS)"
+    },
     "note": {
       "type": "string",
       "title": "Note"
@@ -137,23 +145,33 @@
                 {
                   "$and": [
                     {
+                      "user_condition": {
+                        "role": "mssg_capo"
+                      }
+                    },
+                    {
                       "$or": [
                         {
-                          "user_condition": {
-                            "role": "mssg_capo"
+                          "data.cantiere_id": {
+                            "$in": "{{user.data.cantieri_ids}}"
                           }
                         },
                         {
-                          "user_condition": {
-                            "role": "mssg_operaio"
-                          }
+                          "data.utenti_ids": "{{user.id}}"
                         }
                       ]
+                    }
+                  ]
+                },
+                {
+                  "$and": [
+                    {
+                      "user_condition": {
+                        "role": "mssg_operaio"
+                      }
                     },
                     {
-                      "data.cantiere_id": {
-                        "$in": "{{user.data.cantieri_ids}}"
-                      }
+                      "data.utenti_ids": "{{user.id}}"
                     }
                   ]
                 },
