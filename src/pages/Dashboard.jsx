@@ -107,6 +107,13 @@ export default function Dashboard() {
   };
   const removeQuickAction = (type) => saveQuickActions(quickActions.filter((t) => t !== type));
   const addQuickAction = (type) => saveQuickActions([...quickActions, type]);
+  const moveQuickAction = (i, dir) => {
+    const j = i + dir;
+    if (j < 0 || j >= quickActions.length) return;
+    const arr = [...quickActions];
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+    saveQuickActions(arr);
+  };
 
   return (
     <div>
@@ -132,6 +139,7 @@ export default function Dashboard() {
           editMode={editMode}
           onRemove={removeQuickAction}
           onAdd={addQuickAction}
+          onMove={moveQuickAction}
         />
       </div>
 

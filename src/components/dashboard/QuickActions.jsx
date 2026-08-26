@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Bell, HardHat, Users, Calendar, Cloud, Plus, Loader2, X } from "lucide-react";
+import { Bell, HardHat, Users, Calendar, Cloud, Plus, Loader2, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   Dialog,
@@ -23,7 +23,7 @@ export const ACTION_CONFIG = {
 
 export const ALL_ACTION_TYPES = Object.keys(ACTION_CONFIG);
 
-export default function QuickActions({ visibleActions, editMode, onRemove, onAdd }) {
+export default function QuickActions({ visibleActions, editMode, onRemove, onAdd, onMove }) {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [promOpen, setPromOpen] = useState(false);
@@ -66,7 +66,7 @@ export default function QuickActions({ visibleActions, editMode, onRemove, onAdd
   return (
     <>
       <div className="flex flex-wrap gap-2">
-        {visibleActions.map((type) => {
+        {visibleActions.map((type, idx) => {
           const cfg = ACTION_CONFIG[type];
           if (!cfg) return null;
           return (
@@ -80,12 +80,28 @@ export default function QuickActions({ visibleActions, editMode, onRemove, onAdd
                 {cfg.label}
               </button>
               {editMode && (
-                <button
-                  onClick={() => onRemove(type)}
-                  className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center hover:bg-destructive/80 z-10"
-                >
-                  <X className="w-2.5 h-2.5" />
-                </button>
+                <div className="absolute -top-2 -right-2 flex items-center gap-0.5 z-10">
+                  <button
+                    onClick={() => onMove(idx, -1)}
+                    disabled={idx === 0}
+                    className="w-5 h-5 rounded-full bg-secondary border border-border text-muted-foreground flex items-center justify-center hover:bg-secondary/70 disabled:opacity-30"
+                  >
+                    <ChevronLeft className="w-3 h-3" />
+                  </button>
+                  <button
+                    onClick={() => onMove(idx, 1)}
+                    disabled={idx === visibleActions.length - 1}
+                    className="w-5 h-5 rounded-full bg-secondary border border-border text-muted-foreground flex items-center justify-center hover:bg-secondary/70 disabled:opacity-30"
+                  >
+                    <ChevronRight className="w-3 h-3" />
+                  </button>
+                  <button
+                    onClick={() => onRemove(type)}
+                    className="w-5 h-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center hover:bg-destructive/80"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
               )}
             </div>
           );
