@@ -17,8 +17,8 @@ const AVAILABLE = [
   { type: "promemoria", label: "Promemoria", icon: Bell, color: "text-primary", desc: "Promemoria veloci di oggi con aggiunta rapida" },
 ];
 
-export default function AddWidgetDialog({ open, onOpenChange, onAdd, existing }) {
-  const available = AVAILABLE.filter((w) => !existing.includes(w.type));
+export default function AddWidgetDialog({ open, onOpenChange, onAdd, existing, disabledWidgets = [] }) {
+  const available = AVAILABLE.filter((w) => !existing.includes(w.type) && !disabledWidgets.includes(w.type));
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">

@@ -20,6 +20,8 @@ import CantiereForm from "@/components/cantieri/CantiereForm";
 import ShareMenu from "@/components/dashboard/ShareMenu";
 import { useToast } from "@/components/ui/use-toast";
 import { Image as UIImage } from "@/components/ui/image";
+import { useAuth } from "@/lib/AuthContext";
+import { isOperaio } from "@/lib/ruoli";
 
 const STATO_STILI = {
   bozza: "bg-gray-500/15 text-gray-400",
@@ -49,6 +51,8 @@ const FILTRI = [
 export default function Cantieri() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
+  const operaio = isOperaio(user?.role);
   const [cantieri, setCantieri] = useState([]);
   const [clienti, setClienti] = useState([]);
   const [pagamenti, setPagamenti] = useState([]);
@@ -169,10 +173,12 @@ export default function Cantieri() {
             {cantieri.length} cantieri totali
           </p>
         </div>
-        <Button onClick={handleNew} size="sm">
-          <Plus className="w-4 h-4 mr-1" />
-          Nuovo
-        </Button>
+        {!operaio && (
+          <Button onClick={handleNew} size="sm">
+            <Plus className="w-4 h-4 mr-1" />
+            Nuovo
+          </Button>
+        )}
       </div>
 
       {/* Ricerca + filtri */}
@@ -290,6 +296,7 @@ export default function Cantieri() {
                     />
                   </div>
                 </div>
+                {!operaio && (
                 <div>
                   <div className="flex items-center justify-between text-[10px] text-muted-foreground mb-1">
                     <span>Pagamenti</span>
@@ -302,6 +309,7 @@ export default function Cantieri() {
                     />
                   </div>
                 </div>
+                )}
               </div>
 
               {/* Riepilogo lavorazioni */}
@@ -321,6 +329,7 @@ export default function Cantieri() {
 
               </div>
               {/* Azioni */}
+              {!operaio && (
               <div className="flex gap-1 pt-2 border-t border-border items-center flex-shrink-0">
                 <Button
                   size="icon"
@@ -361,6 +370,7 @@ export default function Cantieri() {
                   />
                 </div>
               </div>
+              )}
             </div>
           ))}
         </div>

@@ -50,7 +50,7 @@ function calcOre(ingresso, uscita) {
   return Math.round((diff / 60) * 100) / 100;
 }
 
-export default function PresenzaForm({ open, onOpenChange, presenza, onSaved }) {
+export default function PresenzaForm({ open, onOpenChange, presenza, onSaved, lockCollaboratoreId }) {
   const [form, setForm] = useState(emptyForm);
   const [loading, setLoading] = useState(false);
   const [collaboratori, setCollaboratori] = useState([]);
@@ -70,9 +70,9 @@ export default function PresenzaForm({ open, onOpenChange, presenza, onSaved }) 
         note: presenza.note || "",
       });
     } else {
-      setForm(emptyForm);
+      setForm(lockCollaboratoreId ? { ...emptyForm, collaboratore_id: lockCollaboratoreId } : emptyForm);
     }
-  }, [presenza, open]);
+  }, [presenza, open, lockCollaboratoreId]);
 
   useEffect(() => {
     if (open) {
@@ -230,6 +230,11 @@ export default function PresenzaForm({ open, onOpenChange, presenza, onSaved }) 
             <>
           <div className="space-y-1.5">
             <Label>Collaboratore *</Label>
+            {lockCollaboratoreId ? (
+              <div className="text-sm font-medium py-2">
+                {collaboratori.find((c) => c.id === lockCollaboratoreId)?.nome || "—"}
+              </div>
+            ) : (
             <Select
               value={form.collaboratore_id || "__none__"}
               onValueChange={(v) =>
@@ -248,6 +253,7 @@ export default function PresenzaForm({ open, onOpenChange, presenza, onSaved }) 
                 ))}
               </SelectContent>
             </Select>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-3">

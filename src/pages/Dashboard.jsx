@@ -17,6 +17,7 @@ import WidgetChat from "@/components/dashboard/WidgetChat";
 import WidgetPromemoria from "@/components/dashboard/WidgetPromemoria";
 import QuickActions from "@/components/dashboard/QuickActions";
 import AddWidgetDialog from "@/components/dashboard/AddWidgetDialog";
+import { isOperaio, WIDGET_VIETATI_OPERAIO, AZIONI_VIETATE_OPERAIO, DEFAULT_WIDGETS_OPERAIO, DEFAULT_QA_OPERAIO } from "@/lib/ruoli";
 
 const WIDGET_REGISTRY = {
   cantieri: { label: "Cantieri", component: WidgetCantieri },
@@ -44,6 +45,7 @@ function getGreeting() {
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const operaio = isOperaio(user?.role);
   const [azienda, setAzienda] = useState(null);
   const [config, setConfig] = useState(null);
   const [widgets, setWidgets] = useState([]);
@@ -67,14 +69,15 @@ export default function Dashboard() {
             setQuickActions(JSON.parse(configs[0].quick_actions));
           }
         } else {
-          const DEFAULT_QA = ["voce", "promemoria", "appuntamento", "cliente", "collaboratore", "backup"];
+          const defaultWidgets = operaio ? DEFAULT_WIDGETS_OPERAIO : DEFAULT_WIDGETS;
+          const defaultQA = operaio ? DEFAULT_QA_OPERAIO : ["voce", "promemoria", "appuntamento", "cliente", "collaboratore", "backup"];
           const created = await base44.entities.DashboardConfig.create({
-            widgets: JSON.stringify(DEFAULT_WIDGETS),
-            quick_actions: JSON.stringify(DEFAULT_QA),
+            widgets: JSON.stringify(defaultWidgets),
+            quick_actions: JSON.stringify(defaultQA),
           });
           setConfig(created);
-          setWidgets(DEFAULT_WIDGETS);
-          setQuickActions(DEFAULT_QA);
+          setWidgets(defaultWidgets);
+          setQuickActions(defaultQA);
         }
       } catch { /* ignora */ }
       setLoading(false);
@@ -140,6 +143,7 @@ export default function Dashboard() {
           onRemove={removeQuickAction}
           onAdd={addQuickAction}
           onMove={moveQuickAction}
+          disabledActions={operaio ? AZIONI_VIETATE_OPERAIO : []}
         />
       </div>
 
@@ -191,7 +195,7 @@ export default function Dashboard() {
         </div>
       )}
 
-      <AddWidgetDialog open={showAdd} onOpenChange={setShowAdd} onAdd={addWidget} existing={widgets} />
+      <AddWidgetDialog open={showAdd} onOpenChange={setShowAdd} onAdd={addWidget} existing={widgets} disabledWidgets={operaio ? WIDGET_VIETATI_OPERAIO : []} />
     </div>
   );
 }

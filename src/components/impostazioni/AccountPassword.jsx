@@ -66,6 +66,9 @@ export default function AccountPassword() {
         <p className="text-xs text-muted-foreground mt-0.5">
           Cambia la tua password o richiedi un'email di recupero.
         </p>
+        <p className="text-[11px] text-muted-foreground mt-1 italic">
+          Se accedi con Google, la password è gestita da Google e non può essere modificata qui.
+        </p>
       </div>
 
       {/* Cambio password */}

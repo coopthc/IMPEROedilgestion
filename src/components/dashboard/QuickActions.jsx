@@ -25,7 +25,7 @@ export const ACTION_CONFIG = {
 
 export const ALL_ACTION_TYPES = Object.keys(ACTION_CONFIG);
 
-export default function QuickActions({ visibleActions, editMode, onRemove, onAdd, onMove }) {
+export default function QuickActions({ visibleActions, editMode, onRemove, onAdd, onMove, disabledActions = [] }) {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [promOpen, setPromOpen] = useState(false);
@@ -66,12 +66,13 @@ export default function QuickActions({ visibleActions, editMode, onRemove, onAdd
     }
   };
 
-  const hiddenActions = ALL_ACTION_TYPES.filter((t) => !visibleActions.includes(t));
+  const visible = visibleActions.filter((t) => !disabledActions.includes(t));
+  const hiddenActions = ALL_ACTION_TYPES.filter((t) => !visible.includes(t) && !disabledActions.includes(t));
 
   return (
     <>
       <div className="flex flex-wrap gap-2">
-        {visibleActions.map((type, idx) => {
+        {visible.map((type, idx) => {
           const cfg = ACTION_CONFIG[type];
           if (!cfg) return null;
           return (

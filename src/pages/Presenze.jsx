@@ -24,6 +24,8 @@ import {
 } from "lucide-react";
 import PresenzaForm from "@/components/presenze/PresenzaForm";
 import ExportButtons from "@/components/esporta/ExportButtons";
+import { useAuth } from "@/lib/AuthContext";
+import { isOperaio } from "@/lib/ruoli";
 
 const COLONNE_PRESENZE = [
   { label: "Collaboratore", key: "collaboratore_nome" },
@@ -38,6 +40,9 @@ const COLONNE_PRESENZE = [
 
 export default function Presenze() {
   const { toast } = useToast();
+  const { user } = useAuth();
+  const operaio = isOperaio(user?.role);
+  const mioCollabId = user?.collaboratore_id;
   const [presenze, setPresenze] = useState([]);
   const [collaboratori, setCollaboratori] = useState([]);
   const [cantieri, setCantieri] = useState([]);
@@ -72,12 +77,13 @@ export default function Presenze() {
 
   const filtered = useMemo(() => {
     return presenze.filter((p) => {
+      if (operaio && mioCollabId && p.collaboratore_id !== mioCollabId) return false;
       if (filtroData && p.data !== filtroData) return false;
       if (filtroCollab !== "tutti" && p.collaboratore_id !== filtroCollab) return false;
       if (filtroCantiere !== "tutti" && p.cantiere_id !== filtroCantiere) return false;
       return true;
     });
-  }, [presenze, filtroData, filtroCollab, filtroCantiere]);
+  }, [presenze, filtroData, filtroCollab, filtroCantiere, operaio, mioCollabId]);
 
   const totaleOre = filtered.reduce((s, p) => s + (p.ore_totali || 0), 0);
   const totaleStraord = filtered.reduce((s, p) => s + (p.ore_straordinarie || 0), 0);
@@ -113,13 +119,15 @@ export default function Presenze() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <ExportButtons
-            title="Presenze"
-            subtitle={`${filtered.length} registrazioni — ${new Date().toLocaleDateString("it-IT")}`}
-            columns={COLONNE_PRESENZE}
-            data={filtered}
-            filename={`presenze-${new Date().toISOString().slice(0, 10)}`}
-          />
+          {!operaio && (
+            <ExportButtons
+              title="Presenze"
+              subtitle={`${filtered.length} registrazioni — ${new Date().toLocaleDateString("it-IT")}`}
+              columns={COLONNE_PRESENZE}
+              data={filtered}
+              filename={`presenze-${new Date().toISOString().slice(0, 10)}`}
+            />
+          )}
           <Button onClick={openNew}>
             <Plus className="w-4 h-4 mr-1" />
             Registra
@@ -155,19 +163,21 @@ export default function Presenze() {
           onChange={(e) => setFiltroData(e.target.value)}
           className="w-full sm:w-40"
         />
-        <Select value={filtroCollab} onValueChange={setFiltroCollab}>
-          <SelectTrigger className="w-full sm:w-48">
-            <SelectValue placeholder="Collaboratore" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="tutti">Tutti i collaboratori</SelectItem>
-            {collaboratori.map((c) => (
-              <SelectItem key={c.id} value={c.id}>
-                {c.nome}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {!operaio && (
+          <Select value={filtroCollab} onValueChange={setFiltroCollab}>
+            <SelectTrigger className="w-full sm:w-48">
+              <SelectValue placeholder="Collaboratore" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="tutti">Tutti i collaboratori</SelectItem>
+              {collaboratori.map((c) => (
+                <SelectItem key={c.id} value={c.id}>
+                  {c.nome}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
         <Select value={filtroCantiere} onValueChange={setFiltroCantiere}>
           <SelectTrigger className="w-full sm:w-48">
             <SelectValue placeholder="Cantiere" />
@@ -259,20 +269,22 @@ export default function Presenze() {
                   </div>
                 )}
               </div>
-              <div className="flex gap-1 flex-shrink-0">
-                <button
-                  onClick={() => openEdit(p)}
-                  className="p-1.5 rounded hover:bg-secondary text-muted-foreground"
-                >
-                  <Pencil className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={() => handleDelete(p)}
-                  className="p-1.5 rounded hover:bg-destructive/15 text-destructive"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              </div>
+              {!operaio && (
+                <div className="flex gap-1 flex-shrink-0">
+                  <button
+                    onClick={() => openEdit(p)}
+                    className="p-1.5 rounded hover:bg-secondary text-muted-foreground"
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(p)}
+                    className="p-1.5 rounded hover:bg-destructive/15 text-destructive"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -283,6 +295,7 @@ export default function Presenze() {
         onOpenChange={setFormOpen}
         presenza={editing}
         onSaved={load}
+        lockCollaboratoreId={operaio ? mioCollabId : null}
       />
     </div>
   );

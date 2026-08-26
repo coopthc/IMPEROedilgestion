@@ -5,6 +5,7 @@ import { base44 } from "@/api/base44Client";
 import NotificationBell from "@/components/NotificationBell";
 import VoiceCommandButton from "@/components/VoiceCommandButton";
 import { applyTema, TEMA_DARK, TEMA_CHIARO } from "@/lib/tema";
+import { isOperaio } from "@/lib/ruoli";
 import {
   LayoutDashboard,
   Building2,
@@ -23,12 +24,12 @@ import {
 export const NAV_ITEMS = [
   { to: "/", icon: LayoutDashboard, label: "Dashboard", group: "gestionale", end: true },
   { to: "/cantieri", icon: Building2, label: "Cantieri", group: "gestionale" },
-  { to: "/clienti", icon: Users, label: "Clienti", group: "gestionale" },
+  { to: "/clienti", icon: Users, label: "Clienti", group: "gestionale", hideFor: ["mssg_operaio"] },
   { to: "/agenda", icon: Calendar, label: "Agenda", group: "gestionale" },
-  { to: "/collaboratori", icon: HardHat, label: "Collaboratori", group: "gestionale" },
+  { to: "/collaboratori", icon: HardHat, label: "Collaboratori", group: "gestionale", hideFor: ["mssg_operaio"] },
   { to: "/presenze", icon: CalendarDays, label: "Presenze", group: "gestionale" },
-  { to: "/esporta", icon: Download, label: "Esporta dati", group: "strumenti" },
-  { to: "/backup-cloud", icon: Cloud, label: "Backup e Cloud", group: "strumenti" },
+  { to: "/esporta", icon: Download, label: "Esporta dati", group: "strumenti", hideFor: ["mssg_operaio"] },
+  { to: "/backup-cloud", icon: Cloud, label: "Backup e Cloud", group: "strumenti", hideFor: ["mssg_operaio"] },
   { to: "/utenti", icon: UserCog, label: "Amministratori", group: "strumenti", roles: ["admin"] },
   { to: "/impostazioni", icon: Settings, label: "Impostazioni", group: "strumenti" },
 ];
@@ -103,7 +104,7 @@ export default function GestionaleLayout() {
               <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-4 pt-3 pb-1 opacity-60">
                 {GROUP_LABELS[group]}
               </div>
-              {NAV_ITEMS.filter((item) => item.group === group && (!item.roles || item.roles.includes(user?.role))).map((item) => (
+              {NAV_ITEMS.filter((item) => item.group === group && (!item.roles || item.roles.includes(user?.role)) && (!item.hideFor || !item.hideFor.includes(user?.role))).map((item) => (
                 <NavLink
                   key={item.to}
                   to={item.to}
@@ -146,11 +147,20 @@ export default function GestionaleLayout() {
         </div>
       </main>
 
-      <VoiceCommandButton />
+      {!isOperaio(user?.role) && <VoiceCommandButton />}
 
       {/* Tab bar mobile — fixed bottom, solo mobile */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border flex justify-around items-center h-[62px] px-1 shadow-[0_-4px_20px_rgba(0,0,0,0.5)]">
-        {MOBILE_TABS.map((item) => (
+        {(isOperaio(user?.role)
+          ? [
+              { to: "/", icon: LayoutDashboard, label: "Home", end: true },
+              { to: "/cantieri", icon: Building2, label: "Cantieri" },
+              { to: "/agenda", icon: Calendar, label: "Agenda" },
+              { to: "/presenze", icon: CalendarDays, label: "Presenze" },
+              { to: "/impostazioni", icon: Settings, label: "Impost." },
+            ]
+          : MOBILE_TABS
+        ).map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
