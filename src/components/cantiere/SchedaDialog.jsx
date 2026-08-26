@@ -6,6 +6,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { exportSchedaPDF } from "@/lib/exportUtils";
 import {
   Phone,
   Mail,
@@ -19,6 +20,7 @@ import {
   BadgeCheck,
   BadgeX,
   FileText,
+  Download,
 } from "lucide-react";
 
 const QUALIFICA_LABELS = {
@@ -71,6 +73,39 @@ export default function SchedaDialog({ open, onOpenChange, type, item }) {
     .filter(Boolean)
     .join(", ");
 
+  const handlePDF = () => {
+    exportSchedaPDF({
+      title: isCliente ? "Scheda Cliente" : "Scheda Collaboratore",
+      subtitle: displayName,
+      sections: [
+        {
+          title: "Dati anagrafici",
+          fields: [
+            ...(!isCliente
+              ? [{ label: "Qualifica", value: QUALIFICA_LABELS[item.qualifica] || item.qualifica }]
+              : []),
+            ...(item.is_azienda
+              ? [{ label: "Ragione sociale", value: item.azienda }]
+              : [{ label: "Nome", value: item.nome }]),
+            { label: "Email", value: email },
+            { label: "Telefono", value: telefono },
+            { label: "Indirizzo", value: indirizzoFull },
+            { label: "P.IVA", value: item.piva },
+            { label: "Codice fiscale", value: item.codice_fiscale },
+            ...(!isCliente && item.costo_orario != null
+              ? [{ label: "Costo orario", value: `€ ${Number(item.costo_orario).toLocaleString("it-IT")}/h` }]
+              : []),
+            ...(!isCliente
+              ? [{ label: "Stato", value: item.attivo !== false ? "Attivo" : "Non attivo" }]
+              : []),
+            ...(item.note ? [{ label: "Note", value: item.note }] : []),
+          ],
+        },
+      ],
+      filename: `scheda-${isCliente ? "cliente" : "collaboratore"}-${(displayName || "").replace(/\s/g, "-").toLowerCase()}`,
+    });
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="bg-card border-border max-w-md">
@@ -120,7 +155,18 @@ export default function SchedaDialog({ open, onOpenChange, type, item }) {
                   </a>
                 </Button>
               )}
+              <Button size="sm" variant="outline" onClick={handlePDF}>
+                <Download className="w-3.5 h-3.5 mr-1" />
+                Scarica PDF
+              </Button>
             </div>
+          )}
+
+          {(!telefono && !email) && (
+            <Button size="sm" variant="outline" onClick={handlePDF}>
+              <Download className="w-3.5 h-3.5 mr-1" />
+              Scarica PDF
+            </Button>
           )}
 
           {/* Dati anagrafici */}

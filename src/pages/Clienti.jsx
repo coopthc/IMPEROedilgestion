@@ -21,7 +21,19 @@ import {
 const waLink = (phone) =>
   "https://wa.me/" + (phone || "").replace(/[^0-9]/g, "");
 import ClienteForm from "@/components/clienti/ClienteForm";
+import ExportButtons from "@/components/esporta/ExportButtons";
 import { useToast } from "@/components/ui/use-toast";
+
+const COLONNE_CLIENTI = [
+  { label: "Nome", key: "nome" },
+  { label: "Azienda", key: "azienda" },
+  { label: "Email", key: "email" },
+  { label: "Telefono", key: "telefono" },
+  { label: "Città", key: "citta" },
+  { label: "Provincia", key: "provincia" },
+  { label: "P.IVA", key: "piva" },
+  { label: "Codice Fiscale", key: "codice_fiscale" },
+];
 
 export default function Clienti() {
   const { toast } = useToast();
@@ -100,10 +112,19 @@ export default function Clienti() {
             {clienti.length} clienti registrati
           </p>
         </div>
-        <Button onClick={handleNew} size="sm">
-          <Plus className="w-4 h-4 mr-1" />
-          Nuovo
-        </Button>
+        <div className="flex items-center gap-2">
+          <ExportButtons
+            title="Clienti"
+            subtitle={`${clientiFiltrati.length} clienti — ${new Date().toLocaleDateString("it-IT")}`}
+            columns={COLONNE_CLIENTI}
+            data={clientiFiltrati}
+            filename={`clienti-${new Date().toISOString().slice(0, 10)}`}
+          />
+          <Button onClick={handleNew} size="sm">
+            <Plus className="w-4 h-4 mr-1" />
+            Nuovo
+          </Button>
+        </div>
       </div>
 
       {/* Ricerca */}

@@ -23,6 +23,18 @@ import {
   TrendingUp,
 } from "lucide-react";
 import PresenzaForm from "@/components/presenze/PresenzaForm";
+import ExportButtons from "@/components/esporta/ExportButtons";
+
+const COLONNE_PRESENZE = [
+  { label: "Collaboratore", key: "collaboratore_nome" },
+  { label: "Cantiere", key: "cantiere_nome" },
+  { label: "Lavorazione", key: "lavorazione_nome" },
+  { label: "Data", key: "data" },
+  { label: "Ingresso", key: "ora_ingresso" },
+  { label: "Uscita", key: "ora_uscita" },
+  { label: "Ore totali", key: "ore_totali" },
+  { label: "Straordinarie", key: "ore_straordinarie" },
+];
 
 export default function Presenze() {
   const { toast } = useToast();
@@ -100,10 +112,19 @@ export default function Presenze() {
             Registra le ore di lavoro dei collaboratori
           </p>
         </div>
-        <Button onClick={openNew}>
-          <Plus className="w-4 h-4 mr-1" />
-          Registra
-        </Button>
+        <div className="flex items-center gap-2">
+          <ExportButtons
+            title="Presenze"
+            subtitle={`${filtered.length} registrazioni — ${new Date().toLocaleDateString("it-IT")}`}
+            columns={COLONNE_PRESENZE}
+            data={filtered}
+            filename={`presenze-${new Date().toISOString().slice(0, 10)}`}
+          />
+          <Button onClick={openNew}>
+            <Plus className="w-4 h-4 mr-1" />
+            Registra
+          </Button>
+        </div>
       </div>
 
       {/* KPI */}

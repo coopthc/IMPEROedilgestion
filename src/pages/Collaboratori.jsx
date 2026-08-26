@@ -19,7 +19,17 @@ import {
 const waLink = (phone) =>
   "https://wa.me/" + (phone || "").replace(/[^0-9]/g, "");
 import CollaboratoreForm from "@/components/collaboratori/CollaboratoreForm";
+import ExportButtons from "@/components/esporta/ExportButtons";
 import { useToast } from "@/components/ui/use-toast";
+
+const COLONNE_COLLABORATORI = [
+  { label: "Nome", key: "nome" },
+  { label: "Qualifica", value: (c) => QUALIFICA_LABELS[c.qualifica] || c.qualifica },
+  { label: "Email", key: "email" },
+  { label: "Telefono", key: "telefono" },
+  { label: "Costo orario", value: (c) => (c.costo_orario ? `€ ${c.costo_orario}` : "") },
+  { label: "Attivo", value: (c) => (c.attivo === false ? "No" : "Sì") },
+];
 
 const QUALIFICA_LABELS = {
   capo_cantiere: "Capo cantiere",
@@ -131,10 +141,19 @@ export default function Collaboratori() {
             {collaboratori.length} collaboratori registrati
           </p>
         </div>
-        <Button onClick={handleNew} size="sm">
-          <Plus className="w-4 h-4 mr-1" />
-          Nuovo
-        </Button>
+        <div className="flex items-center gap-2">
+          <ExportButtons
+            title="Collaboratori"
+            subtitle={`${filtrati.length} collaboratori — ${new Date().toLocaleDateString("it-IT")}`}
+            columns={COLONNE_COLLABORATORI}
+            data={filtrati}
+            filename={`collaboratori-${new Date().toISOString().slice(0, 10)}`}
+          />
+          <Button onClick={handleNew} size="sm">
+            <Plus className="w-4 h-4 mr-1" />
+            Nuovo
+          </Button>
+        </div>
       </div>
 
       {/* Ricerca + filtri */}
