@@ -1,12 +1,13 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 
-export function useSpeechRecognition({ lang = "it-IT", continuous = false, onResult, onError } = {}) {
+export function useSpeechRecognition({ lang = "it-IT", continuous = false, autoRestart = false, onResult, onError } = {}) {
   const [isListening, setIsListening] = useState(false);
   const [interim, setInterim] = useState("");
   const [error, setError] = useState(null);
   const recRef = useRef(null);
   const onResultRef = useRef(onResult);
   const onErrorRef = useRef(onError);
+  const shouldStopRef = useRef(false);
 
   useEffect(() => { onResultRef.current = onResult; }, [onResult]);
   useEffect(() => { onErrorRef.current = onError; }, [onError]);
@@ -17,6 +18,7 @@ export function useSpeechRecognition({ lang = "it-IT", continuous = false, onRes
 
   const start = useCallback(() => {
     if (!supported) return;
+    shouldStopRef.current = false;
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     const rec = new SR();
     rec.lang = lang;
@@ -33,8 +35,20 @@ export function useSpeechRecognition({ lang = "it-IT", continuous = false, onRes
       setInterim(interimText);
       if (finalText && onResultRef.current) onResultRef.current(finalText.trim(), interimText);
     };
-    rec.onend = () => { setIsListening(false); setInterim(""); };
+    rec.onend = () => {
+      // Auto-restart se l'utente non ha premuto stop (gestisce pause nel parlato)
+      if (autoRestart && !shouldStopRef.current) {
+        try { rec.start(); } catch { /* già avviato */ }
+        return;
+      }
+      setIsListening(false);
+      setInterim("");
+    };
     rec.onerror = (e) => {
+      // Per errori di permesso, non riavviare
+      if (e.error === "not-allowed" || e.error === "service-not-allowed") {
+        shouldStopRef.current = true;
+      }
       setIsListening(false);
       setInterim("");
       setError(e.error || "errore");
@@ -43,9 +57,10 @@ export function useSpeechRecognition({ lang = "it-IT", continuous = false, onRes
     rec.start();
     recRef.current = rec;
     setIsListening(true);
-  }, [supported, lang, continuous]);
+  }, [supported, lang, continuous, autoRestart]);
 
   const stop = useCallback(() => {
+    shouldStopRef.current = true;
     if (recRef.current) {
       try { recRef.current.stop(); } catch { /* ignora */ }
       recRef.current = null;
@@ -53,7 +68,10 @@ export function useSpeechRecognition({ lang = "it-IT", continuous = false, onRes
     setIsListening(false);
   }, []);
 
-  useEffect(() => () => { if (recRef.current) { try { recRef.current.stop(); } catch { /* ignora */ } } }, []);
+  useEffect(() => () => {
+    shouldStopRef.current = true;
+    if (recRef.current) { try { recRef.current.stop(); } catch { /* ignora */ } }
+  }, []);
 
   return { isListening, interim, error, supported, start, stop };
 }

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Mic, Loader2, Check, Sparkles, Square } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Mic, Loader2, Check, Sparkles, Square, ArrowRight } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -12,14 +13,24 @@ import { base44 } from "@/api/base44Client";
 import { useToast } from "@/components/ui/use-toast";
 import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
 
+const ROUTE_MAP = {
+  appuntamento: "/agenda",
+  promemoria: "/agenda",
+  cliente: "/clienti",
+  collaboratore: "/collaboratori",
+  cantiere: "/cantieri",
+};
+
 export default function VoiceCommandDialog({ open, onOpenChange }) {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [transcript, setTranscript] = useState("");
   const [parsing, setParsing] = useState(false);
   const [result, setResult] = useState(null);
 
   const { isListening, start, stop, supported } = useSpeechRecognition({
-    continuous: false,
+    continuous: true,
+    autoRestart: true,
     onResult: (finalText) => {
       setTranscript((t) => (t + " " + finalText).trim());
     },
@@ -73,6 +84,16 @@ export default function VoiceCommandDialog({ open, onOpenChange }) {
     onOpenChange(v);
   };
 
+  const handleResultClick = () => {
+    if (!result) return;
+    let route = ROUTE_MAP[result.tipo] || "/";
+    if (result.tipo === "lavorazione" && result.record?.cantiere_id) {
+      route = `/cantieri/${result.record.cantiere_id}`;
+    }
+    navigate(route);
+    handleClose(false);
+  };
+
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-md">
@@ -121,12 +142,18 @@ export default function VoiceCommandDialog({ open, onOpenChange }) {
             )}
           </Button>
           {result && (
-            <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3 text-sm flex items-center gap-2">
+            <button
+              onClick={handleResultClick}
+              className="w-full text-left bg-green-500/10 border border-green-500/30 rounded-lg p-3 text-sm flex items-center gap-2 hover:bg-green-500/20 transition-colors cursor-pointer"
+            >
               <Check className="w-4 h-4 text-green-500 flex-shrink-0" />
-              <span>
+              <span className="flex-1">
                 {result.message}: <strong>{result.record?.titolo || result.record?.nome}</strong>
               </span>
-            </div>
+              <span className="flex items-center gap-1 text-xs text-green-500/80 flex-shrink-0">
+                Vai <ArrowRight className="w-3 h-3" />
+              </span>
+            </button>
           )}
         </div>
       </DialogContent>
