@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Calendar, Clock, User, Building2, FileText, MapPin, Tag } from "lucide-react";
+import { Calendar, Clock, User, Building2, FileText, MapPin, Tag, Pencil } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import ShareButton from "./ShareButton";
 
@@ -21,7 +22,7 @@ function Field({ icon: Icon, label, children }) {
   );
 }
 
-export default function AppuntamentoDetailDialog({ app, open, onOpenChange }) {
+export default function AppuntamentoDetailDialog({ app, open, onOpenChange, onEdit }) {
   const [cantiere, setCantiere] = useState(null);
 
   useEffect(() => {
@@ -82,9 +83,16 @@ export default function AppuntamentoDetailDialog({ app, open, onOpenChange }) {
           </a>
         )}
 
-        <Link to="/agenda" className="flex items-center gap-2 text-sm text-primary hover:underline bg-primary/5 rounded-lg p-2">
-          <Calendar className="w-4 h-4" /> Vai all'agenda
-        </Link>
+        <div className="flex gap-2">
+          {onEdit && (
+            <Button onClick={() => onEdit(app)} className="flex-1">
+              <Pencil className="w-4 h-4 mr-1" /> Modifica
+            </Button>
+          )}
+          <Link to="/agenda" className="flex items-center gap-2 text-sm text-primary hover:underline bg-primary/5 rounded-lg p-2">
+            <Calendar className="w-4 h-4" /> Agenda
+          </Link>
+        </div>
 
         <div className="pt-2 border-t border-border">
           <ShareButton title={`Appuntamento: ${app.titolo}`} text={shareText} />

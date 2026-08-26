@@ -9,6 +9,8 @@ import RichiesteList from "@/components/agenda/RichiesteList";
 import AppuntamentoForm from "@/components/agenda/AppuntamentoForm";
 import ListaAppuntamenti from "@/components/agenda/ListaAppuntamenti";
 import PromemoriaManager from "@/components/agenda/PromemoriaManager";
+import AppuntamentoDetailDialog from "@/components/dashboard/AppuntamentoDetailDialog";
+import PromemoriaDetailDialog from "@/components/agenda/PromemoriaDetailDialog";
 import { Plus, Calendar, Clock, Inbox, Bell } from "lucide-react";
 
 export default function Agenda() {
@@ -19,6 +21,8 @@ export default function Agenda() {
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [defaultData, setDefaultData] = useState("");
+  const [detailApp, setDetailApp] = useState(null);
+  const [detailProm, setDetailProm] = useState(null);
 
   const load = async () => {
     setLoading(true);
@@ -49,6 +53,21 @@ export default function Agenda() {
   const handleEdit = (a) => {
     setEditing(a);
     setDefaultData("");
+    setFormOpen(true);
+  };
+
+  const handleAppuntamentoClick = (a) => {
+    setDetailApp(a);
+  };
+
+  const handlePromemoriaClick = (p) => {
+    setDetailProm(p);
+  };
+
+  const handleEditFromDetail = () => {
+    setEditing(detailApp);
+    setDefaultData("");
+    setDetailApp(null);
     setFormOpen(true);
   };
 
@@ -127,11 +146,12 @@ export default function Agenda() {
             promemoria={promemoria}
             loading={loading}
             onDayClick={handleNew}
-            onAppuntamentoClick={handleEdit}
+            onAppuntamentoClick={handleAppuntamentoClick}
+            onPromemoriaClick={handlePromemoriaClick}
           />
           <ListaAppuntamenti
             appuntamenti={appuntamenti}
-            onAppuntamentoClick={handleEdit}
+            onAppuntamentoClick={handleAppuntamentoClick}
           />
         </TabsContent>
 
@@ -159,6 +179,20 @@ export default function Agenda() {
         onOpenChange={setFormOpen}
         appuntamento={editing}
         defaultData={defaultData}
+        onSaved={load}
+      />
+
+      <AppuntamentoDetailDialog
+        app={detailApp}
+        open={!!detailApp}
+        onOpenChange={(v) => !v && setDetailApp(null)}
+        onEdit={handleEditFromDetail}
+      />
+
+      <PromemoriaDetailDialog
+        prom={detailProm}
+        open={!!detailProm}
+        onOpenChange={(v) => !v && setDetailProm(null)}
         onSaved={load}
       />
     </div>
