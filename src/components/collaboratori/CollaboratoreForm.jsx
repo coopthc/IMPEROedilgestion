@@ -25,14 +25,14 @@ const QUALIFICHE = [
   { value: "capo_cantiere", label: "Capo cantiere" },
   { value: "operaio", label: "Operaio" },
   { value: "tecnico", label: "Tecnico" },
-  { value: "amministrazione", label: "Amministrazione" },
-  { value: "altro", label: "Altro" },
+  { value: "supervisore", label: "Supervisore" },
 ];
 
 const RUOLO_MAP = {
   capo_cantiere: "mssg_capo",
   operaio: "mssg_operaio",
   tecnico: "mssg_operaio",
+  supervisore: "mssg_admin",
   amministrazione: "mssg_admin",
   altro: "mssg_operaio",
 };
@@ -112,6 +112,14 @@ export default function CollaboratoreForm({ open, onOpenChange, collaboratore, o
       let saved;
       if (collaboratore) {
         saved = await base44.entities.Collaboratore.update(collaboratore.id, payload);
+        if (collaboratore.user_id) {
+          const nuovoRuolo = RUOLO_MAP[form.qualifica] || "mssg_operaio";
+          try {
+            await base44.entities.User.update(collaboratore.user_id, { role: nuovoRuolo });
+          } catch (e) {
+            console.error("Sincronizzazione ruolo utente fallita:", e);
+          }
+        }
       } else {
         saved = await base44.entities.Collaboratore.create(payload);
       }

@@ -36,8 +36,9 @@ const QUALIFICA_LABELS = {
   capo_cantiere: "Capo cantiere",
   operaio: "Operaio",
   tecnico: "Tecnico",
-  amministrazione: "Amministrazione",
-  altro: "Altro",
+  supervisore: "Supervisore",
+  amministrazione: "Supervisore",
+  altro: "Operaio",
 };
 
 export default function Collaboratori() {
@@ -124,6 +125,7 @@ export default function Collaboratori() {
       capo_cantiere: "mssg_capo",
       operaio: "mssg_operaio",
       tecnico: "mssg_operaio",
+      supervisore: "mssg_admin",
       amministrazione: "mssg_admin",
       altro: "mssg_operaio",
     };
