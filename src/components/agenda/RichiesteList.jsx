@@ -48,6 +48,8 @@ export default function RichiesteList({
   onAccetta,
   onDeclina,
   onProponi,
+  isCliente = false,
+  onConfermaCliente,
 }) {
   if (loading) {
     return (
@@ -153,11 +155,22 @@ export default function RichiesteList({
                 </div>
               </>
             )}
-            {a.stato === "proposto" && (
+            {a.stato === "proposto" && isCliente && onConfermaCliente && (
               <>
                 <div className="text-xs text-purple-400 flex items-center gap-1.5 mr-auto">
                   <AlertCircle className="w-3.5 h-3.5" />
                   Proposta: {formatDataIta(a.data)} alle {a.ora} — in attesa di conferma
+                </div>
+                <Button size="sm" onClick={() => onConfermaCliente(a)} className="h-7 text-xs">
+                  <CheckCircle2 className="w-3.5 h-3.5 mr-1" /> Conferma
+                </Button>
+              </>
+            )}
+            {a.stato === "proposto" && !isCliente && (
+              <>
+                <div className="text-xs text-purple-400 flex items-center gap-1.5 mr-auto">
+                  <AlertCircle className="w-3.5 h-3.5" />
+                  Proposta: {formatDataIta(a.data)} alle {a.ora} — in attesa di conferma cliente
                 </div>
                 <Button size="sm" variant="outline" onClick={() => onProponi(a)} className="h-7 text-xs">
                   <Pencil className="w-3.5 h-3.5 mr-1" /> Modifica proposta

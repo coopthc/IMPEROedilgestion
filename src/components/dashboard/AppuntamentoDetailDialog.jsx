@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Calendar, Clock, User, Building2, FileText, MapPin, Tag, Pencil } from "lucide-react";
+import { Calendar, Clock, User, Building2, FileText, MapPin, Tag, Pencil, CheckCircle2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import ShareButton from "./ShareButton";
@@ -22,7 +22,7 @@ function Field({ icon: Icon, label, children }) {
   );
 }
 
-export default function AppuntamentoDetailDialog({ app, open, onOpenChange, onEdit }) {
+export default function AppuntamentoDetailDialog({ app, open, onOpenChange, onEdit, isCliente = false, onConfermaCliente }) {
   const [cantiere, setCantiere] = useState(null);
 
   useEffect(() => {
@@ -75,6 +75,17 @@ export default function AppuntamentoDetailDialog({ app, open, onOpenChange, onEd
           )}
           {cantiere?.indirizzo && <Field icon={MapPin} label="Indirizzo">{cantiere.indirizzo}, {cantiere.citta}</Field>}
           {app.note && <Field icon={FileText} label="Note">{app.note}</Field>}
+          {app.motivo && (
+            <div className="flex items-start gap-2 text-sm bg-red-500/10 border border-red-500/20 rounded-lg p-2.5">
+              <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
+              <div>
+                <span className="text-muted-foreground text-xs">
+                  {app.stato === "annullato" ? "Motivo annullamento" : "Motivo"}:{" "}
+                </span>
+                <span className="text-red-400">{app.motivo}</span>
+              </div>
+            </div>
+          )}
         </div>
 
         {mapsUrl && (
@@ -83,8 +94,14 @@ export default function AppuntamentoDetailDialog({ app, open, onOpenChange, onEd
           </a>
         )}
 
+        {isCliente && app.stato === "proposto" && onConfermaCliente && (
+          <Button onClick={() => onConfermaCliente(app)} className="w-full">
+            <CheckCircle2 className="w-4 h-4 mr-1" /> Conferma appuntamento
+          </Button>
+        )}
+
         <div className="flex gap-2">
-          {onEdit && (
+          {onEdit && !isCliente && (
             <Button onClick={() => onEdit(app)} className="flex-1">
               <Pencil className="w-4 h-4 mr-1" /> Modifica
             </Button>

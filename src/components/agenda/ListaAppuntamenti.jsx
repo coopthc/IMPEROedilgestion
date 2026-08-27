@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { Calendar, MapPin, Clock } from "lucide-react";
+import { Calendar, MapPin, Clock, CheckCircle2, AlertCircle } from "lucide-react";
 
 const STATO_COLORS = {
   in_attesa: "bg-yellow-500/15 text-yellow-400 border-yellow-500/40",
@@ -19,7 +19,7 @@ const STATO_LABEL = {
   annullato: "Annullato",
 };
 
-export default function ListaAppuntamenti({ appuntamenti, onAppuntamentoClick }) {
+export default function ListaAppuntamenti({ appuntamenti, onAppuntamentoClick, isCliente = false, onConfermaCliente }) {
   const [filtro, setFiltro] = useState("tutti");
 
   const filtrati = useMemo(() => {
@@ -96,38 +96,57 @@ export default function ListaAppuntamenti({ appuntamenti, onAppuntamentoClick })
               </div>
               <div className="space-y-1.5">
                 {apps.map((a) => (
-                  <button
+                  <div
                     key={a.id}
-                    onClick={() => onAppuntamentoClick(a)}
-                    className={`w-full flex items-center gap-3 p-2.5 rounded-md border text-left text-sm ${
+                    className={`flex items-center gap-2 p-2.5 rounded-md border text-left text-sm ${
                       a.categoria === "personale"
                         ? CATEGORIA_PERSONALE
                         : STATO_COLORS[a.stato] || STATO_COLORS.programmato
                     }`}
                   >
-                    <div className="flex items-center gap-1.5 font-semibold flex-shrink-0">
-                      <Clock className="w-3.5 h-3.5" />
-                      {a.ora || "—"}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium truncate">{a.titolo}</div>
-                      <div className="text-[10px] opacity-70 truncate flex items-center gap-1">
-                        {a.cantiere_nome ? (
-                          <>
-                            <MapPin className="w-2.5 h-2.5" />
-                            {a.cantiere_nome}
-                          </>
-                        ) : (
-                          a.cliente_nome || ""
+                    <button
+                      onClick={() => onAppuntamentoClick(a)}
+                      className="flex items-center gap-3 flex-1 min-w-0 text-left"
+                    >
+                      <div className="flex items-center gap-1.5 font-semibold flex-shrink-0">
+                        <Clock className="w-3.5 h-3.5" />
+                        {a.ora || "—"}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium truncate">{a.titolo}</div>
+                        <div className="text-[10px] opacity-70 truncate flex items-center gap-1">
+                          {a.cantiere_nome ? (
+                            <>
+                              <MapPin className="w-2.5 h-2.5" />
+                              {a.cantiere_nome}
+                            </>
+                          ) : (
+                            a.cliente_nome || ""
+                          )}
+                        </div>
+                        {a.stato === "annullato" && a.motivo && (
+                          <div className="text-[10px] text-red-400 truncate flex items-center gap-1 mt-0.5">
+                            <AlertCircle className="w-2.5 h-2.5" />
+                            {a.motivo}
+                          </div>
                         )}
                       </div>
-                    </div>
-                    <span className="text-[10px] opacity-70 whitespace-nowrap">
-                      {a.categoria === "personale"
-                        ? "Personale"
-                        : STATO_LABEL[a.stato] || a.stato}
-                    </span>
-                  </button>
+                      <span className="text-[10px] opacity-70 whitespace-nowrap">
+                        {a.categoria === "personale"
+                          ? "Personale"
+                          : STATO_LABEL[a.stato] || a.stato}
+                      </span>
+                    </button>
+                    {isCliente && a.stato === "proposto" && onConfermaCliente && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); onConfermaCliente(a); }}
+                        title="Conferma appuntamento"
+                        className="flex-shrink-0 w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-colors"
+                      >
+                        <CheckCircle2 className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
                 ))}
               </div>
             </div>

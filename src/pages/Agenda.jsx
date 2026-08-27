@@ -111,6 +111,19 @@ export default function Agenda() {
     }
   };
 
+  const confermaCliente = async (a) => {
+    try {
+      await base44.functions.invoke("confermaAppuntamentoCliente", {
+        appuntamento_id: a.id,
+      });
+      toast({ title: "Appuntamento confermato", description: "L'amministrazione è stata notificata." });
+      setDetailApp(null);
+      load();
+    } catch {
+      toast({ title: "Errore", variant: "destructive" });
+    }
+  };
+
   const richieste = useMemo(
     () => appuntamenti.filter((a) => a.stato === "in_attesa" || a.stato === "proposto"),
     [appuntamenti]
@@ -182,6 +195,8 @@ export default function Agenda() {
           <ListaAppuntamenti
             appuntamenti={visibleAppuntamenti}
             onAppuntamentoClick={handleAppuntamentoClick}
+            isCliente={isClienteRole}
+            onConfermaCliente={confermaCliente}
           />
         </TabsContent>
 
@@ -192,6 +207,8 @@ export default function Agenda() {
             onAccetta={accetta}
             onDeclina={declina}
             onProponi={handleEdit}
+            isCliente={isClienteRole}
+            onConfermaCliente={confermaCliente}
           />
         </TabsContent>
 
@@ -221,6 +238,8 @@ export default function Agenda() {
         open={!!detailApp}
         onOpenChange={(v) => !v && setDetailApp(null)}
         onEdit={handleEditFromDetail}
+        isCliente={isClienteRole}
+        onConfermaCliente={confermaCliente}
       />
 
       <PromemoriaDetailDialog

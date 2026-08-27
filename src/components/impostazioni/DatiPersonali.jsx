@@ -18,13 +18,17 @@ export default function DatiPersonali() {
   const fileInputRef = useRef(null);
 
   const isCliente = user?.role === "mssg_cliente";
-  const clienteId = user?.cliente_id || user?.data?.cliente_id;
 
-  // Per mssg_cliente: carica il record Cliente
+  // Per mssg_cliente: carica il record Cliente tramite funzione backend (bypassa RLS, fallback per email)
   useEffect(() => {
-    if (isCliente && clienteId) {
-      base44.entities.Cliente.get(clienteId)
-        .then((c) => {
+    if (isCliente) {
+      base44.functions.invoke("getProfiloCliente", {})
+        .then((res) => {
+          const c = res?.cliente;
+          if (!c) {
+            toast({ title: "Profilo cliente non trovato", variant: "destructive" });
+            return;
+          }
           setCliente(c);
           setForm({
             nome: c.nome ?? "",
@@ -45,7 +49,7 @@ export default function DatiPersonali() {
           toast({ title: "Errore caricamento dati cliente", variant: "destructive" });
         });
     }
-  }, [isCliente, clienteId]);
+  }, [isCliente]);
 
   // Per altri ruoli: carica dal profilo User
   useEffect(() => {
@@ -89,10 +93,10 @@ export default function DatiPersonali() {
     e.preventDefault();
     setSaving(true);
     try {
-      if (isCliente && clienteId) {
+      if (isCliente) {
         // Salva tramite funzione backend (bypassa RLS, pulisce campi azienda se privato)
         await base44.functions.invoke("aggiornaProfiloCliente", {
-          cliente_id: clienteId,
+          cliente_id: cliente?.id,
           nome: form.nome,
           email: form.email,
           telefono: form.telefono,
