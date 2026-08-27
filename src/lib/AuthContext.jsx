@@ -95,7 +95,8 @@ export const AuthProvider = ({ children }) => {
       const currentUser = await base44.auth.me();
 
       // Per ruoli non-admin, verifica/abbinamento record PRIMA di renderizzare l'app.
-      if (currentUser && currentUser.role !== 'admin' && currentUser.role !== 'mssg_admin') {
+      const RUOLI_VALIDI = ['admin', 'mssg_admin', 'mssg_capo', 'mssg_operaio', 'mssg_cliente'];
+      if (currentUser && !RUOLI_VALIDI.includes(currentUser.role)) {
         let res = null;
         let funzioneOk = false;
         try {
@@ -111,18 +112,16 @@ export const AuthProvider = ({ children }) => {
           return;
         }
 
-        // Ruolo "user" (non registrato) senza abbinamento, oppure funzione fallita → blocca
-        if (currentUser.role === 'user' || (res && res.has_record === false) || !funzioneOk) {
-          setUser(null);
-          setIsAuthenticated(false);
-          setIsLoadingAuth(false);
-          setAuthChecked(true);
-          setAuthError({
-            type: 'user_not_registered',
-            message: 'User not registered for this app'
-          });
-          return;
-        }
+        // Ruolo non valido senza abbinamento, oppure funzione fallita → blocca
+        setUser(null);
+        setIsAuthenticated(false);
+        setIsLoadingAuth(false);
+        setAuthChecked(true);
+        setAuthError({
+          type: 'user_not_registered',
+          message: 'User not registered for this app'
+        });
+        return;
       }
 
       setUser(currentUser);
