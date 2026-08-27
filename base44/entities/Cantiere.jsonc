@@ -130,6 +130,9 @@
           "id": {
             "$in": "{{user.data.cantieri_ids}}"
           }
+        },
+        {
+          "data.cliente_id": "{{user.data.cliente_id}}"
         }
       ]
     },
