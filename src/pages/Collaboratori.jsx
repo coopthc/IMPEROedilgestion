@@ -51,6 +51,7 @@ export default function Collaboratori() {
   const [filtroAttivo, setFiltroAttivo] = useState("tutti");
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState(null);
+  const [prefillEmail, setPrefillEmail] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -73,6 +74,18 @@ export default function Collaboratori() {
     window.addEventListener("entity-changed", handler);
     return () => window.removeEventListener("entity-changed", handler);
   }, [load]);
+
+  // Pre-compila email da query param (es. da Utenti in attesa)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const email = params.get("email");
+    if (email) {
+      setPrefillEmail(email);
+      setEditing(null);
+      setFormOpen(true);
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, []);
 
   const filtrati = collaboratori.filter((c) => {
     if (filtroAttivo === "attivi" && c.attivo === false) return false;
@@ -363,6 +376,7 @@ export default function Collaboratori() {
         onOpenChange={setFormOpen}
         collaboratore={editing}
         onSaved={load}
+        prefillEmail={prefillEmail}
       />
     </div>
   );

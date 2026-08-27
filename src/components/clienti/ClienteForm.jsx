@@ -32,7 +32,7 @@ const emptyForm = {
   crea_cantiere: false,
 };
 
-export default function ClienteForm({ open, onOpenChange, cliente, onSaved }) {
+export default function ClienteForm({ open, onOpenChange, cliente, onSaved, prefillEmail }) {
   const { toast } = useToast();
   const [form, setForm] = useState(emptyForm);
   const [loading, setLoading] = useState(false);
@@ -58,10 +58,10 @@ export default function ClienteForm({ open, onOpenChange, cliente, onSaved }) {
         .then(setCantieri)
         .catch(() => setCantieri([]));
     } else {
-      setForm(emptyForm);
+      setForm({ ...emptyForm, email: prefillEmail || "" });
       setCantieri([]);
     }
-  }, [cliente, open]);
+  }, [cliente, open, prefillEmail]);
 
   const update = (field, value) => setForm((f) => ({ ...f, [field]: value }));
 

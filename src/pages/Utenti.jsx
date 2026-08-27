@@ -29,6 +29,7 @@ export default function Utenti() {
   const { user: me } = useAuth();
   const { toast } = useToast();
   const [utenti, setUtenti] = useState([]);
+  const [pending, setPending] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [formOpen, setFormOpen] = useState(false);
@@ -39,8 +40,11 @@ export default function Utenti() {
     setLoading(true);
     try {
       const data = await base44.entities.User.list("-created_date");
-      // Solo amministratori e supervisori; clienti/collaboratori si gestiscono dalle rispettive sezioni
+      // Amministratori e supervisori nella sezione principale
       setUtenti(data.filter((u) => u.role === "admin" || u.role === "mssg_admin"));
+      // Utenti in attesa: ruolo non valido (nessun abbinamento Cliente/Collaboratore)
+      const RUOLI_VALIDI = ["admin", "mssg_admin", "mssg_capo", "mssg_operaio", "mssg_cliente"];
+      setPending(data.filter((u) => !RUOLI_VALIDI.includes(u.role)));
     } catch (err) {
       console.error("Errore caricamento utenti:", err);
       toast({ title: "Errore caricamento utenti", variant: "destructive" });
@@ -153,6 +157,82 @@ export default function Utenti() {
           o operaio.
         </p>
       </div>
+
+      {pending.length > 0 && (
+        <div className="mb-5 rounded-lg border border-yellow-500/40 bg-yellow-500/5 p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Shield className="w-4 h-4 text-yellow-500" />
+            <h2 className="text-sm font-semibold text-yellow-500">
+              Utenti in attesa di abbinamento ({pending.length})
+            </h2>
+          </div>
+          <p className="text-[12px] text-muted-foreground mb-3">
+            Questi utenti si sono registrati ma non hanno un record Cliente o
+            Collaboratore associato. Sono bloccati e non possono accedere al
+            gestionale. Per attivarli, crea un Cliente o Collaboratore con la
+            loro email (verranno abbinati automaticamente al prossimo accesso),
+            oppure promuovili ad amministratore/supervisore.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {pending.map((u) => (
+              <div
+                key={u.id}
+                className="bg-card border border-yellow-500/30 rounded-[12px] p-3"
+              >
+                <div className="flex items-start gap-2 mb-2">
+                  <div className="w-8 h-8 rounded-full bg-yellow-500/15 flex items-center justify-center flex-shrink-0">
+                    <span className="text-xs font-bold text-yellow-500">
+                      {(u.full_name || u.email || "?").charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-xs leading-tight truncate">
+                      {u.full_name || "—"}
+                    </h3>
+                    <p className="text-[11px] text-muted-foreground truncate">
+                      {u.email}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-1.5 pt-2 border-t border-border">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 text-[11px]"
+                    onClick={() => handleEdit(u)}
+                    title="Promuovi ad amministratore/supervisore"
+                  >
+                    <Pencil className="w-3 h-3 mr-1" />
+                    Promuovi
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 text-[11px]"
+                    onClick={() =>
+                      (window.location.href = `/clienti?email=${encodeURIComponent(u.email)}`)
+                    }
+                    title="Crea cliente con questa email"
+                  >
+                    Cliente
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 text-[11px]"
+                    onClick={() =>
+                      (window.location.href = `/collaboratori?email=${encodeURIComponent(u.email)}`)
+                    }
+                    title="Crea collaboratore con questa email"
+                  >
+                    Collab.
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="relative mb-4">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />

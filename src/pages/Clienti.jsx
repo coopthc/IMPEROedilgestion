@@ -48,6 +48,7 @@ export default function Clienti() {
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [promoCliente, setPromoCliente] = useState(null);
+  const [prefillEmail, setPrefillEmail] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -77,6 +78,19 @@ export default function Clienti() {
     window.addEventListener("entity-changed", handler);
     return () => window.removeEventListener("entity-changed", handler);
   }, [load]);
+
+  // Pre-compila email da query param (es. da Utenti in attesa)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const email = params.get("email");
+    if (email) {
+      setPrefillEmail(email);
+      setEditing(null);
+      setFormOpen(true);
+      // Pulisci l'URL
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, []);
 
   const clientiFiltrati = clienti.filter((c) => {
     if (!search) return true;
@@ -352,6 +366,7 @@ export default function Clienti() {
         onOpenChange={setFormOpen}
         cliente={editing}
         onSaved={load}
+        prefillEmail={prefillEmail}
       />
 
       <PromozioneDialog

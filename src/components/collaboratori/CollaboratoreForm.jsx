@@ -59,7 +59,7 @@ const emptyForm = {
   invita_utente: true,
 };
 
-export default function CollaboratoreForm({ open, onOpenChange, collaboratore, onSaved }) {
+export default function CollaboratoreForm({ open, onOpenChange, collaboratore, onSaved, prefillEmail }) {
   const { toast } = useToast();
   const [form, setForm] = useState(emptyForm);
   const [loading, setLoading] = useState(false);
@@ -88,10 +88,10 @@ export default function CollaboratoreForm({ open, onOpenChange, collaboratore, o
       });
       setInvited(!!collaboratore.user_id);
     } else {
-      setForm(emptyForm);
+      setForm({ ...emptyForm, email: prefillEmail || "" });
       setInvited(false);
     }
-  }, [collaboratore, open]);
+  }, [collaboratore, open, prefillEmail]);
 
   useEffect(() => {
     if (open) {
