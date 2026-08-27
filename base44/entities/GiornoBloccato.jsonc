@@ -10,13 +10,56 @@
     "motivo": {
       "type": "string",
       "title": "Motivo (es. ferie, festivit\u00e0)"
+    },
+    "tipo": {
+      "type": "string",
+      "enum": [
+        "aziendale",
+        "personale"
+      ],
+      "default": "aziendale",
+      "title": "Tipo (aziendale o personale)"
+    },
+    "utente_id": {
+      "type": "string",
+      "title": "Utente (per blocco personale)"
+    },
+    "utente_nome": {
+      "type": "string",
+      "title": "Nome utente"
     }
   },
   "required": [
     "data"
   ],
   "rls": {
-    "read": {},
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "mssg_admin"
+          }
+        },
+        {
+          "data.tipo": "aziendale"
+        },
+        {
+          "$and": [
+            {
+              "data.tipo": "personale"
+            },
+            {
+              "data.utente_id": "{{user.id}}"
+            }
+          ]
+        }
+      ]
+    },
     "create": {
       "$or": [
         {
@@ -30,9 +73,34 @@
           }
         },
         {
-          "user_condition": {
-            "role": "mssg_capo"
-          }
+          "$and": [
+            {
+              "user_condition": {
+                "role": "mssg_capo"
+              }
+            },
+            {
+              "data.tipo": "personale"
+            },
+            {
+              "data.utente_id": "{{user.id}}"
+            }
+          ]
+        },
+        {
+          "$and": [
+            {
+              "user_condition": {
+                "role": "mssg_operaio"
+              }
+            },
+            {
+              "data.tipo": "personale"
+            },
+            {
+              "data.utente_id": "{{user.id}}"
+            }
+          ]
         }
       ]
     },
@@ -47,6 +115,16 @@
           "user_condition": {
             "role": "mssg_admin"
           }
+        },
+        {
+          "$and": [
+            {
+              "data.tipo": "personale"
+            },
+            {
+              "data.utente_id": "{{user.id}}"
+            }
+          ]
         }
       ]
     },
@@ -61,6 +139,16 @@
           "user_condition": {
             "role": "mssg_admin"
           }
+        },
+        {
+          "$and": [
+            {
+              "data.tipo": "personale"
+            },
+            {
+              "data.utente_id": "{{user.id}}"
+            }
+          ]
         }
       ]
     }
