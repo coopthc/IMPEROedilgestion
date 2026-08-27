@@ -14,6 +14,13 @@ import {
   Loader2,
 } from "lucide-react";
 
+const DECLINA_MOTIVI = [
+  "Fuori zona",
+  "Impegnato in quel giorno",
+  "Ho un altro appuntamento",
+  "Non disponibile",
+];
+
 const STATO_LABELS = {
   in_attesa: "In attesa",
   proposto: "Proposto",
@@ -131,6 +138,19 @@ export default function RichiesteList({
                 >
                   <XCircle className="w-3.5 h-3.5 mr-1" /> Declina
                 </Button>
+                <div className="flex flex-wrap gap-1.5 w-full mt-1.5">
+                  <span className="text-[10px] text-muted-foreground self-center">Risposte rapide:</span>
+                  {DECLINA_MOTIVI.map((m) => (
+                    <button
+                      key={m}
+                      type="button"
+                      onClick={() => onDeclina(a, m)}
+                      className="text-[10px] px-2 py-0.5 rounded-full bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors"
+                    >
+                      {m}
+                    </button>
+                  ))}
+                </div>
               </>
             )}
             {a.stato === "proposto" && (

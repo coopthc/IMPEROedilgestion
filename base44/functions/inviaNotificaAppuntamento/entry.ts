@@ -17,16 +17,27 @@ export default async function(req: Request): Promise<Response> {
 
     // Raccogli destinatari: cliente + collaboratori partecipanti
     const destinatari: { email: string; nome: string }[] = [];
+    const notificheInApp: { user_id: string; tipo: string; titolo: string; testo: string; url: string; letto: boolean }[] = [];
 
     if (appuntamento.cliente_id) {
       const cliente = await base44.asServiceRole.entities.Cliente.get(appuntamento.cliente_id);
       if (cliente?.email) {
         destinatari.push({ email: cliente.email, nome: cliente.nome || '' });
       }
+      // Notifica in-app per il cliente (se ha un utente collegato)
+      if (cliente?.user_id) {
+        notificheInApp.push({
+          user_id: cliente.user_id,
+          tipo: 'appuntamento',
+          titolo: `Appuntamento: ${appuntamento.titolo || ''}`,
+          testo: `${appuntamento.data || ''} alle ${appuntamento.ora || ''}${appuntamento.cantiere_nome ? ' — ' + appuntamento.cantiere_nome : ''}`,
+          url: '/agenda',
+          letto: false,
+        });
+      }
     }
 
     const collabIds = (appuntamento.partecipanti_ids || '').split(',').filter(Boolean);
-    const notificheInApp: { user_id: string; tipo: string; titolo: string; testo: string; url: string; letto: boolean }[] = [];
     if (collabIds.length > 0) {
       const collaboratori = await base44.asServiceRole.entities.Collaboratore.list();
       for (const c of collaboratori) {
@@ -45,13 +56,14 @@ export default async function(req: Request): Promise<Response> {
           });
         }
       }
-      // Crea le notifiche in-app lato server (affidabile, bypassa RLS)
-      if (notificheInApp.length > 0) {
-        try {
-          await base44.asServiceRole.entities.Notifica.bulkCreate(notificheInApp);
-        } catch (e) {
-          console.error('Errore creazione notifiche in-app:', e);
-        }
+    }
+
+    // Crea le notifiche in-app lato server (affidabile, bypassa RLS)
+    if (notificheInApp.length > 0) {
+      try {
+        await base44.asServiceRole.entities.Notifica.bulkCreate(notificheInApp);
+      } catch (e) {
+        console.error('Errore creazione notifiche in-app:', e);
       }
     }
 
@@ -60,7 +72,7 @@ export default async function(req: Request): Promise<Response> {
     }
 
     const [imp, modello] = await Promise.all([
-      getImpostazioni(base44),
+      getImpostazioni(base44, user),
       getModello(base44, 'appuntamento_nuovo'),
     ]);
 

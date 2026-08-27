@@ -18,7 +18,7 @@ export default async function(req: Request): Promise<Response> {
 
     const origin = new URL(req.url).origin;
     const resetLink = `${origin}/forgot-password`;
-    const imp = await getImpostazioni(base44);
+    const imp = await getImpostazioni(base44, user);
     const nomeAzienda = imp.ragione_sociale || 'EdilGestion';
 
     const saluto = nome ? `Ciao ${escapeHtml(nome)},` : 'Ciao,';

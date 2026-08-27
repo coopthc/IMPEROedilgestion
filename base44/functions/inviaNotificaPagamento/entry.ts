@@ -26,7 +26,7 @@ export default async function(req: Request): Promise<Response> {
     }
 
     const [imp, modello] = await Promise.all([
-      getImpostazioni(base44),
+      getImpostazioni(base44, user),
       getModello(base44, 'pagamento_promemoria'),
     ]);
 

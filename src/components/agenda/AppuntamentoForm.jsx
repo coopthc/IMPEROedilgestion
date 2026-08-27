@@ -118,8 +118,9 @@ export default function AppuntamentoForm({
       );
       setPillole(durataToPillole(appuntamento.durata_minuti));
     } else {
+      const myClienteId = user?.cliente_id || user?.data?.cliente_id || "";
       setForm(isClienteRole
-        ? { ...emptyForm, data: defaultData || "", categoria: "lavorativo", tipo: "richiesta", stato: "in_attesa" }
+        ? { ...emptyForm, data: defaultData || "", categoria: "lavorativo", tipo: "richiesta", stato: "in_attesa", cliente_id: myClienteId }
         : { ...emptyForm, data: defaultData || "" });
       setPartecipantiIds([]);
       setPillole([60]);
@@ -187,19 +188,35 @@ export default function AppuntamentoForm({
       if (partecipantiIds.includes(s.id)) nomi.push(s.nome);
     });
 
-    // RLS: raccoglie gli user_id dei partecipanti + creatore
+    // RLS: raccoglie gli user_id dei partecipanti + cliente + creatore
     const utentiIds = [];
     collaboratori.forEach((s) => {
       if (partecipantiIds.includes(s.id) && s.user_id) {
         utentiIds.push(s.user_id);
       }
     });
+    // Aggiungi l'user_id del cliente (se selezionato o se è il cliente stesso)
+    if (form.cliente_id) {
+      const clienteObj = clienti.find((c) => c.id === form.cliente_id);
+      if (clienteObj?.user_id && !utentiIds.includes(clienteObj.user_id)) {
+        utentiIds.push(clienteObj.user_id);
+      }
+    }
     if (user?.id && !utentiIds.includes(user.id)) {
       utentiIds.push(user.id);
     }
 
+    // Se l'admin modifica data/ora di una richiesta in_attesa, imposta stato a "proposto"
+    let statoFinale = form.stato;
+    if (appuntamento && (appuntamento.stato === "in_attesa" || appuntamento.stato === "proposto")) {
+      if (form.data !== appuntamento.data || form.ora !== appuntamento.ora) {
+        statoFinale = "proposto";
+      }
+    }
+
     const payload = {
       ...form,
+      stato: statoFinale,
       durata_minuti: durataTotale || 60,
       cliente_nome: cliente?.nome || "",
       cantiere_nome: cantiere?.nome || "",

@@ -85,25 +85,26 @@ export default function Agenda() {
 
   const accetta = async (a) => {
     try {
-      await base44.entities.Appuntamento.update(a.id, {
-        stato: "programmato",
-        tipo: "confermato",
+      await base44.functions.invoke("risolviRichiestaAppuntamento", {
+        appuntamento_id: a.id,
+        azione: "accetta",
       });
-      toast({ title: "Appuntamento confermato" });
+      toast({ title: "Appuntamento confermato", description: "Il cliente è stato notificato." });
       load();
     } catch {
       toast({ title: "Errore", variant: "destructive" });
     }
   };
 
-  const declina = async (a) => {
-    const motivo = prompt("Motivo del rifiuto (opzionale):") || "";
+  const declina = async (a, motivoPredefinito = "") => {
+    const motivo = motivoPredefinito || prompt("Motivo del rifiuto (opzionale):") || "";
     try {
-      await base44.entities.Appuntamento.update(a.id, {
-        stato: "annullato",
+      await base44.functions.invoke("risolviRichiestaAppuntamento", {
+        appuntamento_id: a.id,
+        azione: "declina",
         motivo,
       });
-      toast({ title: "Appuntamento declinato" });
+      toast({ title: "Appuntamento declinato", description: "Il cliente è stato notificato." });
       load();
     } catch {
       toast({ title: "Errore", variant: "destructive" });
