@@ -53,15 +53,17 @@ export default function DatiAzienda() {
     e.preventDefault();
     setSaving(true);
     try {
+      // Strip built-in fields before sending
+      const { id: _id, created_date: _cd, updated_date: _ud, created_by_id: _cb, ...payload } = form;
       if (id) {
-        await base44.entities.ImpostazioneApp.update(id, form);
+        await base44.entities.ImpostazioneApp.update(id, payload);
       } else {
-        const c = await base44.entities.ImpostazioneApp.create(form);
+        const c = await base44.entities.ImpostazioneApp.create(payload);
         setId(c.id);
       }
       toast({ title: "Dati azienda salvati" });
-    } catch {
-      toast({ title: "Errore", variant: "destructive" });
+    } catch (err) {
+      toast({ title: "Errore", description: err?.message || "Salvataggio fallito", variant: "destructive" });
     } finally {
       setSaving(false);
     }
