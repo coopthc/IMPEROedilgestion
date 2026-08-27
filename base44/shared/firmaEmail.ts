@@ -39,9 +39,35 @@ export function buildEmailHtml(oggetto: string, corpo: string, imp: any): string
   </div>`;
 }
 
-export async function getImpostazioni(base44: any): Promise<any> {
+export async function getImpostazioni(base44: any, user?: any): Promise<any> {
   const list = await base44.asServiceRole.entities.ImpostazioneApp.list();
-  return list[0] || {};
+  const imp = list[0] || {};
+  // Merge con i dati del profilo utente corrente (DatiPersonali)
+  // per avere sempre la firma aggiornata con i dati inseriti dall'utente
+  try {
+    const u = user || await base44.auth.me();
+    if (u) {
+      const d = u.data || {};
+      const isAzienda = u.is_azienda ?? d.is_azienda;
+      const ragioneSociale = isAzienda ? (u.azienda || d.azienda) : u.full_name;
+      return {
+        ...imp,
+        ragione_sociale: ragioneSociale || imp.ragione_sociale || '',
+        logo_url: u.logo_url || d.logo_url || imp.logo_url || '',
+        piva: u.piva || d.piva || imp.piva || '',
+        codice_fiscale: u.codice_fiscale || d.codice_fiscale || imp.codice_fiscale || '',
+        indirizzo: u.indirizzo || d.indirizzo || imp.indirizzo || '',
+        citta: u.citta || d.citta || imp.citta || '',
+        cap: u.cap || d.cap || imp.cap || '',
+        provincia: u.provincia || d.provincia || imp.provincia || '',
+        telefono: u.telefono || d.telefono || imp.telefono || '',
+        email_azienda: u.email || imp.email_azienda || '',
+      };
+    }
+  } catch (e) {
+    console.error('Errore lettura profilo utente per firma email:', e);
+  }
+  return imp;
 }
 
 export async function getModello(base44: any, chiave: string): Promise<any> {
