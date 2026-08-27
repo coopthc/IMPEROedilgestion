@@ -91,37 +91,44 @@ export const AuthProvider = ({ children }) => {
 
   const checkUserAuth = async () => {
     try {
-      // Now check if the user is authenticated
       setIsLoadingAuth(true);
       const currentUser = await base44.auth.me();
+
+      // Per ruoli non-admin, verifica/abbinamento record PRIMA di renderizzare l'app.
+      if (currentUser && currentUser.role !== 'admin' && currentUser.role !== 'mssg_admin') {
+        let res = null;
+        let funzioneOk = false;
+        try {
+          res = await base44.functions.invoke('controllaRecordUtente', {});
+          funzioneOk = true;
+        } catch (e) {
+          console.error('Controllo record utente fallito:', e);
+        }
+
+        // Auto-abbinamento riuscito → ricarica per applicare il nuovo ruolo
+        if (res && res.abbinato) {
+          window.location.reload();
+          return;
+        }
+
+        // Ruolo "user" (non registrato) senza abbinamento, oppure funzione fallita → blocca
+        if (currentUser.role === 'user' || (res && res.has_record === false) || !funzioneOk) {
+          setUser(null);
+          setIsAuthenticated(false);
+          setIsLoadingAuth(false);
+          setAuthChecked(true);
+          setAuthError({
+            type: 'user_not_registered',
+            message: 'User not registered for this app'
+          });
+          return;
+        }
+      }
+
       setUser(currentUser);
       setIsAuthenticated(true);
       setIsLoadingAuth(false);
       setAuthChecked(true);
-
-      // Abbinamento automatico utente -> Cliente/Collaboratore (tramite email).
-      // Se l'utente viene abbinato, ricarica per applicare il nuovo ruolo.
-      if (currentUser && currentUser.role !== 'admin' && currentUser.role !== 'mssg_admin') {
-        try {
-          const res = await base44.functions.invoke('controllaRecordUtente', {});
-          if (res && res.abbinato) {
-            window.location.reload();
-            return;
-          }
-          // Nessun record trovato e nessun abbinamento possibile → blocca l'accesso
-          if (res && res.has_record === false && !res.abbinato) {
-            setUser(null);
-            setIsAuthenticated(false);
-            setAuthError({
-              type: 'user_not_registered',
-              message: 'User not registered for this app'
-            });
-            return;
-          }
-        } catch (e) {
-          console.error('Controllo record utente fallito:', e);
-        }
-      }
     } catch (error) {
       console.error('User auth check failed:', error);
       setIsLoadingAuth(false);
