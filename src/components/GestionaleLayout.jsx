@@ -52,7 +52,7 @@ const GROUP_LABELS = {
 export default function GestionaleLayout() {
   const { user, logout } = useAuth();
   const [azienda, setAzienda] = useState(null);
-  const [cliente, setCliente] = useState(null);
+  const [profilo, setProfilo] = useState(null);
 
   useEffect(() => {
     (async () => {
@@ -73,10 +73,24 @@ export default function GestionaleLayout() {
   }, []);
 
   useEffect(() => {
-    if (user?.role !== "mssg_cliente") return;
-    const clienteId = user?.cliente_id || user?.data?.cliente_id;
-    if (!clienteId) return;
-    base44.entities.Cliente.get(clienteId).then(setCliente).catch(() => {});
+    const role = user?.role;
+    if (!role) return;
+    (async () => {
+      try {
+        if (role === "mssg_cliente") {
+          const clienteId = user?.cliente_id || user?.data?.cliente_id;
+          if (clienteId) {
+            const c = await base44.entities.Cliente.get(clienteId);
+            setProfilo({ tipo: "cliente", data: c });
+          }
+        } else if (role === "mssg_capo" || role === "mssg_operaio") {
+          const results = await base44.entities.Collaboratore.filter({ user_id: user.id });
+          if (results.length > 0) setProfilo({ tipo: "collaboratore", data: results[0] });
+        }
+      } catch {
+        /* ignora */
+      }
+    })();
   }, [user]);
 
   const handleLogout = () => {
@@ -85,11 +99,15 @@ export default function GestionaleLayout() {
   };
 
   const isClienteRole = user?.role === "mssg_cliente";
+  const isCollabRole = user?.role === "mssg_capo" || user?.role === "mssg_operaio";
+  const profiloData = profilo?.data;
   const logoNome = isClienteRole
-    ? cliente?.is_azienda ? cliente?.azienda : cliente?.nome
+    ? profiloData?.is_azienda ? profiloData?.azienda : profiloData?.nome
+    : isCollabRole
+    ? profiloData?.is_azienda ? profiloData?.azienda : profiloData?.nome
     : user?.is_azienda ? user?.azienda : user?.full_name;
   const logoEmail = user?.email;
-  const logoUrl = isClienteRole ? cliente?.logo_url : user?.logo_url;
+  const logoUrl = isClienteRole ? profiloData?.logo_url : user?.logo_url;
 
   return (
     <div className="min-h-screen bg-background text-foreground md:flex">
