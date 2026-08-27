@@ -102,8 +102,25 @@ export default function Clienti() {
   const handleDelete = async (cliente) => {
     if (!confirm(`Eliminare il cliente "${cliente.nome}"?`)) return;
     try {
+      // Disattiva l'utente collegato: reset ruolo e pulisci riferimenti
+      if (cliente.user_id) {
+        await base44.functions.invoke("aggiornaUtenteGestionale", {
+          user_id: cliente.user_id,
+          data: { role: "user", cliente_id: "", cantieri_ids: [] },
+        });
+      } else if (cliente.email) {
+        // Cerca utente per email se user_id non impostato
+        const users = await base44.entities.User.list();
+        const u = users.find((x) => x.email === cliente.email);
+        if (u) {
+          await base44.functions.invoke("aggiornaUtenteGestionale", {
+            user_id: u.id,
+            data: { role: "user", cliente_id: "", cantieri_ids: [] },
+          });
+        }
+      }
       await base44.entities.Cliente.delete(cliente.id);
-      toast({ title: "Cliente eliminato" });
+      toast({ title: "Cliente eliminato", description: "Utente disattivato e accessi revocati" });
       load();
     } catch (err) {
       toast({ title: "Errore durante l'eliminazione", variant: "destructive" });
