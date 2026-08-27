@@ -1,10 +1,17 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 
+const AUTHORIZED_ROLES = new Set(['admin', 'mssg_admin', 'mssg_capo']);
+
 export default async function(req: Request): Promise<Response> {
   try {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
+    // Autorizzazione: solo admin, mssg_admin, mssg_capo possono leggere record di altri utenti
+    if (!AUTHORIZED_ROLES.has(user.role)) {
+      return Response.json({ error: 'Non autorizzato' }, { status: 403 });
+    }
 
     const body = await req.json().catch(() => ({}));
     const { email, cliente_id, user_id } = body;
