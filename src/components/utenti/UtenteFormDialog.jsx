@@ -13,9 +13,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/components/ui/use-toast";
-import { Loader2, Mail } from "lucide-react";
+import { Loader2, Mail, KeyRound } from "lucide-react";
 import { invitaUtenteConRuolo } from "@/lib/invitaUtente";
-import { inviaEmailAccesso } from "@/lib/emailAccesso";
+import { inviaEmailAccesso, reinviaLinkAccesso } from "@/lib/emailAccesso";
 
 // Solo amministratori: clienti e collaboratori si creano dalle rispettive sezioni.
 const LIVELLI = [
@@ -148,6 +148,16 @@ export default function UtenteFormDialog({ open, onOpenChange, utente, onSaved }
     }
   };
 
+  const reinviaLink = async () => {
+    if (!utente?.email) return;
+    try {
+      await reinviaLinkAccesso(utente.email);
+      toast({ title: "Link di accesso re-inviato", description: utente.email });
+    } catch (err) {
+      toast({ title: "Errore invio link", variant: "destructive" });
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
@@ -173,12 +183,20 @@ export default function UtenteFormDialog({ open, onOpenChange, utente, onSaved }
               placeholder="nome@email.com"
             />
             {utente && (
-              <button
-                onClick={reinvita}
-                className="text-[11px] text-primary hover:underline flex items-center gap-1"
-              >
-                <Mail className="w-3 h-3" /> Re-invia invito
-              </button>
+              <div className="flex flex-col gap-1">
+                <button
+                  onClick={reinvita}
+                  className="text-[11px] text-primary hover:underline flex items-center gap-1"
+                >
+                  <Mail className="w-3 h-3" /> Re-invia email di benvenuto
+                </button>
+                <button
+                  onClick={reinviaLink}
+                  className="text-[11px] text-primary hover:underline flex items-center gap-1"
+                >
+                  <KeyRound className="w-3 h-3" /> Re-invia link di accesso (password)
+                </button>
+              </div>
             )}
           </div>
 

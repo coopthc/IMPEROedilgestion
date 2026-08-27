@@ -17,6 +17,7 @@ import {
   MessageCircle,
   HardHat,
   ArrowUpCircle,
+  KeyRound,
 } from "lucide-react";
 
 const waLink = (phone) =>
@@ -25,7 +26,7 @@ import ClienteForm from "@/components/clienti/ClienteForm";
 import PromozioneDialog from "@/components/clienti/PromozioneDialog";
 import ExportButtons from "@/components/esporta/ExportButtons";
 import { useToast } from "@/components/ui/use-toast";
-import { inviaEmailAccesso } from "@/lib/emailAccesso";
+import { inviaEmailAccesso, reinviaLinkAccesso } from "@/lib/emailAccesso";
 
 const COLONNE_CLIENTI = [
   { label: "Nome", key: "nome" },
@@ -116,6 +117,16 @@ export default function Clienti() {
       toast({ title: "Email di accesso re-inviata", description: cliente.email });
     } catch (err) {
       toast({ title: "Errore invio email", variant: "destructive" });
+    }
+  };
+
+  const reinviaLink = async (cliente) => {
+    if (!cliente.email) return;
+    try {
+      await reinviaLinkAccesso(cliente.email);
+      toast({ title: "Link di accesso re-inviato", description: cliente.email });
+    } catch (err) {
+      toast({ title: "Errore invio link", variant: "destructive" });
     }
   };
 
@@ -279,9 +290,20 @@ export default function Clienti() {
                   variant="ghost"
                   className="h-7 w-7"
                   onClick={() => reinviaEmail(c)}
-                  title="Re-invia email di accesso"
+                  title="Re-invia email di benvenuto"
                 >
                   <Mail className="w-3.5 h-3.5" />
+                </Button>
+              )}
+              {c.email && (
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-7 w-7"
+                  onClick={() => reinviaLink(c)}
+                  title="Re-invia link di accesso (password)"
+                >
+                  <KeyRound className="w-3.5 h-3.5" />
                 </Button>
               )}
               <Button

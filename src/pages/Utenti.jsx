@@ -15,9 +15,10 @@ import {
   ShieldCheck,
   Shield,
   Lock,
+  KeyRound,
 } from "lucide-react";
 import UtenteFormDialog, { LIVELLO_LABEL } from "@/components/utenti/UtenteFormDialog";
-import { inviaEmailAccesso } from "@/lib/emailAccesso";
+import { inviaEmailAccesso, reinviaLinkAccesso } from "@/lib/emailAccesso";
 
 const RUOLO_STILE = {
   admin: { icon: ShieldCheck, cls: "bg-primary/20 text-primary border-primary/40" },
@@ -96,6 +97,15 @@ export default function Utenti() {
       toast({ title: "Email di accesso re-inviata", description: u.email });
     } catch (err) {
       toast({ title: "Errore invio email", variant: "destructive" });
+    }
+  };
+
+  const reinviaLink = async (u) => {
+    try {
+      await reinviaLinkAccesso(u.email);
+      toast({ title: "Link di accesso re-inviato", description: u.email });
+    } catch (err) {
+      toast({ title: "Errore invio link", variant: "destructive" });
     }
   };
 
@@ -247,9 +257,18 @@ export default function Utenti() {
                     variant="ghost"
                     className="h-7 w-7"
                     onClick={() => reinvita(u)}
-                    title="Re-invia invito"
+                    title="Re-invia email di benvenuto"
                   >
                     <Mail className="w-3.5 h-3.5" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-7 w-7"
+                    onClick={() => reinviaLink(u)}
+                    title="Re-invia link di accesso (password)"
+                  >
+                    <KeyRound className="w-3.5 h-3.5" />
                   </Button>
                 </div>
               </div>

@@ -14,6 +14,7 @@ import {
   Loader2,
   Building,
   MessageCircle,
+  KeyRound,
 } from "lucide-react";
 
 const waLink = (phone) =>
@@ -21,7 +22,7 @@ const waLink = (phone) =>
 import CollaboratoreForm from "@/components/collaboratori/CollaboratoreForm";
 import ExportButtons from "@/components/esporta/ExportButtons";
 import { useToast } from "@/components/ui/use-toast";
-import { inviaEmailAccesso } from "@/lib/emailAccesso";
+import { inviaEmailAccesso, reinviaLinkAccesso } from "@/lib/emailAccesso";
 
 const COLONNE_COLLABORATORI = [
   { label: "Nome", key: "nome" },
@@ -127,6 +128,19 @@ export default function Collaboratori() {
       toast({ title: "Email di accesso re-inviata", description: coll.email });
     } catch (err) {
       toast({ title: "Errore invio email", variant: "destructive" });
+    }
+  };
+
+  const reinviaLink = async (coll) => {
+    if (!coll.email) {
+      toast({ title: "Nessuna email registrata", variant: "destructive" });
+      return;
+    }
+    try {
+      await reinviaLinkAccesso(coll.email);
+      toast({ title: "Link di accesso re-inviato", description: coll.email });
+    } catch (err) {
+      toast({ title: "Errore invio link", variant: "destructive" });
     }
   };
 
@@ -301,6 +315,17 @@ export default function Collaboratori() {
                     title="Re-invia email di benvenuto"
                   >
                     <Mail className="w-3.5 h-3.5" />
+                  </Button>
+                )}
+                {c.email && (
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-7 w-7"
+                    onClick={() => reinviaLink(c)}
+                    title="Re-invia link di accesso (password)"
+                  >
+                    <KeyRound className="w-3.5 h-3.5" />
                   </Button>
                 )}
                 <Button
