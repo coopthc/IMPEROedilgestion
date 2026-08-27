@@ -12,11 +12,13 @@ import ListaAppuntamenti from "@/components/agenda/ListaAppuntamenti";
 import PromemoriaManager from "@/components/agenda/PromemoriaManager";
 import AppuntamentoDetailDialog from "@/components/dashboard/AppuntamentoDetailDialog";
 import PromemoriaDetailDialog from "@/components/agenda/PromemoriaDetailDialog";
-import { Plus, Calendar, Clock, Inbox, Bell } from "lucide-react";
+import { Plus, Calendar, Clock, Inbox, Bell, Eye, EyeOff } from "lucide-react";
+import { filtraAppuntamentiPersonali } from "@/lib/appuntamentiUtils";
 
 export default function Agenda() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const isAdmin = ["admin", "mssg_admin"].includes(user?.role);
   const [appuntamenti, setAppuntamenti] = useState([]);
   const [promemoria, setPromemoria] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -25,6 +27,13 @@ export default function Agenda() {
   const [defaultData, setDefaultData] = useState("");
   const [detailApp, setDetailApp] = useState(null);
   const [detailProm, setDetailProm] = useState(null);
+  const [showAll, setShowAll] = useState(false);
+
+  // Vista personale: ogni utente vede solo i propri appuntamenti.
+  // L'admin può attivare "vedi tutti" per oversight globale.
+  const visibleAppuntamenti = isAdmin && showAll
+    ? appuntamenti
+    : filtraAppuntamentiPersonali(appuntamenti, user);
 
   const load = async () => {
     setLoading(true);
@@ -116,9 +125,22 @@ export default function Agenda() {
             Gestisci appuntamenti, disponibilità e richieste di prenotazione
           </p>
         </div>
-        <Button onClick={() => handleNew()}>
-          <Plus className="w-4 h-4 mr-1" /> Nuovo appuntamento
-        </Button>
+        <div className="flex items-center gap-2">
+          {isAdmin && (
+            <Button
+              variant={showAll ? "default" : "outline"}
+              size="sm"
+              onClick={() => setShowAll((v) => !v)}
+              title={showAll ? "Vista globale" : "Vista personale"}
+            >
+              {showAll ? <Eye className="w-4 h-4 mr-1" /> : <EyeOff className="w-4 h-4 mr-1" />}
+              {showAll ? "Tutti" : "Miei"}
+            </Button>
+          )}
+          <Button onClick={() => handleNew()}>
+            <Plus className="w-4 h-4 mr-1" /> Nuovo appuntamento
+          </Button>
+        </div>
       </div>
 
       <Tabs defaultValue="settimana">
@@ -144,7 +166,7 @@ export default function Agenda() {
 
         <TabsContent value="settimana" className="mt-4 space-y-4">
           <SettimanaView
-            appuntamenti={appuntamenti}
+            appuntamenti={visibleAppuntamenti}
             promemoria={promemoria}
             loading={loading}
             onDayClick={handleNew}
@@ -152,7 +174,7 @@ export default function Agenda() {
             onPromemoriaClick={handlePromemoriaClick}
           />
           <ListaAppuntamenti
-            appuntamenti={appuntamenti}
+            appuntamenti={visibleAppuntamenti}
             onAppuntamentoClick={handleAppuntamentoClick}
           />
         </TabsContent>

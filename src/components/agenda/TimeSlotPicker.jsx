@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
+import { useAuth } from "@/lib/AuthContext";
+import { isMioAppuntamento } from "@/lib/appuntamentiUtils";
 import { Clock, Ban, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
@@ -36,6 +38,7 @@ export default function TimeSlotPicker({
   const [noAvailability, setNoAvailability] = useState(false);
   const [giornoBloccato, setGiornoBloccato] = useState(null);
   const [forceMode, setForceMode] = useState(false);
+  const { user } = useAuth();
 
   useEffect(() => {
     setForceMode(false);
@@ -90,11 +93,14 @@ export default function TimeSlotPicker({
             ? impostazioni[0].appuntamenti_contemporanei
             : 1;
 
+        // Vista personale: ogni utente vede come occupati solo i propri slot.
+        const myApps = existingApps.filter((a) => isMioAppuntamento(a, user?.id));
+
         // Build slot list with blocked status
         const slotsWithStatus = rawSlots.map((slot) => {
           const slotStart = timeToMinutes(slot);
           const slotEnd = slotStart + SLOT_STEP;
-          const overlapping = existingApps.filter((a) => {
+          const overlapping = myApps.filter((a) => {
             if (a.stato === "annullato") return false;
             if (excludeId && a.id === excludeId) return false;
             const appStart = timeToMinutes(a.ora);

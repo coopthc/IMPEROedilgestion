@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
+import { useAuth } from "@/lib/AuthContext";
+import { filtraAppuntamentiPersonali } from "@/lib/appuntamentiUtils";
 import { Calendar, Loader2, Clock, MapPin } from "lucide-react";
 import { Link } from "react-router-dom";
 import AppuntamentoDetailDialog from "./AppuntamentoDetailDialog";
 
 export default function WidgetAppuntamenti({ offset = 0, title = "Appuntamenti oggi" }) {
+  const { user } = useAuth();
   const [apps, setApps] = useState(null);
   const [selected, setSelected] = useState(null);
 
@@ -12,16 +15,17 @@ export default function WidgetAppuntamenti({ offset = 0, title = "Appuntamenti o
     (async () => {
       try {
         const all = await base44.entities.Appuntamento.list();
+        const mine = filtraAppuntamentiPersonali(all, user);
         const target = new Date();
         target.setDate(target.getDate() + (offset || 0));
         const targetStr = target.toISOString().split("T")[0];
-        const dayApps = all
+        const dayApps = mine
           .filter((a) => a.data === targetStr && a.stato !== "annullato")
           .sort((a, b) => (a.ora || "").localeCompare(b.ora || ""));
         setApps(dayApps);
       } catch { setApps([]); }
     })();
-  }, [offset]);
+  }, [offset, user]);
 
   if (!apps) return <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>;
 
