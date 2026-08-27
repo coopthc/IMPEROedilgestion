@@ -79,6 +79,11 @@
     "provincia": {
       "type": "string",
       "title": "Provincia"
+    },
+    "logo_url": {
+      "type": "string",
+      "format": "uri",
+      "title": "Logo / Foto profilo"
     }
   },
   "required": [

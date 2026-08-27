@@ -1,18 +1,21 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Save, Building2, UserCircle } from "lucide-react";
+import { Loader2, Save, Building2, UserCircle, Upload, X } from "lucide-react";
+import { Image as ImageComponent } from "@/components/ui/image";
 
 export default function DatiPersonali() {
   const { user, checkUserAuth } = useAuth();
   const { toast } = useToast();
   const [form, setForm] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [cliente, setCliente] = useState(null);
+  const fileInputRef = useRef(null);
 
   const isCliente = user?.role === "mssg_cliente";
   const clienteId = user?.cliente_id || user?.data?.cliente_id;
@@ -35,6 +38,7 @@ export default function DatiPersonali() {
             citta: c.citta ?? "",
             cap: c.cap ?? "",
             provincia: c.provincia ?? "",
+            logo_url: c.logo_url ?? "",
           });
         })
         .catch(() => {
@@ -56,9 +60,30 @@ export default function DatiPersonali() {
         citta: user.citta ?? "",
         cap: user.cap ?? "",
         provincia: user.provincia ?? "",
+        logo_url: user.logo_url ?? "",
       });
     }
   }, [user, isCliente]);
+
+  const handleLogoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      setForm((f) => ({ ...f, logo_url: file_url }));
+      toast({ title: "Logo caricato" });
+    } catch (err) {
+      toast({ title: "Errore caricamento", description: err.message, variant: "destructive" });
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const removeLogo = () => {
+    setForm((f) => ({ ...f, logo_url: "" }));
+  };
 
   const save = async (e) => {
     e.preventDefault();
@@ -71,6 +96,7 @@ export default function DatiPersonali() {
           nome: form.nome,
           email: form.email,
           telefono: form.telefono,
+          logo_url: form.logo_url,
         });
         toast({ title: "Dati salvati", description: "I tuoi dati sono stati aggiornati." });
       } else {
@@ -101,6 +127,52 @@ export default function DatiPersonali() {
              ? "Le tue informazioni di contatto."
              : "Le tue informazioni personali, dati di fatturazione e tipo di account (privato o azienda)."}
          </p>
+      </div>
+
+      {/* Logo / Foto profilo */}
+      <div className="flex items-center gap-4">
+        <div className="relative">
+          {form.logo_url ? (
+            <div className="relative">
+              <div className="w-20 h-20 rounded-lg overflow-hidden border border-border bg-secondary">
+                <ImageComponent src={form.logo_url} alt="Logo" className="w-full h-full object-cover" fittingType="fill" />
+              </div>
+              <button
+                type="button"
+                onClick={removeLogo}
+                className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center hover:bg-destructive/90"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ) : (
+            <div className="w-20 h-20 rounded-lg border border-dashed border-border bg-secondary flex items-center justify-center">
+              <UserCircle className="w-8 h-8 text-muted-foreground" />
+            </div>
+          )}
+        </div>
+        <div className="space-y-1">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleLogoUpload}
+            className="hidden"
+          />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={uploading}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            {uploading ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Upload className="w-4 h-4 mr-1" />}
+            {form.logo_url ? "Cambia logo" : "Carica logo"}
+          </Button>
+          <p className="text-xs text-muted-foreground">
+            Logo o foto profilo visibile a tutti gli utenti.
+          </p>
+        </div>
       </div>
 
       {/* Toggle Azienda / Privato (solo per non-clienti) */}

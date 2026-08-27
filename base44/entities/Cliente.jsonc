@@ -55,6 +55,11 @@
     "user_id": {
       "type": "string",
       "title": "Utente collegato"
+    },
+    "logo_url": {
+      "type": "string",
+      "format": "uri",
+      "title": "Logo / Foto profilo"
     }
   },
   "required": [

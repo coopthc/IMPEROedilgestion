@@ -27,6 +27,7 @@ export default async function(req: Request): Promise<Response> {
     if (body.nome !== undefined) updateData.nome = body.nome;
     if (body.email !== undefined) updateData.email = body.email;
     if (body.telefono !== undefined) updateData.telefono = body.telefono;
+    if (body.logo_url !== undefined) updateData.logo_url = body.logo_url;
 
     const updated = await base44.asServiceRole.entities.Cliente.update(clienteId, updateData);
     return Response.json({ success: true, cliente: updated });
