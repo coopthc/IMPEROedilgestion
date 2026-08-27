@@ -69,16 +69,8 @@ export default function DatiPersonali() {
         await base44.functions.invoke("aggiornaProfiloCliente", {
           cliente_id: clienteId,
           nome: form.nome,
-          is_azienda: form.is_azienda,
-          azienda: form.azienda,
           email: form.email,
-          piva: form.piva,
-          codice_fiscale: form.codice_fiscale,
           telefono: form.telefono,
-          indirizzo: form.indirizzo,
-          citta: form.citta,
-          cap: form.cap,
-          provincia: form.provincia,
         });
         toast({ title: "Dati salvati", description: "I tuoi dati sono stati aggiornati." });
       } else {
@@ -105,11 +97,14 @@ export default function DatiPersonali() {
           <UserCircle className="w-4 h-4 text-primary" /> Dati personali
         </h2>
         <p className="text-xs text-muted-foreground mt-0.5">
-          Le tue informazioni personali, dati di fatturazione e tipo di account (privato o azienda).
-        </p>
+           {isCliente
+             ? "Le tue informazioni di contatto."
+             : "Le tue informazioni personali, dati di fatturazione e tipo di account (privato o azienda)."}
+         </p>
       </div>
 
-      {/* Toggle Azienda / Privato */}
+      {/* Toggle Azienda / Privato (solo per non-clienti) */}
+      {!isCliente && (
       <div className="flex items-center gap-2">
         <button
           type="button"
@@ -130,6 +125,7 @@ export default function DatiPersonali() {
           <Building2 className="w-4 h-4" /> Azienda
         </button>
       </div>
+      )}
 
       <div className="grid sm:grid-cols-2 gap-3">
         {isCliente ? (
@@ -166,34 +162,38 @@ export default function DatiPersonali() {
           </>
         )}
 
-        {form.is_azienda && (
-          <div className="space-y-1.5 sm:col-span-2">
-            <Label>Ragione sociale</Label>
-            <Input
-              value={form.azienda}
-              onChange={(e) => setForm((f) => ({ ...f, azienda: e.target.value }))}
-              placeholder="Nome dell'azienda"
-            />
-          </div>
-        )}
+        {!isCliente && (
+          <>
+            {form.is_azienda && (
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label>Ragione sociale</Label>
+                <Input
+                  value={form.azienda}
+                  onChange={(e) => setForm((f) => ({ ...f, azienda: e.target.value }))}
+                  placeholder="Nome dell'azienda"
+                />
+              </div>
+            )}
 
-        {form.is_azienda && (
-          <div className="space-y-1.5">
-            <Label>P.IVA</Label>
-            <Input
-              value={form.piva}
-              onChange={(e) => setForm((f) => ({ ...f, piva: e.target.value }))}
-            />
-          </div>
-        )}
+            {form.is_azienda && (
+              <div className="space-y-1.5">
+                <Label>P.IVA</Label>
+                <Input
+                  value={form.piva}
+                  onChange={(e) => setForm((f) => ({ ...f, piva: e.target.value }))}
+                />
+              </div>
+            )}
 
-        <div className="space-y-1.5">
-          <Label>Codice fiscale</Label>
-          <Input
-            value={form.codice_fiscale}
-            onChange={(e) => setForm((f) => ({ ...f, codice_fiscale: e.target.value }))}
-          />
-        </div>
+            <div className="space-y-1.5">
+              <Label>Codice fiscale</Label>
+              <Input
+                value={form.codice_fiscale}
+                onChange={(e) => setForm((f) => ({ ...f, codice_fiscale: e.target.value }))}
+              />
+            </div>
+          </>
+        )}
 
         <div className="space-y-1.5">
           <Label>Telefono</Label>
@@ -203,35 +203,39 @@ export default function DatiPersonali() {
           />
         </div>
 
-        <div className="space-y-1.5 sm:col-span-2">
-          <Label>Indirizzo</Label>
-          <Input
-            value={form.indirizzo}
-            onChange={(e) => setForm((f) => ({ ...f, indirizzo: e.target.value }))}
-          />
-        </div>
+        {!isCliente && (
+          <>
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label>Indirizzo</Label>
+              <Input
+                value={form.indirizzo}
+                onChange={(e) => setForm((f) => ({ ...f, indirizzo: e.target.value }))}
+              />
+            </div>
 
-        <div className="space-y-1.5">
-          <Label>CAP</Label>
-          <Input
-            value={form.cap}
-            onChange={(e) => setForm((f) => ({ ...f, cap: e.target.value }))}
-          />
-        </div>
-        <div className="space-y-1.5">
-          <Label>Città</Label>
-          <Input
-            value={form.citta}
-            onChange={(e) => setForm((f) => ({ ...f, citta: e.target.value }))}
-          />
-        </div>
-        <div className="space-y-1.5">
-          <Label>Provincia</Label>
-          <Input
-            value={form.provincia}
-            onChange={(e) => setForm((f) => ({ ...f, provincia: e.target.value }))}
-          />
-        </div>
+            <div className="space-y-1.5">
+              <Label>CAP</Label>
+              <Input
+                value={form.cap}
+                onChange={(e) => setForm((f) => ({ ...f, cap: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Città</Label>
+              <Input
+                value={form.citta}
+                onChange={(e) => setForm((f) => ({ ...f, citta: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Provincia</Label>
+              <Input
+                value={form.provincia}
+                onChange={(e) => setForm((f) => ({ ...f, provincia: e.target.value }))}
+              />
+            </div>
+          </>
+        )}
       </div>
 
       <div className="flex justify-end">

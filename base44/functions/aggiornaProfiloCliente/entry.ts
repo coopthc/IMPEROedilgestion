@@ -21,21 +21,12 @@ export default async function(req: Request): Promise<Response> {
       return Response.json({ error: 'Non autorizzato per questo cliente' }, { status: 403 });
     }
 
-    const isAzienda = body.is_azienda || false;
-
-    const updateData = {
-      nome: body.nome,
-      is_azienda: isAzienda,
-      azienda: isAzienda ? (body.azienda || '') : '',
-      piva: isAzienda ? (body.piva || '') : '',
-      email: body.email,
-      codice_fiscale: body.codice_fiscale,
-      telefono: body.telefono,
-      indirizzo: body.indirizzo,
-      citta: body.citta,
-      cap: body.cap,
-      provincia: body.provincia,
-    };
+    // Il cliente puo aggiornare solo i propri dati di contatto;
+    // i dati di fatturazione sono gestiti dall'amministratore.
+    const updateData = {};
+    if (body.nome !== undefined) updateData.nome = body.nome;
+    if (body.email !== undefined) updateData.email = body.email;
+    if (body.telefono !== undefined) updateData.telefono = body.telefono;
 
     const updated = await base44.asServiceRole.entities.Cliente.update(clienteId, updateData);
     return Response.json({ success: true, cliente: updated });
