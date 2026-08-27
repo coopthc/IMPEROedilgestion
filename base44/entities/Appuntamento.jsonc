@@ -171,7 +171,14 @@
                       }
                     },
                     {
-                      "data.cliente_id": "{{user.data.cliente_id}}"
+                      "$or": [
+                        {
+                          "data.cliente_id": "{{user.data.cliente_id}}"
+                        },
+                        {
+                          "data.utenti_ids": "{{user.id}}"
+                        }
+                      ]
                     }
                   ]
                 }
