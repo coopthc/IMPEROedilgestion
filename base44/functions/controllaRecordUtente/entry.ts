@@ -22,6 +22,29 @@ export default async function(req: Request): Promise<Response> {
     const myClienteId = user.cliente_id || (user.data && user.data.cliente_id);
     const myCollabId = user.collaboratore_id || (user.data && user.data.collaboratore_id);
     if (myClienteId || myCollabId) {
+      // Ricalcola cantieri_ids come rete di sicurezza (il cliente potrebbe avere cantieri non ancora sincronizzati)
+      const cantieri = await base44.asServiceRole.entities.Cantiere.list();
+      let cantieriIds = [];
+      if (myClienteId) {
+        cantieriIds = cantieri.filter((c) => c.cliente_id === myClienteId).map((c) => c.id);
+      } else if (myCollabId) {
+        cantieriIds = cantieri.filter((c) => {
+          const squadIds = (c.collaboratori_ids || '').split(',').filter(Boolean);
+          return squadIds.includes(myCollabId) || c.responsabile_id === myCollabId;
+        }).map((c) => c.id);
+      }
+      const currentIds = (user.cantieri_ids || (user.data && user.data.cantieri_ids) || []).slice().sort();
+      const newIds = cantieriIds.slice().sort();
+      if (JSON.stringify(currentIds) !== JSON.stringify(newIds)) {
+        await base44.asServiceRole.entities.User.update(user.id, { cantieri_ids: cantieriIds });
+        for (const cant of cantieri.filter((c) => cantieriIds.includes(c.id))) {
+          const existing = Array.isArray(cant.utenti_ids) ? cant.utenti_ids : [];
+          if (!existing.includes(user.id)) {
+            await base44.asServiceRole.entities.Cantiere.update(cant.id, { utenti_ids: [...existing, user.id] });
+          }
+        }
+        return Response.json({ abbinato: true, ricalcolato: true, cantieri: cantieriIds.length });
+      }
       return Response.json({ has_record: true, already: true });
     }
 
