@@ -65,8 +65,9 @@ export default function DatiPersonali() {
     setSaving(true);
     try {
       if (isCliente && clienteId) {
-        // Salva sull'entità Cliente
-        await base44.entities.Cliente.update(clienteId, {
+        // Salva tramite funzione backend (bypassa RLS, pulisce campi azienda se privato)
+        await base44.functions.invoke("aggiornaProfiloCliente", {
+          cliente_id: clienteId,
           nome: form.nome,
           is_azienda: form.is_azienda,
           azienda: form.azienda,
