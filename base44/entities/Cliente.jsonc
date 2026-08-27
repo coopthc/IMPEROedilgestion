@@ -118,6 +118,9 @@
           "user_condition": {
             "role": "mssg_capo"
           }
+        },
+        {
+          "id": "{{user.data.cliente_id}}"
         }
       ]
     },
