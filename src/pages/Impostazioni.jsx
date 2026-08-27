@@ -8,9 +8,13 @@ import {
 import DatiPersonali from "@/components/impostazioni/DatiPersonali";
 import AccountPassword from "@/components/impostazioni/AccountPassword";
 import TemaGestionale from "@/components/impostazioni/TemaGestionale";
-import { KeyRound, Palette, Settings, UserCircle } from "lucide-react";
+import CapacitaAppuntamenti from "@/components/impostazioni/CapacitaAppuntamenti";
+import { KeyRound, Palette, Settings, UserCircle, Clock } from "lucide-react";
+import { useAuth } from "@/lib/AuthContext";
 
 export default function Impostazioni() {
+  const { user } = useAuth();
+  const isGestore = ["admin", "mssg_admin"].includes(user?.role);
   return (
     <div className="space-y-4">
       <div>
@@ -41,6 +45,22 @@ export default function Impostazioni() {
             <DatiPersonali />
           </AccordionContent>
         </AccordionItem>
+
+        {isGestore && (
+        <AccordionItem value="capacita" className="border-b border-border">
+          <AccordionTrigger className="hover:no-underline">
+            <span className="flex items-center gap-2 font-semibold">
+              <Clock className="w-4 h-4 text-primary" /> Capacità appuntamenti
+            </span>
+          </AccordionTrigger>
+          <AccordionContent>
+            <p className="text-xs text-muted-foreground mb-3">
+              Definisci quanti appuntamenti contemporanei puoi gestire.
+            </p>
+            <CapacitaAppuntamenti />
+          </AccordionContent>
+        </AccordionItem>
+        )}
 
         <AccordionItem value="tema" className="border-b border-border">
           <AccordionTrigger className="hover:no-underline">
