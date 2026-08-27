@@ -108,6 +108,16 @@ export const AuthProvider = ({ children }) => {
             window.location.reload();
             return;
           }
+          // Nessun record trovato e nessun abbinamento possibile → blocca l'accesso
+          if (res && res.has_record === false && !res.abbinato) {
+            setUser(null);
+            setIsAuthenticated(false);
+            setAuthError({
+              type: 'user_not_registered',
+              message: 'User not registered for this app'
+            });
+            return;
+          }
         } catch (e) {
           console.error('Controllo record utente fallito:', e);
         }
