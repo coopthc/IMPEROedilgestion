@@ -22,6 +22,7 @@ import {
   Check,
 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { useAuth } from "@/lib/AuthContext";
 
 const GIORNI = [
   { value: 1, label: "Lunedì" },
@@ -35,6 +36,8 @@ const GIORNI = [
 
 export default function DisponibilitaManager() {
   const { toast } = useToast();
+  const { user } = useAuth();
+  const isAziendaleManager = ["admin", "mssg_admin"].includes(user?.role);
   const [slots, setSlots] = useState([]);
   const [giorniBloccati, setGiorniBloccati] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -44,8 +47,9 @@ export default function DisponibilitaManager() {
     ora_inizio: "09:00",
     ora_fine: "18:00",
     durata_slot: 60,
+    tipo: isAziendaleManager ? "aziendale" : "personale",
   });
-  const [nuovoBlocco, setNuovoBlocco] = useState({ data_inizio: "", data_fine: "", motivo: "" });
+  const [nuovoBlocco, setNuovoBlocco] = useState({ data_inizio: "", data_fine: "", motivo: "", tipo: isAziendaleManager ? "aziendale" : "personale" });
   const [savingBlocco, setSavingBlocco] = useState(false);
   const [agendaDates, setAgendaDates] = useState(new Set());
   const [fissando, setFissando] = useState(null);
@@ -87,12 +91,16 @@ export default function DisponibilitaManager() {
     if (!nuovo.ora_inizio || !nuovo.ora_fine) return;
     setSaving(true);
     try {
+      const tipo = isAziendaleManager ? nuovo.tipo : "personale";
       await base44.entities.Disponibilita.create({
         giorno_settimana: Number(nuovo.giorno_settimana),
         ora_inizio: nuovo.ora_inizio,
         ora_fine: nuovo.ora_fine,
         durata_slot: Number(nuovo.durata_slot) || 60,
         attivo: true,
+        tipo,
+        utente_id: tipo === "personale" ? user.id : "",
+        utente_nome: tipo === "personale" ? (user.full_name || user.email || "") : "",
       });
       await load();
       toast({ title: "Disponibilità aggiunta" });
@@ -158,10 +166,17 @@ export default function DisponibilitaManager() {
         return;
       }
 
+      const bloccoTipo = isAziendaleManager ? nuovoBlocco.tipo : "personale";
       await base44.entities.GiornoBloccato.bulkCreate(
-        newDates.map((d) => ({ data: d, motivo: nuovoBlocco.motivo || "" }))
+        newDates.map((d) => ({
+          data: d,
+          motivo: nuovoBlocco.motivo || "",
+          tipo: bloccoTipo,
+          utente_id: bloccoTipo === "personale" ? user.id : "",
+          utente_nome: bloccoTipo === "personale" ? (user.full_name || user.email || "") : "",
+        }))
       );
-      setNuovoBlocco({ data_inizio: "", data_fine: "", motivo: "" });
+      setNuovoBlocco({ data_inizio: "", data_fine: "", motivo: "", tipo: isAziendaleManager ? "aziendale" : "personale" });
       await load();
       toast({ title: `${newDates.length} ${newDates.length === 1 ? "giornata bloccata" : "giornate bloccate"}` });
     } catch (err) {
@@ -232,10 +247,24 @@ export default function DisponibilitaManager() {
           <Clock className="w-4 h-4 text-primary" /> Disponibilità settimanale
         </h3>
         <p className="text-xs text-muted-foreground mb-3">
-          Definisci gli orari in cui sei disponibile. Gli slot generati verranno
-          usati nel form appuntamento, escludendo quelli già occupati.
-        </p>
-        <form onSubmit={add} className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+           {isAziendaleManager
+             ? "Definisci le fasce di disponibilità. \"Aziendale\" = calendario di base per tutti; \"Personale\" = le tue sovrapposizioni individuali."
+             : "Definisci le tue fasce di disponibilità personali. Il calendario aziendale è gestito dall'amministratore."}
+         </p>
+         {isAziendaleManager && (
+           <div className="flex items-center gap-3 mb-2">
+             <span className="text-xs text-muted-foreground">Tipo:</span>
+             <label className="flex items-center gap-1.5 text-xs cursor-pointer">
+               <input type="radio" name="disp-tipo" value="aziendale" checked={nuovo.tipo === "aziendale"} onChange={(e) => setNuovo((f) => ({ ...f, tipo: e.target.value }))} />
+               Aziendale
+             </label>
+             <label className="flex items-center gap-1.5 text-xs cursor-pointer">
+               <input type="radio" name="disp-tipo" value="personale" checked={nuovo.tipo === "personale"} onChange={(e) => setNuovo((f) => ({ ...f, tipo: e.target.value }))} />
+               Personale
+             </label>
+           </div>
+         )}
+         <form onSubmit={add} className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           <Select
             value={nuovo.giorno_settimana}
             onValueChange={(v) =>
@@ -307,16 +336,19 @@ export default function DisponibilitaManager() {
             {g.slots.length === 0 ? (
               <p className="text-xs text-muted-foreground py-2">Non disponibile</p>
             ) : (
-              g.slots.map((s) => (
+              g.slots.map((s) => {
+                const canEdit = isAziendaleManager || s.tipo === "personale";
+                return (
                 <div
                   key={s.id}
                   className="flex items-center justify-between gap-2 py-1.5 border-b border-border last:border-0"
                 >
                   <div className="flex items-center gap-2">
-                    <Switch
-                      checked={s.attivo}
-                      onCheckedChange={() => toggle(s)}
-                    />
+                    {canEdit ? (
+                      <Switch checked={s.attivo} onCheckedChange={() => toggle(s)} />
+                    ) : (
+                      <span className={`w-9 h-5 rounded-full ${s.attivo ? "bg-primary/40" : "bg-muted"}`} />
+                    )}
                     <span
                       className={`text-sm ${
                         s.attivo ? "" : "line-through text-muted-foreground"
@@ -327,15 +359,21 @@ export default function DisponibilitaManager() {
                     <span className="text-[10px] text-muted-foreground">
                       {s.durata_slot}min
                     </span>
+                    {s.tipo === "personale" && (
+                      <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-primary/15 text-primary">Mio</span>
+                    )}
                   </div>
-                  <button
-                    onClick={() => remove(s)}
-                    className="p-1 rounded hover:bg-destructive/15 text-destructive"
-                  >
-                    <Trash2 className="w-3 h-3" />
-                  </button>
+                  {canEdit && (
+                    <button
+                      onClick={() => remove(s)}
+                      className="p-1 rounded hover:bg-destructive/15 text-destructive"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  )}
                 </div>
-              ))
+                );
+              })
             )}
           </div>
         ))}
@@ -347,11 +385,23 @@ export default function DisponibilitaManager() {
           <Ban className="w-4 h-4 text-destructive" /> Blocca giornate specifiche
         </h3>
         <p className="text-xs text-muted-foreground mb-3">
-          Blocca date per ferie, festività o impegni: in quei giorni non sarà
-          possibile prenotare appuntamenti. Inserisci una data fine per bloccare
-          un intero periodo (es. una settimana di ferie).
-        </p>
-        <form onSubmit={addBlocco} className="flex flex-wrap gap-2 items-end">
+           Blocca date per ferie, festività o impegni: in quei giorni non sarà
+           possibile prenotare appuntamenti. {isAziendaleManager ? "\"Aziendale\" blocca per tutti; \"Personale\" blocca solo per te." : "Le tue giornate bloccate sono personali."} Inserisci una data fine per bloccare un intero periodo (es. una settimana di ferie).
+         </p>
+         {isAziendaleManager && (
+           <div className="flex items-center gap-3 mb-2">
+             <span className="text-xs text-muted-foreground">Tipo:</span>
+             <label className="flex items-center gap-1.5 text-xs cursor-pointer">
+               <input type="radio" name="blocco-tipo" value="aziendale" checked={nuovoBlocco.tipo === "aziendale"} onChange={(e) => setNuovoBlocco((f) => ({ ...f, tipo: e.target.value }))} />
+               Aziendale
+             </label>
+             <label className="flex items-center gap-1.5 text-xs cursor-pointer">
+               <input type="radio" name="blocco-tipo" value="personale" checked={nuovoBlocco.tipo === "personale"} onChange={(e) => setNuovoBlocco((f) => ({ ...f, tipo: e.target.value }))} />
+               Personale
+             </label>
+           </div>
+         )}
+         <form onSubmit={addBlocco} className="flex flex-wrap gap-2 items-end">
           <div className="space-y-1.5 flex-1 min-w-[130px]">
             <Label className="text-xs">Data inizio</Label>
             <Input
@@ -401,7 +451,9 @@ export default function DisponibilitaManager() {
 
         {giorniBloccati.length > 0 && (
           <div className="mt-3 space-y-1.5">
-            {giorniBloccati.map((g) => (
+            {giorniBloccati.map((g) => {
+              const canEdit = isAziendaleManager || g.tipo === "personale";
+              return (
               <div
                 key={g.id}
                 className="flex items-center justify-between gap-2 px-3 py-2 rounded-md bg-destructive/10 border border-destructive/20"
@@ -420,6 +472,9 @@ export default function DisponibilitaManager() {
                       — {g.motivo}
                     </span>
                   )}
+                  {g.tipo === "personale" && (
+                    <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-primary/15 text-primary">Mio</span>
+                  )}
                 </div>
                 <div className="flex items-center gap-1 flex-shrink-0">
                   {agendaDates.has(g.data) ? (
@@ -436,15 +491,18 @@ export default function DisponibilitaManager() {
                       Fissa
                     </button>
                   )}
-                  <button
-                    onClick={() => removeBlocco(g)}
-                    className="p-1 rounded hover:bg-destructive/20 text-destructive"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                  {canEdit && (
+                    <button
+                      onClick={() => removeBlocco(g)}
+                      className="p-1 rounded hover:bg-destructive/20 text-destructive"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
