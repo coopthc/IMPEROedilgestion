@@ -242,9 +242,20 @@
                   }
                 },
                 {
-                  "user_condition": {
-                    "role": "mssg_capo"
-                  }
+                  "$and": [
+                    {
+                      "user_condition": {
+                        "role": "mssg_capo"
+                      }
+                    },
+                    {
+                      "data.utenti_ids": {
+                        "$in": [
+                          "{{user.id}}"
+                        ]
+                      }
+                    }
+                  ]
                 }
               ]
             }
@@ -284,9 +295,20 @@
                   }
                 },
                 {
-                  "user_condition": {
-                    "role": "mssg_capo"
-                  }
+                  "$and": [
+                    {
+                      "user_condition": {
+                        "role": "mssg_capo"
+                      }
+                    },
+                    {
+                      "data.utenti_ids": {
+                        "$in": [
+                          "{{user.id}}"
+                        ]
+                      }
+                    }
+                  ]
                 }
               ]
             }
