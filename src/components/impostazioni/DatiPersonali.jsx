@@ -5,16 +5,47 @@ import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Save, User, Building2, UserCircle } from "lucide-react";
+import { Loader2, Save, Building2, UserCircle } from "lucide-react";
 
 export default function DatiPersonali() {
   const { user, checkUserAuth } = useAuth();
   const { toast } = useToast();
   const [form, setForm] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [cliente, setCliente] = useState(null);
 
+  const isCliente = user?.role === "mssg_cliente";
+  const clienteId = user?.cliente_id || user?.data?.cliente_id;
+
+  // Per mssg_cliente: carica il record Cliente
   useEffect(() => {
-    if (user) {
+    if (isCliente && clienteId) {
+      base44.entities.Cliente.get(clienteId)
+        .then((c) => {
+          setCliente(c);
+          setForm({
+            nome: c.nome ?? "",
+            is_azienda: c.is_azienda ?? false,
+            azienda: c.azienda ?? "",
+            email: c.email ?? "",
+            piva: c.piva ?? "",
+            codice_fiscale: c.codice_fiscale ?? "",
+            telefono: c.telefono ?? "",
+            indirizzo: c.indirizzo ?? "",
+            citta: c.citta ?? "",
+            cap: c.cap ?? "",
+            provincia: c.provincia ?? "",
+          });
+        })
+        .catch(() => {
+          toast({ title: "Errore caricamento dati cliente", variant: "destructive" });
+        });
+    }
+  }, [isCliente, clienteId]);
+
+  // Per altri ruoli: carica dal profilo User
+  useEffect(() => {
+    if (!isCliente && user) {
       setForm({
         is_azienda: user.is_azienda ?? false,
         azienda: user.azienda ?? "",
@@ -27,15 +58,34 @@ export default function DatiPersonali() {
         provincia: user.provincia ?? "",
       });
     }
-  }, [user]);
+  }, [user, isCliente]);
 
   const save = async (e) => {
     e.preventDefault();
     setSaving(true);
     try {
-      await base44.auth.updateMe(form);
-      await checkUserAuth();
-      toast({ title: "Dati personali salvati" });
+      if (isCliente && clienteId) {
+        // Salva sull'entità Cliente
+        await base44.entities.Cliente.update(clienteId, {
+          nome: form.nome,
+          is_azienda: form.is_azienda,
+          azienda: form.azienda,
+          email: form.email,
+          piva: form.piva,
+          codice_fiscale: form.codice_fiscale,
+          telefono: form.telefono,
+          indirizzo: form.indirizzo,
+          citta: form.citta,
+          cap: form.cap,
+          provincia: form.provincia,
+        });
+        toast({ title: "Dati salvati", description: "I tuoi dati sono stati aggiornati." });
+      } else {
+        // Salva sul profilo User
+        await base44.auth.updateMe(form);
+        await checkUserAuth();
+        toast({ title: "Dati personali salvati" });
+      }
     } catch (err) {
       toast({ title: "Errore salvataggio", description: err.message, variant: "destructive" });
     } finally {
@@ -51,10 +101,10 @@ export default function DatiPersonali() {
     <form onSubmit={save} className="bg-card border border-border rounded-lg p-5 space-y-4">
       <div>
         <h2 className="text-sm font-semibold flex items-center gap-2">
-          <User className="w-4 h-4 text-primary" /> Dati personali
+          <UserCircle className="w-4 h-4 text-primary" /> Dati personali
         </h2>
         <p className="text-xs text-muted-foreground mt-0.5">
-          Le tue informazioni personali e di fatturazione.
+          Le tue informazioni personali, dati di fatturazione e tipo di account (privato o azienda).
         </p>
       </div>
 
@@ -81,14 +131,39 @@ export default function DatiPersonali() {
       </div>
 
       <div className="grid sm:grid-cols-2 gap-3">
-        <div className="space-y-1.5">
-          <Label>Nome</Label>
-          <Input value={user?.full_name || ""} disabled />
-        </div>
-        <div className="space-y-1.5">
-          <Label>Email</Label>
-          <Input value={user?.email || ""} disabled />
-        </div>
+        {isCliente ? (
+          // Campi per cliente (da entità Cliente)
+          <>
+            <div className="space-y-1.5">
+              <Label>Nome referente</Label>
+              <Input
+                value={form.nome}
+                onChange={(e) => setForm((f) => ({ ...f, nome: e.target.value }))}
+                placeholder="Nome e cognome"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Email di contatto</Label>
+              <Input
+                value={form.email}
+                onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                placeholder="Email di contatto"
+              />
+            </div>
+          </>
+        ) : (
+          // Campi per altri ruoli (da User)
+          <>
+            <div className="space-y-1.5">
+              <Label>Nome</Label>
+              <Input value={user?.full_name || ""} disabled />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Email</Label>
+              <Input value={user?.email || ""} disabled />
+            </div>
+          </>
+        )}
 
         {form.is_azienda && (
           <div className="space-y-1.5 sm:col-span-2">
@@ -161,7 +236,7 @@ export default function DatiPersonali() {
       <div className="flex justify-end">
         <Button type="submit" disabled={saving}>
           {saving ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Save className="w-4 h-4 mr-1" />}
-          Salva dati personali
+          Salva dati
         </Button>
       </div>
     </form>
