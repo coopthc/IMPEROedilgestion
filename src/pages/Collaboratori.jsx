@@ -99,8 +99,24 @@ export default function Collaboratori() {
   const handleDelete = async (coll) => {
     if (!confirm(`Eliminare il collaboratore "${coll.nome}"?`)) return;
     try {
+      // Disattiva l'utente collegato: reset ruolo e pulisci riferimenti
+      if (coll.user_id) {
+        await base44.functions.invoke("aggiornaUtenteGestionale", {
+          user_id: coll.user_id,
+          data: { role: "user", collaboratore_id: "", cantieri_ids: [] },
+        });
+      } else if (coll.email) {
+        const users = await base44.entities.User.list();
+        const u = users.find((x) => x.email === coll.email);
+        if (u) {
+          await base44.functions.invoke("aggiornaUtenteGestionale", {
+            user_id: u.id,
+            data: { role: "user", collaboratore_id: "", cantieri_ids: [] },
+          });
+        }
+      }
       await base44.entities.Collaboratore.delete(coll.id);
-      toast({ title: "Collaboratore eliminato" });
+      toast({ title: "Collaboratore eliminato", description: "Utente disattivato e accessi revocati" });
       load();
     } catch (err) {
       toast({ title: "Errore durante l'eliminazione", variant: "destructive" });
