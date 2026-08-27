@@ -15,6 +15,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2, Mail } from "lucide-react";
 import { invitaUtenteConRuolo } from "@/lib/invitaUtente";
+import { inviaEmailAccesso } from "@/lib/emailAccesso";
 
 // Solo amministratori: clienti e collaboratori si creano dalle rispettive sezioni.
 const LIVELLI = [
@@ -140,8 +141,8 @@ export default function UtenteFormDialog({ open, onOpenChange, utente, onSaved }
   const reinvita = async () => {
     if (!utente?.email) return;
     try {
-      await invitaUtenteConRuolo(utente.email, utente.role);
-      toast({ title: "Email re-inviata", description: utente.email });
+      await inviaEmailAccesso(utente.email, utente.full_name || "", "amministratore");
+      toast({ title: "Email di accesso re-inviata", description: utente.email });
     } catch (err) {
       toast({ title: "Errore invio email", variant: "destructive" });
     }

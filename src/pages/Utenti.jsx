@@ -17,6 +17,7 @@ import {
   Lock,
 } from "lucide-react";
 import UtenteFormDialog, { LIVELLO_LABEL } from "@/components/utenti/UtenteFormDialog";
+import { inviaEmailAccesso } from "@/lib/emailAccesso";
 
 const RUOLO_STILE = {
   admin: { icon: ShieldCheck, cls: "bg-primary/20 text-primary border-primary/40" },
@@ -91,8 +92,8 @@ export default function Utenti() {
 
   const reinvita = async (u) => {
     try {
-      await base44.users.inviteUser(u.email, u.role === "admin" ? "admin" : "user");
-      toast({ title: "Email re-inviata", description: u.email });
+      await inviaEmailAccesso(u.email, u.full_name || "", "amministratore");
+      toast({ title: "Email di accesso re-inviata", description: u.email });
     } catch (err) {
       toast({ title: "Errore invio email", variant: "destructive" });
     }

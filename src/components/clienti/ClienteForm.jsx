@@ -29,6 +29,7 @@ const emptyForm = {
   piva: "",
   codice_fiscale: "",
   note: "",
+  crea_cantiere: false,
 };
 
 export default function ClienteForm({ open, onOpenChange, cliente, onSaved }) {
@@ -74,42 +75,50 @@ export default function ClienteForm({ open, onOpenChange, cliente, onSaved }) {
       } else {
         // Crea cliente + cantiere collegato (sono la stessa entità)
         const nuovoCliente = await base44.entities.Cliente.create(form);
-        const nuovoCantiere = await base44.entities.Cantiere.create({
-          nome: form.is_azienda && form.azienda
-            ? form.azienda
-            : `Cantiere ${form.nome}`,
-          cliente_id: nuovoCliente.id,
-          cliente_nome: nuovoCliente.nome,
-          indirizzo: form.indirizzo || "",
-          citta: form.citta || "",
-          stato: "bozza",
-        });
+        let nuovoCantiere = null;
+        if (form.crea_cantiere) {
+          nuovoCantiere = await base44.entities.Cantiere.create({
+            nome: form.is_azienda && form.azienda
+              ? form.azienda
+              : `Cantiere ${form.nome}`,
+            cliente_id: nuovoCliente.id,
+            cliente_nome: nuovoCliente.nome,
+            indirizzo: form.indirizzo || "",
+            citta: form.citta || "",
+            stato: "bozza",
+          });
+        }
         // Se c'è una email, crea automaticamente l'account utente con ruolo cliente
         if (form.email) {
           try {
-            const invitedUser = await invitaUtenteConRuolo(form.email, "mssg_cliente", {
-              cliente_id: nuovoCliente.id,
-            });
+            const invitedUser = await invitaUtenteConRuolo(
+              form.email,
+              "mssg_cliente",
+              { cliente_id: nuovoCliente.id },
+              form.nome
+            );
             if (invitedUser) {
               await base44.entities.Cliente.update(nuovoCliente.id, {
                 user_id: invitedUser.id,
               });
-              try {
-                await base44.functions.invoke("sincronizzaCantieriUtente", {
-                  cantiere_id: nuovoCantiere.id,
-                });
-              } catch (e) {
-                console.error("Sync cantieri fallita:", e);
+              if (nuovoCantiere) {
+                try {
+                  await base44.functions.invoke("sincronizzaCantieriUtente", {
+                    cantiere_id: nuovoCantiere.id,
+                  });
+                } catch (e) {
+                  console.error("Sync cantieri fallita:", e);
+                }
               }
             }
             toast({
-              title: "Account cliente creato",
-              description: `Invito inviato a ${form.email}`,
+              title: "Cliente creato",
+              description: `Email di accesso inviata a ${form.email}`,
             });
           } catch (err) {
             console.error("Errore invito utente cliente:", err);
             toast({
-              title: "Cliente creato, invito non inviato",
+              title: "Cliente creato, email non inviata",
               description: "Verifica l'email o reinvia più tardi.",
               variant: "destructive",
             });
@@ -191,6 +200,22 @@ export default function ClienteForm({ open, onOpenChange, cliente, onSaved }) {
               />
             </div>
           </div>
+
+          {/* Crea cantiere (opzionale) */}
+          {!cliente && (
+            <div className="flex items-center justify-between rounded-lg border border-border p-3">
+              <div>
+                <Label className="cursor-pointer">Crea anche il cantiere</Label>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Crea un cantiere collegato automaticamente
+                </p>
+              </div>
+              <Switch
+                checked={form.crea_cantiere}
+                onCheckedChange={(v) => update("crea_cantiere", v)}
+              />
+            </div>
+          )}
 
           {/* Sezione fatturazione */}
           <div className="pt-2">

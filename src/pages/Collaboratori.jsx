@@ -21,7 +21,7 @@ const waLink = (phone) =>
 import CollaboratoreForm from "@/components/collaboratori/CollaboratoreForm";
 import ExportButtons from "@/components/esporta/ExportButtons";
 import { useToast } from "@/components/ui/use-toast";
-import { invitaUtenteConRuolo } from "@/lib/invitaUtente";
+import { inviaEmailAccesso } from "@/lib/emailAccesso";
 
 const COLONNE_COLLABORATORI = [
   { label: "Nome", key: "nome" },
@@ -122,18 +122,9 @@ export default function Collaboratori() {
       toast({ title: "Nessuna email registrata", variant: "destructive" });
       return;
     }
-    const RUOLO_MAP = {
-      amministratore: "admin",
-      capo_cantiere: "mssg_capo",
-      operaio: "mssg_operaio",
-      tecnico: "mssg_operaio",
-      supervisore: "mssg_admin",
-      amministrazione: "mssg_admin",
-      altro: "mssg_operaio",
-    };
     try {
-      await invitaUtenteConRuolo(coll.email, RUOLO_MAP[coll.qualifica] || "mssg_operaio");
-      toast({ title: "Email re-inviata", description: coll.email });
+      await inviaEmailAccesso(coll.email, coll.nome, "collaboratore");
+      toast({ title: "Email di accesso re-inviata", description: coll.email });
     } catch (err) {
       toast({ title: "Errore invio email", variant: "destructive" });
     }

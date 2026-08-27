@@ -132,8 +132,8 @@ export default function CollaboratoreForm({ open, onOpenChange, collaboratore, o
         const ruolo = RUOLO_MAP[form.qualifica] || "mssg_operaio";
         try {
           await invitaUtenteConRuolo(form.email, ruolo, {
-            collaboratore_id: saved.id,
-          });
+              collaboratore_id: saved.id,
+            }, form.nome);
           toast({ title: "Email di benvenuto inviata", description: form.email });
           // Collega lo user_id sul collaboratore
           try {
