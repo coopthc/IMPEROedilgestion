@@ -52,6 +52,7 @@ const GROUP_LABELS = {
 export default function GestionaleLayout() {
   const { user, logout } = useAuth();
   const [azienda, setAzienda] = useState(null);
+  const [cliente, setCliente] = useState(null);
 
   useEffect(() => {
     (async () => {
@@ -71,14 +72,24 @@ export default function GestionaleLayout() {
     })();
   }, []);
 
+  useEffect(() => {
+    if (user?.role !== "mssg_cliente") return;
+    const clienteId = user?.cliente_id || user?.data?.cliente_id;
+    if (!clienteId) return;
+    base44.entities.Cliente.get(clienteId).then(setCliente).catch(() => {});
+  }, [user]);
+
   const handleLogout = () => {
     logout(false);
     window.location.href = "/login";
   };
 
-  const logoNome = azienda?.ragione_sociale;
-  const logoEmail = azienda?.email_azienda;
-  const logoUrl = azienda?.logo_url;
+  const isClienteRole = user?.role === "mssg_cliente";
+  const logoNome = isClienteRole
+    ? cliente?.is_azienda ? cliente?.azienda : cliente?.nome
+    : user?.is_azienda ? user?.azienda : user?.full_name;
+  const logoEmail = user?.email;
+  const logoUrl = isClienteRole ? cliente?.logo_url : user?.logo_url;
 
   return (
     <div className="min-h-screen bg-background text-foreground md:flex">
