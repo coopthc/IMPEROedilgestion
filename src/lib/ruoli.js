@@ -32,9 +32,9 @@ export const WIDGET_VIETATI_CLIENTE = [
 // Azioni rapide non disponibili per il cliente
 export const AZIONI_VIETATE_CLIENTE = ["voce", "promemoria", "cliente", "collaboratore", "backup"];
 
-// Widget predefiniti per il cliente
+// Widget predefiniti per il cliente (dashboard fissa)
 export const DEFAULT_WIDGETS_CLIENTE = [
-  "appuntamenti", "lavorazioni", "notifiche", "chat"
+  "appuntamenti", "lavorazioni"
 ];
 
 // Azioni rapide predefinite per il cliente

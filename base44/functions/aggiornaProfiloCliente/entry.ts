@@ -10,12 +10,21 @@ export default async function(req: Request): Promise<Response> {
       return Response.json({ error: 'Non autorizzato' }, { status: 403 });
     }
 
-    const clienteId = user.cliente_id || (user.data && user.data.cliente_id);
+    const body = await req.json();
+
+    let clienteId = user.cliente_id || (user.data && user.data.cliente_id);
+    // Fallback: se cliente_id non è sul profilo utente, verifica via email
+    if (!clienteId && body.cliente_id) {
+      try {
+        const cliente = await base44.asServiceRole.entities.Cliente.get(body.cliente_id);
+        if (cliente && cliente.email && cliente.email.toLowerCase() === user.email.toLowerCase()) {
+          clienteId = body.cliente_id;
+        }
+      } catch { /* ignora */ }
+    }
     if (!clienteId) {
       return Response.json({ error: 'Cliente non collegato' }, { status: 403 });
     }
-
-    const body = await req.json();
 
     if (body.cliente_id && body.cliente_id !== clienteId) {
       return Response.json({ error: 'Non autorizzato per questo cliente' }, { status: 403 });

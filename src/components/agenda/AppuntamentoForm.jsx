@@ -174,7 +174,8 @@ export default function AppuntamentoForm({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.titolo.trim() || !form.data || !form.ora) return;
+    if (!form.titolo.trim() || !form.data) return;
+    if (!isClienteRole && !form.ora) return;
     setLoading(true);
 
     const cliente = clienti.find((c) => c.id === form.cliente_id);
@@ -405,6 +406,7 @@ export default function AppuntamentoForm({
             )}
           </div>
 
+          {!isClienteRole && (
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Tipo</Label>
@@ -437,7 +439,9 @@ export default function AppuntamentoForm({
               </Select>
             </div>
           </div>
+          )}
 
+          {!isClienteRole && (
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Cliente</Label>
@@ -459,9 +463,10 @@ export default function AppuntamentoForm({
               />
             </div>
           </div>
+          )}
 
           {/* Crea cantiere in bozza per sopralluogo */}
-          {form.cliente_id && !form.cantiere_id && (
+          {!isClienteRole && form.cliente_id && !form.cantiere_id && (
             <label className="flex items-center gap-2.5 p-3 rounded-lg border border-border cursor-pointer hover:bg-secondary/30 transition-colors">
               <Switch
                 checked={creaCantiereBozza}
@@ -478,7 +483,7 @@ export default function AppuntamentoForm({
           )}
 
           {/* Collaboratori partecipanti — tutti gli attivi */}
-          {collaboratori.length > 0 && (
+          {!isClienteRole && collaboratori.length > 0 && (
             <div className="rounded-lg border border-border p-3">
               <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2 block">
                 Collaboratori partecipanti
@@ -593,7 +598,7 @@ export default function AppuntamentoForm({
                 {(loading || sendingEmail) && (
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                 )}
-                {sendingEmail ? "Invio email..." : appuntamento ? "Salva" : "Crea"}
+                {sendingEmail ? "Invio email..." : isClienteRole ? "Invia richiesta" : appuntamento ? "Salva" : "Crea"}
               </Button>
             </div>
           </div>

@@ -58,23 +58,29 @@ export default function Dashboard() {
   useEffect(() => {
     (async () => {
       try {
-        const configs = await base44.entities.DashboardConfig.filter({ created_by_id: user?.id });
-        if (configs.length > 0) {
-          setConfig(configs[0]);
-          setWidgets(JSON.parse(configs[0].widgets || "[]"));
-          if (configs[0].quick_actions) {
-            setQuickActions(JSON.parse(configs[0].quick_actions));
-          }
+        if (cliente) {
+          // Dashboard fissa per il cliente: usa sempre i default, ignora vecchie configurazioni
+          setWidgets(DEFAULT_WIDGETS_CLIENTE);
+          setQuickActions(DEFAULT_QA_CLIENTE);
         } else {
-          const defaultWidgets = operaio ? DEFAULT_WIDGETS_OPERAIO : cliente ? DEFAULT_WIDGETS_CLIENTE : DEFAULT_WIDGETS;
-          const defaultQA = operaio ? DEFAULT_QA_OPERAIO : cliente ? DEFAULT_QA_CLIENTE : ["voce", "promemoria", "appuntamento", "cliente", "collaboratore", "backup"];
-          const created = await base44.entities.DashboardConfig.create({
-            widgets: JSON.stringify(defaultWidgets),
-            quick_actions: JSON.stringify(defaultQA),
-          });
-          setConfig(created);
-          setWidgets(defaultWidgets);
-          setQuickActions(defaultQA);
+          const configs = await base44.entities.DashboardConfig.filter({ created_by_id: user?.id });
+          if (configs.length > 0) {
+            setConfig(configs[0]);
+            setWidgets(JSON.parse(configs[0].widgets || "[]"));
+            if (configs[0].quick_actions) {
+              setQuickActions(JSON.parse(configs[0].quick_actions));
+            }
+          } else {
+            const defaultWidgets = operaio ? DEFAULT_WIDGETS_OPERAIO : DEFAULT_WIDGETS;
+            const defaultQA = operaio ? DEFAULT_QA_OPERAIO : ["voce", "promemoria", "appuntamento", "cliente", "collaboratore", "backup"];
+            const created = await base44.entities.DashboardConfig.create({
+              widgets: JSON.stringify(defaultWidgets),
+              quick_actions: JSON.stringify(defaultQA),
+            });
+            setConfig(created);
+            setWidgets(defaultWidgets);
+            setQuickActions(defaultQA);
+          }
         }
       } catch { /* ignora */ }
       setLoading(false);
