@@ -71,7 +71,7 @@ export default function UtenteFormDialog({ open, onOpenChange, utente, onSaved }
       };
 
       if (utente) {
-        await base44.entities.User.update(utente.id, { role, ...dataExtra });
+        await base44.functions.invoke("aggiornaUtenteGestionale", { user_id: utente.id, data: { role, ...dataExtra } });
         const qualifica = RUOLO_TO_QUALIFICA[role];
         if (qualifica && utente.collaboratore_id) {
           try {
@@ -95,7 +95,7 @@ export default function UtenteFormDialog({ open, onOpenChange, utente, onSaved }
                 user_id: utente.id,
                 attivo: true,
               });
-              await base44.entities.User.update(utente.id, { collaboratore_id: nuovoColl.id });
+              await base44.functions.invoke("aggiornaUtenteGestionale", { user_id: utente.id, data: { collaboratore_id: nuovoColl.id } });
             }
           } catch (e) {
             console.error("Creazione collaboratore per supervisore fallita:", e);
@@ -107,10 +107,7 @@ export default function UtenteFormDialog({ open, onOpenChange, utente, onSaved }
         // Supervisore: crea anche il record Collaboratore
         if (role === "mssg_admin") {
           try {
-            const users = await base44.entities.User.list();
-            const nu = users.find(
-              (u) => u.email?.toLowerCase() === email.trim().toLowerCase()
-            );
+            const nu = await base44.functions.invoke("getUtenteGestionale", { email: email.trim() });
             if (nu && !nu.collaboratore_id) {
               const nuovoColl = await base44.entities.Collaboratore.create({
                 nome: nu.full_name || email.trim(),
@@ -119,7 +116,7 @@ export default function UtenteFormDialog({ open, onOpenChange, utente, onSaved }
                 user_id: nu.id,
                 attivo: true,
               });
-              await base44.entities.User.update(nu.id, { collaboratore_id: nuovoColl.id });
+              await base44.functions.invoke("aggiornaUtenteGestionale", { user_id: nu.id, data: { collaboratore_id: nuovoColl.id } });
             }
           } catch (e) {
             console.error("Creazione collaboratore per nuovo supervisore fallita:", e);

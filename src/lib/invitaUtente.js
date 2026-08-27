@@ -12,14 +12,12 @@ export async function invitaUtenteConRuolo(email, ruoloCustom, dataExtra = {}) {
     console.warn("inviteUser fallito (utente esistente?):", e);
   }
   try {
-    const users = await base44.entities.User.list();
-    const nu = users.find(
-      (u) => u.email?.toLowerCase() === email.toLowerCase()
-    );
-    if (nu) {
-      await base44.entities.User.update(nu.id, { role: ruoloCustom, ...dataExtra });
-      return nu;
-    }
+    await base44.functions.invoke("aggiornaUtenteGestionale", {
+      email,
+      data: { role: ruoloCustom, ...dataExtra },
+    });
+    const nu = await base44.functions.invoke("getUtenteGestionale", { email });
+    return nu || null;
   } catch (e) {
     console.error("Errore aggiornamento ruolo utente:", e);
   }

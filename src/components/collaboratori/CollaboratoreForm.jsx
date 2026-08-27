@@ -118,7 +118,7 @@ export default function CollaboratoreForm({ open, onOpenChange, collaboratore, o
         if (collaboratore.user_id) {
           const nuovoRuolo = RUOLO_MAP[form.qualifica] || "mssg_operaio";
           try {
-            await base44.entities.User.update(collaboratore.user_id, { role: nuovoRuolo });
+            await base44.functions.invoke("aggiornaUtenteGestionale", { user_id: collaboratore.user_id, data: { role: nuovoRuolo } });
           } catch (e) {
             console.error("Sincronizzazione ruolo utente fallita:", e);
           }
@@ -137,10 +137,7 @@ export default function CollaboratoreForm({ open, onOpenChange, collaboratore, o
           toast({ title: "Email di benvenuto inviata", description: form.email });
           // Collega lo user_id sul collaboratore
           try {
-            const users = await base44.entities.User.list();
-            const found = users.find(
-              (u) => u.email?.toLowerCase() === form.email.toLowerCase()
-            );
+            const found = await base44.functions.invoke("getUtenteGestionale", { email: form.email });
             if (found) {
               await base44.entities.Collaboratore.update(saved.id, {
                 user_id: found.id,

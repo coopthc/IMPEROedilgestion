@@ -38,12 +38,9 @@ export default function PromozioneDialog({ open, onOpenChange, cliente, onSaved 
   useEffect(() => {
     if (!open || !cliente) return;
     setLoading(true);
-    base44.entities.User
-      .list()
-      .then((users) => {
-        const u = users.find(
-          (x) => x.cliente_id === cliente.id || x.id === cliente.user_id
-        );
+    base44.functions
+      .invoke("getUtenteGestionale", { user_id: cliente.user_id, cliente_id: cliente.id })
+      .then((u) => {
         setUser(u || null);
         if (u) {
           const r = ["mssg_admin", "mssg_capo", "mssg_operaio"].includes(u.role)
@@ -63,11 +60,7 @@ export default function PromozioneDialog({ open, onOpenChange, cliente, onSaved 
     setSaving(true);
     try {
       if (role === "mssg_admin") {
-        await base44.entities.User.update(user.id, {
-          role,
-          supervisore_pagamenti: supPagamenti,
-          supervisore_chat: supChat,
-        });
+        await base44.functions.invoke("aggiornaUtenteGestionale", { user_id: user.id, data: { role, supervisore_pagamenti: supPagamenti, supervisore_chat: supChat } });
       } else {
         const coll = await base44.entities.Collaboratore.create({
           nome: cliente.nome,
@@ -83,10 +76,7 @@ export default function PromozioneDialog({ open, onOpenChange, cliente, onSaved 
           attivo: true,
           user_id: user.id,
         });
-        await base44.entities.User.update(user.id, {
-          role,
-          collaboratore_id: coll.id,
-        });
+        await base44.functions.invoke("aggiornaUtenteGestionale", { user_id: user.id, data: { role, collaboratore_id: coll.id } });
       }
       toast({
         title: "Utente promosso",

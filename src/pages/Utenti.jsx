@@ -75,7 +75,10 @@ export default function Utenti() {
   const toggleSupervisore = async (u, campo) => {
     setTogglingId(u.id + campo);
     try {
-      await base44.entities.User.update(u.id, { [campo]: !u[campo] });
+      await base44.functions.invoke("aggiornaUtenteGestionale", {
+        user_id: u.id,
+        data: { [campo]: !u[campo] },
+      });
       setUtenti((prev) =>
         prev.map((x) => (x.id === u.id ? { ...x, [campo]: !u[campo] } : x))
       );

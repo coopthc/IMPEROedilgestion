@@ -105,10 +105,21 @@ export default function CantiereForm({ open, onOpenChange, cantiere, clienti, on
         data_inizio: form.data_inizio || null,
         data_fine: form.data_fine || null,
       };
+      let cantiereId = cantiere?.id;
       if (cantiere) {
         await base44.entities.Cantiere.update(cantiere.id, payload);
       } else {
-        await base44.entities.Cantiere.create(payload);
+        const nuovo = await base44.entities.Cantiere.create(payload);
+        cantiereId = nuovo.id;
+      }
+      if (cantiereId) {
+        try {
+          await base44.functions.invoke("sincronizzaCantieriUtente", {
+            cantiere_id: cantiereId,
+          });
+        } catch (e) {
+          console.error("Sync cantieri fallita:", e);
+        }
       }
       onSaved();
       onOpenChange(false);

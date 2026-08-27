@@ -74,7 +74,7 @@ export default function ClienteForm({ open, onOpenChange, cliente, onSaved }) {
       } else {
         // Crea cliente + cantiere collegato (sono la stessa entità)
         const nuovoCliente = await base44.entities.Cliente.create(form);
-        await base44.entities.Cantiere.create({
+        const nuovoCantiere = await base44.entities.Cantiere.create({
           nome: form.is_azienda && form.azienda
             ? form.azienda
             : `Cantiere ${form.nome}`,
@@ -94,6 +94,13 @@ export default function ClienteForm({ open, onOpenChange, cliente, onSaved }) {
               await base44.entities.Cliente.update(nuovoCliente.id, {
                 user_id: invitedUser.id,
               });
+              try {
+                await base44.functions.invoke("sincronizzaCantieriUtente", {
+                  cantiere_id: nuovoCantiere.id,
+                });
+              } catch (e) {
+                console.error("Sync cantieri fallita:", e);
+              }
             }
             toast({
               title: "Account cliente creato",
