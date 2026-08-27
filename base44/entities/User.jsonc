@@ -25,7 +25,7 @@
     "supervisore_chat": {
       "type": "boolean",
       "default": false,
-      "title": "Supervisore: chat cliente visibili"
+      "title": "Supervisore: chat cliente visibile"
     },
     "cliente_id": {
       "type": "string",
@@ -42,6 +42,43 @@
       },
       "default": [],
       "title": "Cantieri assegnati (IDs)"
+    },
+    "is_azienda": {
+      "type": "boolean",
+      "default": false,
+      "title": "\u00c8 un'azienda"
+    },
+    "azienda": {
+      "type": "string",
+      "title": "Ragione sociale"
+    },
+    "piva": {
+      "type": "string",
+      "title": "Partita IVA"
+    },
+    "codice_fiscale": {
+      "type": "string",
+      "title": "Codice fiscale"
+    },
+    "telefono": {
+      "type": "string",
+      "title": "Telefono"
+    },
+    "indirizzo": {
+      "type": "string",
+      "title": "Indirizzo"
+    },
+    "citta": {
+      "type": "string",
+      "title": "Citt\u00e0"
+    },
+    "cap": {
+      "type": "string",
+      "title": "CAP"
+    },
+    "provincia": {
+      "type": "string",
+      "title": "Provincia"
     }
   },
   "required": [
