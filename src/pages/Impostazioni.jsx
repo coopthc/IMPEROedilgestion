@@ -5,18 +5,12 @@ import {
   AccordionTrigger,
   AccordionContent,
 } from "@/components/ui/accordion";
-import DatiAzienda from "@/components/impostazioni/DatiAzienda";
 import DatiPersonali from "@/components/impostazioni/DatiPersonali";
 import AccountPassword from "@/components/impostazioni/AccountPassword";
 import TemaGestionale from "@/components/impostazioni/TemaGestionale";
-import { KeyRound, Palette, Building2, Settings, UserCircle } from "lucide-react";
-import { useAuth } from "@/lib/AuthContext";
-import { isOperaio } from "@/lib/ruoli";
+import { KeyRound, Palette, Settings, UserCircle } from "lucide-react";
 
 export default function Impostazioni() {
-  const { user } = useAuth();
-  const operaio = isOperaio(user?.role);
-  const isGestore = ["admin", "mssg_admin"].includes(user?.role);
   return (
     <div className="space-y-4">
       <div>
@@ -47,22 +41,6 @@ export default function Impostazioni() {
             <DatiPersonali />
           </AccordionContent>
         </AccordionItem>
-
-        {isGestore && (
-        <AccordionItem value="dati-azienda" className="border-b border-border">
-          <AccordionTrigger className="hover:no-underline">
-            <span className="flex items-center gap-2 font-semibold">
-              <Building2 className="w-4 h-4 text-primary" /> Dati azienda
-            </span>
-          </AccordionTrigger>
-          <AccordionContent>
-            <p className="text-xs text-muted-foreground mb-3">
-              Ragione sociale, partita IVA, indirizzo, contatti e capacità appuntamenti.
-            </p>
-            <DatiAzienda />
-          </AccordionContent>
-        </AccordionItem>
-        )}
 
         <AccordionItem value="tema" className="border-b border-border">
           <AccordionTrigger className="hover:no-underline">
