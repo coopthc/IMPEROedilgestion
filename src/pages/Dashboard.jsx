@@ -48,7 +48,6 @@ export default function Dashboard() {
   const operaio = isOperaio(user?.role);
   const cliente = isCliente(user?.role);
   const canCustomize = !cliente;
-  const [azienda, setAzienda] = useState(null);
   const [config, setConfig] = useState(null);
   const [widgets, setWidgets] = useState([]);
   const [quickActions, setQuickActions] = useState(["voce", "promemoria", "appuntamento", "cliente", "collaboratore", "backup"]);
@@ -58,10 +57,6 @@ export default function Dashboard() {
 
   useEffect(() => {
     (async () => {
-      try {
-        const list = await base44.entities.ImpostazioneApp.list();
-        if (list.length > 0) setAzienda(list[0]);
-      } catch { /* ignora */ }
       try {
         const configs = await base44.entities.DashboardConfig.filter({ created_by_id: user?.id });
         if (configs.length > 0) {
@@ -129,7 +124,7 @@ export default function Dashboard() {
             {getGreeting()}, {user?.full_name?.split(" ")[0] || "Utente"}
           </h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            {azienda?.ragione_sociale || "EdilGestion"}
+            {user?.is_azienda ? user?.azienda : user?.full_name || "EdilGestion"}
           </p>
         </div>
         {canCustomize && (
