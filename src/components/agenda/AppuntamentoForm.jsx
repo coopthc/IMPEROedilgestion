@@ -87,6 +87,7 @@ export default function AppuntamentoForm({
 }) {
   const { user } = useAuth();
   const isAdmin = ["admin", "mssg_admin"].includes(user?.role);
+  const isClienteRole = user?.role === "mssg_cliente";
   const [form, setForm] = useState(emptyForm);
   const [loading, setLoading] = useState(false);
   const [sendingEmail, setSendingEmail] = useState(false);
@@ -117,7 +118,9 @@ export default function AppuntamentoForm({
       );
       setPillole(durataToPillole(appuntamento.durata_minuti));
     } else {
-      setForm({ ...emptyForm, data: defaultData || "" });
+      setForm(isClienteRole
+        ? { ...emptyForm, data: defaultData || "", categoria: "lavorativo", tipo: "richiesta", stato: "in_attesa" }
+        : { ...emptyForm, data: defaultData || "" });
       setPartecipantiIds([]);
       setPillole([60]);
       setCreaCantiereBozza(false);
@@ -286,27 +289,29 @@ export default function AppuntamentoForm({
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 pt-2">
-          {/* Categoria: Lavorativo / Personale */}
-          <div className="grid grid-cols-2 gap-2 p-1 bg-secondary/50 rounded-lg">
-            <button
-              type="button"
-              onClick={() => update("categoria", "lavorativo")}
-              className={`flex items-center justify-center gap-1.5 py-2 rounded-md text-sm font-medium transition-colors ${
-                form.categoria !== "personale" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <Briefcase className="w-4 h-4" /> Lavorativo
-            </button>
-            <button
-              type="button"
-              onClick={() => update("categoria", "personale")}
-              className={`flex items-center justify-center gap-1.5 py-2 rounded-md text-sm font-medium transition-colors ${
-                form.categoria === "personale" ? "bg-teal-500 text-white" : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <User className="w-4 h-4" /> Personale
-            </button>
-          </div>
+          {/* Categoria: Lavorativo / Personale (nascosto per cliente) */}
+          {!isClienteRole && (
+            <div className="grid grid-cols-2 gap-2 p-1 bg-secondary/50 rounded-lg">
+              <button
+                type="button"
+                onClick={() => update("categoria", "lavorativo")}
+                className={`flex items-center justify-center gap-1.5 py-2 rounded-md text-sm font-medium transition-colors ${
+                  form.categoria !== "personale" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Briefcase className="w-4 h-4" /> Lavorativo
+              </button>
+              <button
+                type="button"
+                onClick={() => update("categoria", "personale")}
+                className={`flex items-center justify-center gap-1.5 py-2 rounded-md text-sm font-medium transition-colors ${
+                  form.categoria === "personale" ? "bg-teal-500 text-white" : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <User className="w-4 h-4" /> Personale
+              </button>
+            </div>
+          )}
 
           {/* Data + Ora */}
           <div className="grid grid-cols-2 gap-3">

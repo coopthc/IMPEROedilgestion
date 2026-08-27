@@ -34,6 +34,15 @@ export async function invitaUtenteConRuolo(email, ruoloCustom, dataExtra = {}, n
     } catch (e) {
       console.error("Invio email benvenuto fallito:", e);
     }
+    // Sincronizza cantieri: se l'utente è appena stato collegato a un cliente
+    // o collaboratore, assicura che i cantieri esistenti vengano abbinati all'utente.
+    if (dataExtra?.cliente_id || dataExtra?.collaboratore_id) {
+      try {
+        await base44.functions.invoke("sincronizzaCantieriUtente", {});
+      } catch (e) {
+        console.error("Sync cantieri fallita:", e);
+      }
+    }
     return nu || null;
   } catch (e) {
     console.error("Errore aggiornamento ruolo utente:", e);

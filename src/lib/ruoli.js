@@ -20,3 +20,22 @@ export const DEFAULT_WIDGETS_OPERAIO = [
 ];
 
 export const DEFAULT_QA_OPERAIO = ["promemoria", "appuntamento"];
+
+export const isCliente = (role) => role === "mssg_cliente";
+
+// Widget non disponibili per il cliente (solo comunicazione e appuntamenti)
+export const WIDGET_VIETATI_CLIENTE = [
+  "cantieri", "pagamenti", "clienti", "collaboratori", "presenze",
+  "settimana", "appuntamenti_domani", "promemoria"
+];
+
+// Azioni rapide non disponibili per il cliente
+export const AZIONI_VIETATE_CLIENTE = ["voce", "promemoria", "cliente", "collaboratore", "backup"];
+
+// Widget predefiniti per il cliente
+export const DEFAULT_WIDGETS_CLIENTE = [
+  "appuntamenti", "lavorazioni", "notifiche", "chat"
+];
+
+// Azioni rapide predefinite per il cliente
+export const DEFAULT_QA_CLIENTE = ["appuntamento"];

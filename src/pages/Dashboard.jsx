@@ -17,7 +17,7 @@ import WidgetChat from "@/components/dashboard/WidgetChat";
 import WidgetPromemoria from "@/components/dashboard/WidgetPromemoria";
 import QuickActions from "@/components/dashboard/QuickActions";
 import AddWidgetDialog from "@/components/dashboard/AddWidgetDialog";
-import { isOperaio, WIDGET_VIETATI_OPERAIO, AZIONI_VIETATE_OPERAIO, DEFAULT_WIDGETS_OPERAIO, DEFAULT_QA_OPERAIO } from "@/lib/ruoli";
+import { isOperaio, isCliente, WIDGET_VIETATI_OPERAIO, AZIONI_VIETATE_OPERAIO, DEFAULT_WIDGETS_OPERAIO, DEFAULT_QA_OPERAIO, WIDGET_VIETATI_CLIENTE, AZIONI_VIETATE_CLIENTE, DEFAULT_WIDGETS_CLIENTE, DEFAULT_QA_CLIENTE } from "@/lib/ruoli";
 
 const WIDGET_REGISTRY = {
   cantieri: { label: "Cantieri", component: WidgetCantieri },
@@ -46,6 +46,8 @@ function getGreeting() {
 export default function Dashboard() {
   const { user } = useAuth();
   const operaio = isOperaio(user?.role);
+  const cliente = isCliente(user?.role);
+  const canCustomize = !cliente;
   const [azienda, setAzienda] = useState(null);
   const [config, setConfig] = useState(null);
   const [widgets, setWidgets] = useState([]);
@@ -69,8 +71,8 @@ export default function Dashboard() {
             setQuickActions(JSON.parse(configs[0].quick_actions));
           }
         } else {
-          const defaultWidgets = operaio ? DEFAULT_WIDGETS_OPERAIO : DEFAULT_WIDGETS;
-          const defaultQA = operaio ? DEFAULT_QA_OPERAIO : ["voce", "promemoria", "appuntamento", "cliente", "collaboratore", "backup"];
+          const defaultWidgets = operaio ? DEFAULT_WIDGETS_OPERAIO : cliente ? DEFAULT_WIDGETS_CLIENTE : DEFAULT_WIDGETS;
+          const defaultQA = operaio ? DEFAULT_QA_OPERAIO : cliente ? DEFAULT_QA_CLIENTE : ["voce", "promemoria", "appuntamento", "cliente", "collaboratore", "backup"];
           const created = await base44.entities.DashboardConfig.create({
             widgets: JSON.stringify(defaultWidgets),
             quick_actions: JSON.stringify(defaultQA),
@@ -130,20 +132,22 @@ export default function Dashboard() {
             {azienda?.ragione_sociale || "EdilGestion"}
           </p>
         </div>
-        <Button variant={editMode ? "default" : "outline"} size="sm" onClick={() => setEditMode(!editMode)}>
-          <Settings2 className="w-4 h-4 mr-1" />
-          {editMode ? "Fatto" : "Modifica layout"}
-        </Button>
+        {canCustomize && (
+          <Button variant={editMode ? "default" : "outline"} size="sm" onClick={() => setEditMode(!editMode)}>
+            <Settings2 className="w-4 h-4 mr-1" />
+            {editMode ? "Fatto" : "Modifica layout"}
+          </Button>
+        )}
       </div>
 
       <div className="mt-4 mb-5">
         <QuickActions
           visibleActions={quickActions}
-          editMode={editMode}
+          editMode={canCustomize && editMode}
           onRemove={removeQuickAction}
           onAdd={addQuickAction}
           onMove={moveQuickAction}
-          disabledActions={operaio ? AZIONI_VIETATE_OPERAIO : []}
+          disabledActions={operaio ? AZIONI_VIETATE_OPERAIO : cliente ? AZIONI_VIETATE_CLIENTE : []}
         />
       </div>
 
@@ -166,7 +170,7 @@ export default function Dashboard() {
             const Widget = entry.component;
             return (
               <div key={`${type}-${i}`} className="bg-card border border-border rounded-lg p-4 relative">
-                {editMode && (
+                {canCustomize && editMode && (
                   <div className="absolute top-2 right-2 flex gap-0.5 z-10">
                     <button onClick={() => moveWidget(i, -1)} disabled={i === 0} className="p-1 rounded hover:bg-secondary text-muted-foreground disabled:opacity-30">
                       <ArrowUp className="w-3.5 h-3.5" />
@@ -183,7 +187,7 @@ export default function Dashboard() {
               </div>
             );
           })}
-          {editMode && (
+          {canCustomize && editMode && (
             <button
               onClick={() => setShowAdd(true)}
               className="border-2 border-dashed border-border rounded-lg p-4 flex flex-col items-center justify-center gap-2 text-muted-foreground hover:border-primary hover:text-primary transition-colors min-h-[120px]"
@@ -195,7 +199,7 @@ export default function Dashboard() {
         </div>
       )}
 
-      <AddWidgetDialog open={showAdd} onOpenChange={setShowAdd} onAdd={addWidget} existing={widgets} disabledWidgets={operaio ? WIDGET_VIETATI_OPERAIO : []} />
+      <AddWidgetDialog open={showAdd} onOpenChange={setShowAdd} onAdd={addWidget} existing={widgets} disabledWidgets={operaio ? WIDGET_VIETATI_OPERAIO : cliente ? WIDGET_VIETATI_CLIENTE : []} />
     </div>
   );
 }

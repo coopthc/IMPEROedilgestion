@@ -19,6 +19,7 @@ export default function Agenda() {
   const { user } = useAuth();
   const { toast } = useToast();
   const isAdmin = ["admin", "mssg_admin"].includes(user?.role);
+  const isClienteRole = user?.role === "mssg_cliente";
   const [appuntamenti, setAppuntamenti] = useState([]);
   const [promemoria, setPromemoria] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -156,12 +157,16 @@ export default function Agenda() {
               </span>
             )}
           </TabsTrigger>
-          <TabsTrigger value="disponibilita" className="flex items-center gap-1.5">
-            <Clock className="w-3.5 h-3.5" /> Disponibilità
-          </TabsTrigger>
-          <TabsTrigger value="promemoria" className="flex items-center gap-1.5">
-            <Bell className="w-3.5 h-3.5" /> Promemoria
-          </TabsTrigger>
+          {!isClienteRole && (
+            <TabsTrigger value="disponibilita" className="flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5" /> Disponibilità
+            </TabsTrigger>
+          )}
+          {!isClienteRole && (
+            <TabsTrigger value="promemoria" className="flex items-center gap-1.5">
+              <Bell className="w-3.5 h-3.5" /> Promemoria
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="settimana" className="mt-4 space-y-4">
@@ -189,13 +194,17 @@ export default function Agenda() {
           />
         </TabsContent>
 
-        <TabsContent value="disponibilita" className="mt-4">
-          <DisponibilitaManager />
-        </TabsContent>
+        {!isClienteRole && (
+          <TabsContent value="disponibilita" className="mt-4">
+            <DisponibilitaManager />
+          </TabsContent>
+        )}
 
-        <TabsContent value="promemoria" className="mt-4">
-          <PromemoriaManager />
-        </TabsContent>
+        {!isClienteRole && (
+          <TabsContent value="promemoria" className="mt-4">
+            <PromemoriaManager />
+          </TabsContent>
+        )}
       </Tabs>
 
       <AppuntamentoForm
