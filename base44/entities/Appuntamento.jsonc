@@ -103,6 +103,10 @@
     "richiedente_nome": {
       "type": "string",
       "title": "Nome richiedente"
+    },
+    "risposte_json": {
+      "type": "string",
+      "title": "Risposte partecipanti (JSON user_id -> {risposta, nome, data})"
     }
   },
   "required": [
@@ -133,14 +137,81 @@
             {
               "$or": [
                 {
-                  "user_condition": {
-                    "role": "admin"
-                  }
+                  "$and": [
+                    {
+                      "user_condition": {
+                        "role": "admin"
+                      }
+                    },
+                    {
+                      "$or": [
+                        {
+                          "data.cantiere_id": {
+                            "$ne": ""
+                          }
+                        },
+                        {
+                          "created_by_id": "{{user.id}}"
+                        },
+                        {
+                          "data.utenti_ids": "{{user.id}}"
+                        }
+                      ]
+                    }
+                  ]
                 },
                 {
-                  "user_condition": {
-                    "role": "mssg_admin"
-                  }
+                  "$and": [
+                    {
+                      "user_condition": {
+                        "role": "mssg_admin"
+                      }
+                    },
+                    {
+                      "user_condition": {
+                        "data.supervisore_tutti_cantieri": true
+                      }
+                    },
+                    {
+                      "$or": [
+                        {
+                          "data.cantiere_id": {
+                            "$ne": ""
+                          }
+                        },
+                        {
+                          "created_by_id": "{{user.id}}"
+                        },
+                        {
+                          "data.utenti_ids": "{{user.id}}"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "$and": [
+                    {
+                      "user_condition": {
+                        "role": "mssg_admin"
+                      }
+                    },
+                    {
+                      "$or": [
+                        {
+                          "data.cantiere_id": {
+                            "$in": "{{user.data.cantieri_ids}}"
+                          }
+                        },
+                        {
+                          "created_by_id": "{{user.id}}"
+                        },
+                        {
+                          "data.utenti_ids": "{{user.id}}"
+                        }
+                      ]
+                    }
+                  ]
                 },
                 {
                   "$and": [
@@ -244,11 +315,6 @@
                   }
                 },
                 {
-                  "user_condition": {
-                    "role": "mssg_admin"
-                  }
-                },
-                {
                   "$and": [
                     {
                       "user_condition": {
@@ -290,34 +356,9 @@
               }
             },
             {
-              "$or": [
-                {
-                  "user_condition": {
-                    "role": "admin"
-                  }
-                },
-                {
-                  "user_condition": {
-                    "role": "mssg_admin"
-                  }
-                },
-                {
-                  "$and": [
-                    {
-                      "user_condition": {
-                        "role": "mssg_capo"
-                      }
-                    },
-                    {
-                      "data.utenti_ids": {
-                        "$in": [
-                          "{{user.id}}"
-                        ]
-                      }
-                    }
-                  ]
-                }
-              ]
+              "user_condition": {
+                "role": "admin"
+              }
             }
           ]
         }
