@@ -358,7 +358,7 @@ export default function Collaboratori() {
               </div>
 
               <div className="flex gap-1.5 pt-2 border-t border-border">
-                {me?.role === "admin" && c.user_id && (
+                {(me?.role === "admin" || me?.role === "mssg_capo") && c.user_id && (
                   <button
                     onClick={() => toggleRubrica(c)}
                     disabled={togglingRubId === c.user_id}

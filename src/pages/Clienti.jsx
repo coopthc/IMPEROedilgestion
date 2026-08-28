@@ -39,6 +39,12 @@ const COLONNE_CLIENTI = [
   { label: "Codice Fiscale", key: "codice_fiscale" },
 ];
 
+const STATO_BADGE = {
+  attivo: { label: "Attivo", cls: "bg-green-500/15 text-green-500" },
+  disattivo: { label: "Disattivo", cls: "bg-yellow-500/15 text-yellow-500" },
+  negativo: { label: "Negativo", cls: "bg-red-500/15 text-red-500" },
+};
+
 export default function Clienti() {
   const { toast } = useToast();
   const [clienti, setClienti] = useState([]);
@@ -224,9 +230,18 @@ export default function Clienti() {
                   </span>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-sm leading-tight truncate">
-                    {c.nome}
-                  </h3>
+                  <div className="flex items-center gap-1.5">
+                    <h3 className="font-semibold text-sm leading-tight truncate">
+                      {c.nome}
+                    </h3>
+                    {STATO_BADGE[c.stato || "attivo"] && (
+                      <span
+                        className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full flex-shrink-0 ${STATO_BADGE[c.stato || "attivo"].cls}`}
+                      >
+                        {STATO_BADGE[c.stato || "attivo"].label}
+                      </span>
+                    )}
+                  </div>
                   {c.is_azienda && (
                     <span className="inline-block mt-1 text-[10px] font-medium text-primary bg-primary/15 px-1.5 py-0.5 rounded">
                       Azienda

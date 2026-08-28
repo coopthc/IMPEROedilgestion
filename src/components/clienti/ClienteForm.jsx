@@ -29,8 +29,23 @@ const emptyForm = {
   piva: "",
   codice_fiscale: "",
   note: "",
+  stato: "attivo",
   crea_cantiere: false,
 };
+
+const STATI_CLIENTE = [
+  { value: "attivo", label: "Attivo", color: "text-green-500" },
+  { value: "disattivo", label: "Disattivo", color: "text-yellow-500" },
+  { value: "negativo", label: "Negativo", color: "text-red-500" },
+];
+
+const STATI_CANTIERE = [
+  { value: "bozza", label: "Bozza" },
+  { value: "attivo", label: "Attivo" },
+  { value: "sospeso", label: "Sospeso" },
+  { value: "completato", label: "Completato" },
+  { value: "chiuso", label: "Chiuso" },
+];
 
 export default function ClienteForm({ open, onOpenChange, cliente, onSaved, prefillEmail }) {
   const { toast } = useToast();
@@ -53,6 +68,8 @@ export default function ClienteForm({ open, onOpenChange, cliente, onSaved, pref
         piva: cliente.piva || "",
         codice_fiscale: cliente.codice_fiscale || "",
         note: cliente.note || "",
+        stato: cliente.stato || "attivo",
+        crea_cantiere: false,
       });
       base44.entities.Cantiere.filter({ cliente_id: cliente.id })
         .then(setCantieri)
@@ -65,18 +82,54 @@ export default function ClienteForm({ open, onOpenChange, cliente, onSaved, pref
 
   const update = (field, value) => setForm((f) => ({ ...f, [field]: value }));
 
+  const cambiaStatoCantiere = async (cantiereId, nuovoStato) => {
+    try {
+      await base44.entities.Cantiere.update(cantiereId, { stato: nuovoStato });
+      setCantieri((prev) =>
+        prev.map((c) => (c.id === cantiereId ? { ...c, stato: nuovoStato } : c))
+      );
+      toast({ title: "Stato cantiere aggiornato" });
+    } catch (err) {
+      toast({ title: "Errore aggiornamento stato", variant: "destructive" });
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.nome.trim()) return;
     setLoading(true);
     try {
       if (cliente) {
-        await base44.entities.Cliente.update(cliente.id, form);
+        const { crea_cantiere, ...datiCliente } = form;
+        await base44.entities.Cliente.update(cliente.id, datiCliente);
+        // Permetti di creare il cantiere anche in fase di modifica
+        if (crea_cantiere && cantieri.length === 0) {
+          const nuovoCantiere = await base44.entities.Cantiere.create({
+            nome: form.is_azienda && form.azienda
+              ? form.azienda
+              : `Cantiere ${form.nome}`,
+            cliente_id: cliente.id,
+            cliente_nome: cliente.nome,
+            indirizzo: form.indirizzo || "",
+            citta: form.citta || "",
+            stato: "bozza",
+          });
+          if (cliente.user_id) {
+            try {
+              await base44.functions.invoke("sincronizzaCantieriUtente", {
+                cantiere_id: nuovoCantiere.id,
+              });
+            } catch (e) {
+              console.error("Sync cantieri fallita:", e);
+            }
+          }
+        }
       } else {
         // Crea cliente + cantiere collegato (sono la stessa entità)
-        const nuovoCliente = await base44.entities.Cliente.create(form);
+        const { crea_cantiere, ...datiCliente } = form;
+        const nuovoCliente = await base44.entities.Cliente.create(datiCliente);
         let nuovoCantiere = null;
-        if (form.crea_cantiere) {
+        if (crea_cantiere) {
           nuovoCantiere = await base44.entities.Cantiere.create({
             nome: form.is_azienda && form.azienda
               ? form.azienda
@@ -201,13 +254,36 @@ export default function ClienteForm({ open, onOpenChange, cliente, onSaved, pref
             </div>
           </div>
 
-          {/* Crea cantiere (opzionale) */}
-          {!cliente && (
+          {/* Stato cliente */}
+          <div className="space-y-1.5">
+            <Label htmlFor="stato">Stato cliente</Label>
+            <select
+              id="stato"
+              value={form.stato}
+              onChange={(e) => update("stato", e.target.value)}
+              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            >
+              {STATI_CLIENTE.map((s) => (
+                <option key={s.value} value={s.value} className="bg-card">
+                  {s.label}
+                </option>
+              ))}
+            </select>
+            <p className="text-[11px] text-muted-foreground">
+              Usa "Negativo" per segnalare clienti con cui è andata male, utile
+              per valutare contatti futuri.
+            </p>
+          </div>
+
+          {/* Crea cantiere (sempre disponibile quando non ce ne sono già) */}
+          {(!cliente || cantieri.length === 0) && (
             <div className="flex items-center justify-between rounded-lg border border-border p-3">
               <div>
                 <Label className="cursor-pointer">Crea anche il cantiere</Label>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Crea un cantiere collegato automaticamente
+                  {cliente
+                    ? "Crea ora un cantiere collegato a questo cliente"
+                    : "Crea un cantiere collegato automaticamente"}
                 </p>
               </div>
               <Switch
@@ -280,26 +356,39 @@ export default function ClienteForm({ open, onOpenChange, cliente, onSaved, pref
             </div>
           </div>
 
-          {/* Cantieri collegati (read-only) */}
+          {/* Cantieri collegati con cambio stato */}
           {cliente && cantieri.length > 0 && (
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label>Cantieri collegati ({cantieri.length})</Label>
-              <div className="flex flex-wrap gap-1.5">
-                {cantieri.map((cant) => (
+              {cantieri.map((cant) => (
+                <div
+                  key={cant.id}
+                  className="flex items-center gap-2 rounded-lg border border-border p-2.5"
+                >
                   <Link
-                    key={cant.id}
                     to={`/cantieri/${cant.id}`}
                     onClick={() => onOpenChange(false)}
-                    className="text-xs px-2.5 py-1 rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors flex items-center gap-1"
+                    className="text-xs px-2.5 py-1 rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors flex items-center gap-1 flex-shrink-0"
                   >
                     <HardHat className="w-3 h-3" />
                     {cant.nome}
                     <ExternalLink className="w-2.5 h-2.5 opacity-60" />
                   </Link>
-                ))}
-              </div>
+                  <select
+                    value={cant.stato || "attivo"}
+                    onChange={(e) => cambiaStatoCantiere(cant.id, e.target.value)}
+                    className="ml-auto flex h-8 rounded-md border border-input bg-transparent px-2 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  >
+                    {STATI_CANTIERE.map((s) => (
+                      <option key={s.value} value={s.value} className="bg-card">
+                        {s.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ))}
               <p className="text-[10px] text-muted-foreground">
-                I cantieri si collegano automaticamente quando li abbini al cliente.
+                Puoi cambiare lo stato del cantiere direttamente da qui.
               </p>
             </div>
           )}

@@ -21,6 +21,8 @@ import {
   Lock,
 } from "lucide-react";
 import ContattoForm from "@/components/contatti/ContattoForm";
+import PromuoviContattoDialog from "@/components/contatti/PromuoviContattoDialog";
+import { HardHat, ArrowUpCircle } from "lucide-react";
 
 const waLink = (phone) => "https://wa.me/" + (phone || "").replace(/[^0-9]/g, "");
 
@@ -67,23 +69,34 @@ export default function Contatti() {
   const { toast } = useToast();
   const isAdmin = user?.role === "admin";
   const [contatti, setContatti] = useState([]);
+  const [collaboratori, setCollaboratori] = useState([]);
+  const [clienti, setClienti] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState(null);
+  const [promoContatto, setPromoContatto] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await base44.entities.Contatto.list("-created_date");
+      const [data, colls, clis] = await Promise.all([
+        base44.entities.Contatto.list("-created_date"),
+        base44.entities.Collaboratore.list("-created_date").catch(() => []),
+        isAdmin
+          ? base44.entities.Cliente.list("-created_date").catch(() => [])
+          : Promise.resolve([]),
+      ]);
       setContatti(data);
+      setCollaboratori(colls);
+      setClienti(clis);
     } catch (err) {
       console.error("Errore caricamento contatti:", err);
       toast({ title: "Errore caricamento contatti", variant: "destructive" });
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, [toast, isAdmin]);
 
   useEffect(() => {
     load();
@@ -128,6 +141,41 @@ export default function Contatti() {
         c.ruolo?.toLowerCase().includes(q)
     );
   };
+
+  const collabAsContatti = useMemo(
+    () =>
+      collaboratori.map((c) => ({
+        id: "coll-" + c.id,
+        _id: c.id,
+        nome: c.nome,
+        azienda: c.azienda || "",
+        email: c.email || "",
+        telefono: c.telefono || "",
+        ruolo: c.qualifica || "",
+        note: c.attivo === false ? "Non attivo" : "",
+        derived: "collaboratore",
+      })),
+    [collaboratori]
+  );
+
+  const clientiAsContatti = useMemo(
+    () =>
+      clienti.map((c) => ({
+        id: "cli-" + c.id,
+        _id: c.id,
+        nome: c.nome,
+        azienda: c.azienda || "",
+        email: c.email || "",
+        telefono: c.telefono || "",
+        ruolo: "Cliente",
+        note: "",
+        derived: "cliente",
+      })),
+    [clienti]
+  );
+
+  const collabFiltrati = filtra(collabAsContatti);
+  const clientiFiltrati = filtra(clientiAsContatti);
 
   const mieiFiltrati = filtra(miei);
 
@@ -176,7 +224,8 @@ export default function Contatti() {
   };
 
   const renderCard = (c, shared = false) => {
-    const canEdit = c.created_by_id === user?.id || isAdmin;
+    const canEdit = !c.derived && (c.created_by_id === user?.id || isAdmin);
+    const canPromote = !c.derived && c.created_by_id === user?.id;
     return (
       <div
         key={c.id}
@@ -205,6 +254,16 @@ export default function Contatti() {
           {shared && (
             <span className="flex items-center gap-1 text-[10px] text-primary bg-primary/10 px-1.5 py-0.5 rounded-full flex-shrink-0">
               <Share2 className="w-2.5 h-2.5" /> condiviso
+            </span>
+          )}
+          {c.derived === "collaboratore" && (
+            <span className="flex items-center gap-1 text-[10px] text-primary bg-primary/10 px-1.5 py-0.5 rounded-full flex-shrink-0">
+              <HardHat className="w-2.5 h-2.5" /> azienda
+            </span>
+          )}
+          {c.derived === "cliente" && (
+            <span className="flex items-center gap-1 text-[10px] text-primary bg-primary/10 px-1.5 py-0.5 rounded-full flex-shrink-0">
+              azienda
             </span>
           )}
         </div>
@@ -259,10 +318,21 @@ export default function Contatti() {
               >
                 <Trash2 className="w-3.5 h-3.5" />
               </Button>
+              {canPromote && (
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-7 w-7 ml-auto text-primary hover:text-primary"
+                  onClick={() => setPromoContatto(c)}
+                  title="Promuovi a collaboratore"
+                >
+                  <ArrowUpCircle className="w-3.5 h-3.5" />
+                </Button>
+              )}
             </>
           ) : (
             <p className="text-[10px] text-muted-foreground flex items-center gap-1 py-1">
-              <Lock className="w-3 h-3" /> Rubrica condivisa in sola lettura
+              <Lock className="w-3 h-3" /> {c.derived ? "Gestito in " + (c.derived === "collaboratore" ? "Collaboratori" : "Clienti") : "Rubrica condivisa in sola lettura"}
             </p>
           )}
         </div>
@@ -328,6 +398,32 @@ export default function Contatti() {
             )}
           </section>
 
+          {/* Rubrica aziendale - Collaboratori (automatico) */}
+          {collabFiltrati.length > 0 && (
+            <section>
+              <h2 className="text-sm font-semibold flex items-center gap-2 mb-3">
+                <HardHat className="w-4 h-4 text-primary" /> Collaboratori aziendali
+                <span className="text-[10px] text-muted-foreground font-normal">({collabFiltrati.length})</span>
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {collabFiltrati.map((c) => renderCard(c, false))}
+              </div>
+            </section>
+          )}
+
+          {/* Clienti (solo admin, automatico) */}
+          {isAdmin && clientiFiltrati.length > 0 && (
+            <section>
+              <h2 className="text-sm font-semibold flex items-center gap-2 mb-3">
+                <Users className="w-4 h-4 text-primary" /> Clienti
+                <span className="text-[10px] text-muted-foreground font-normal">({clientiFiltrati.length})</span>
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {clientiFiltrati.map((c) => renderCard(c, false))}
+              </div>
+            </section>
+          )}
+
           {/* Rubriche condivise */}
           {condivisiPerProprietario.length > 0 && (
             <section>
@@ -360,6 +456,13 @@ export default function Contatti() {
         open={formOpen}
         onOpenChange={setFormOpen}
         contatto={editing}
+        onSaved={load}
+      />
+
+      <PromuoviContattoDialog
+        open={!!promoContatto}
+        onOpenChange={(v) => !v && setPromoContatto(null)}
+        contatto={promoContatto}
         onSaved={load}
       />
     </div>
