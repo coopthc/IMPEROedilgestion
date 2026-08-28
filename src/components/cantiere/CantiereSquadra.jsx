@@ -21,13 +21,6 @@ import {
 } from "lucide-react";
 import { creaNotifiche } from "@/lib/notifiche";
 
-const RUOLI_CANTIERE = [
-  { value: "operaio", label: "Operaio" },
-  { value: "capo", label: "Capo cantiere" },
-  { value: "subappaltatore", label: "Subappaltatore" },
-  { value: "supervisore", label: "Supervisore" },
-];
-
 function parseRuoli(str) {
   if (!str) return {};
   try {
@@ -67,7 +60,6 @@ export default function CantiereSquadra({ cantiere, clienti = [], onSaved, onOpe
       : [...assignedIds, collabId];
     const newRuoli = { ...ruoli };
     if (isAssigned) delete newRuoli[collabId];
-    else newRuoli[collabId] = "operaio";
     setSaving(true);
     try {
       await base44.entities.Cantiere.update(cantiere.id, {
@@ -112,12 +104,10 @@ export default function CantiereSquadra({ cantiere, clienti = [], onSaved, onOpe
         responsabile_id: responsabileId || "",
         responsabile_nome: collab?.nome || "",
       };
-      // Auto-inserisce il responsabile nella squadra con ruolo "capo"
+      // Auto-inserisce il responsabile nella squadra
       if (responsabileId && !assignedIds.includes(responsabileId)) {
         const newIds = [...assignedIds, responsabileId];
-        const newRuoli = { ...ruoli, [responsabileId]: "capo" };
         updateData.collaboratori_ids = newIds.join(",");
-        updateData.collaboratori_ruoli = JSON.stringify(newRuoli);
       }
       await base44.entities.Cantiere.update(cantiere.id, updateData);
       onSaved();
@@ -240,7 +230,7 @@ export default function CantiereSquadra({ cantiere, clienti = [], onSaved, onOpe
             <SelectContent>
               <SelectItem value="__none__">— Nessuno —</SelectItem>
               {collaboratori
-                .filter((c) => c.attivo !== false && c.qualifica === "capo_cantiere")
+                .filter((c) => c.attivo !== false)
                 .map((c) => (
                   <SelectItem key={c.id} value={c.id}>
                     {c.nome}
@@ -303,22 +293,16 @@ export default function CantiereSquadra({ cantiere, clienti = [], onSaved, onOpe
                       )}
                     </button>
                   </div>
-                  <Select
-                    value={ruolo}
-                    onValueChange={(v) => updateRuolo(c.id, v)}
+                  <Input
+                    placeholder="Ruolo / nota (opzionale)"
+                    defaultValue={ruoli[c.id] || ""}
+                    onBlur={(e) => {
+                      const val = e.target.value.trim();
+                      if (val !== (ruoli[c.id] || "")) updateRuolo(c.id, val);
+                    }}
                     disabled={saving}
-                  >
-                    <SelectTrigger className="h-7 w-32 text-xs">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {RUOLI_CANTIERE.map((r) => (
-                        <SelectItem key={r.value} value={r.value}>
-                          {r.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    className="h-7 w-44 text-xs"
+                  />
                   <button
                     onClick={() => toggle(c.id)}
                     disabled={saving}
