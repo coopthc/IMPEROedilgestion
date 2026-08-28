@@ -121,9 +121,6 @@
               }
             },
             {
-              "data.visibile_cliente": true
-            },
-            {
               "data.cantiere_id": {
                 "$in": "{{user.data.cantieri_ids}}"
               }
