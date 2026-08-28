@@ -88,11 +88,6 @@
         },
         {
           "user_condition": {
-            "role": "mssg_admin"
-          }
-        },
-        {
-          "user_condition": {
             "role": "mssg_capo"
           }
         },
