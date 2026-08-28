@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import ContattoForm from "@/components/contatti/ContattoForm";
 import PromuoviContattoDialog from "@/components/contatti/PromuoviContattoDialog";
-import { HardHat, ArrowUpCircle } from "lucide-react";
+import { HardHat, ArrowUpCircle, Star } from "lucide-react";
 
 const waLink = (phone) => "https://wa.me/" + (phone || "").replace(/[^0-9]/g, "");
 
@@ -76,6 +76,27 @@ export default function Contatti() {
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [promoContatto, setPromoContatto] = useState(null);
+  const [filtro, setFiltro] = useState("tutti"); // tutti | personali | aziendali
+  const [preferiti, setPreferiti] = useState(() => {
+    try {
+      const raw = localStorage.getItem("contatti_preferiti");
+      return new Set(raw ? JSON.parse(raw) : []);
+    } catch {
+      return new Set();
+    }
+  });
+
+  const togglePreferito = (id) => {
+    setPreferiti((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      try {
+        localStorage.setItem("contatti_preferiti", JSON.stringify([...next]));
+      } catch {}
+      return next;
+    });
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -154,6 +175,7 @@ export default function Contatti() {
         ruolo: c.qualifica || "",
         note: c.attivo === false ? "Non attivo" : "",
         derived: "collaboratore",
+        _cat: "aziendale",
       })),
     [collaboratori]
   );
@@ -170,6 +192,7 @@ export default function Contatti() {
         ruolo: "Cliente",
         note: "",
         derived: "cliente",
+        _cat: "aziendale",
       })),
     [clienti]
   );
@@ -178,6 +201,30 @@ export default function Contatti() {
   const clientiFiltrati = filtra(clientiAsContatti);
 
   const mieiFiltrati = filtra(miei);
+
+  const allContatti = useMemo(
+    () => [
+      ...miei.map((c) => ({ ...c, _cat: "personale" })),
+      ...collabAsContatti,
+      ...clientiAsContatti,
+      ...condivisi.map((c) => ({ ...c, _cat: "aziendale" })),
+    ],
+    [miei, collabAsContatti, clientiAsContatti, condivisi]
+  );
+
+  const preferitiList = useMemo(
+    () =>
+      allContatti.filter(
+        (c) =>
+          preferiti.has(c.id) &&
+          (filtro === "tutti" || c._cat === filtro) &&
+          (!search || filtra([c]).length > 0)
+      ),
+    [allContatti, preferiti, filtro, search]
+  );
+
+  const showPersonali = filtro === "tutti" || filtro === "personali";
+  const showAziendali = filtro === "tutti" || filtro === "aziendali";
 
   const handleNew = () => {
     setEditing(null);
@@ -303,7 +350,16 @@ export default function Contatti() {
           )}
         </div>
 
-        <div className="flex gap-1.5 pt-2 border-t border-border">
+        <div className="flex items-center gap-1.5 pt-2 border-t border-border">
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-7 w-7"
+            onClick={() => togglePreferito(c.id)}
+            title={preferiti.has(c.id) ? "Rimuovi dai preferiti" : "Fissa tra i preferiti"}
+          >
+            <Star className={"w-3.5 h-3.5 " + (preferiti.has(c.id) ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground")} />
+          </Button>
           {canEdit ? (
             <>
               <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleEdit(c)} title="Modifica">
@@ -331,8 +387,8 @@ export default function Contatti() {
               )}
             </>
           ) : (
-            <p className="text-[10px] text-muted-foreground flex items-center gap-1 py-1">
-              <Lock className="w-3 h-3" /> {c.derived ? "Gestito in " + (c.derived === "collaboratore" ? "Collaboratori" : "Clienti") : "Rubrica condivisa in sola lettura"}
+            <p className="text-[10px] text-muted-foreground flex items-center gap-1 py-1 ml-1">
+              <Lock className="w-3 h-3" /> {c.derived ? "Gestito in " + (c.derived === "collaboratore" ? "Collaboratori" : "Clienti") : "Condivisa in lettura"}
             </p>
           )}
         </div>
@@ -365,14 +421,36 @@ export default function Contatti() {
         </div>
       </div>
 
-      <div className="relative mb-4">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <Input
-          placeholder="Cerca tra tutti i contatti..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="pl-10"
-        />
+      <div className="flex flex-col sm:flex-row gap-3 mb-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="Cerca tra tutti i contatti..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        <div className="flex gap-1 bg-secondary/30 rounded-lg p-1 self-start">
+          {[
+            { v: "tutti", label: "Tutti" },
+            { v: "personali", label: "Personali" },
+            { v: "aziendali", label: "Aziendali" },
+          ].map((f) => (
+            <button
+              key={f.v}
+              onClick={() => setFiltro(f.v)}
+              className={
+                "px-3 py-1.5 rounded-md text-xs font-medium transition-colors " +
+                (filtro === f.v
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground")
+              }
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {loading ? (
@@ -381,25 +459,42 @@ export default function Contatti() {
         </div>
       ) : (
         <div className="space-y-6">
-          {/* I miei contatti */}
-          <section>
-            <h2 className="text-sm font-semibold flex items-center gap-2 mb-3">
-              <Users className="w-4 h-4 text-primary" /> I miei contatti
-              <span className="text-[10px] text-muted-foreground font-normal">({mieiFiltrati.length})</span>
-            </h2>
-            {mieiFiltrati.length === 0 ? (
-              <p className="text-sm text-muted-foreground italic py-6 text-center bg-secondary/20 rounded-lg">
-                {search ? "Nessun risultato." : "Nessun contatto. Clicca \"Nuovo\" per aggiungerne uno."}
-              </p>
-            ) : (
+          {/* Preferiti / Fissati */}
+          {preferitiList.length > 0 && (
+            <section>
+              <h2 className="text-sm font-semibold flex items-center gap-2 mb-3">
+                <Star className="w-4 h-4 text-yellow-400" /> Preferiti
+                <span className="text-[10px] text-muted-foreground font-normal">({preferitiList.length})</span>
+              </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {mieiFiltrati.map((c) => renderCard(c, false))}
+                {preferitiList.map((c) =>
+                  renderCard(c, !!c.created_by_id && c.created_by_id !== user?.id && c.condivisa === true)
+                )}
               </div>
-            )}
-          </section>
+            </section>
+          )}
+
+          {/* I miei contatti */}
+          {showPersonali && (
+            <section>
+              <h2 className="text-sm font-semibold flex items-center gap-2 mb-3">
+                <Users className="w-4 h-4 text-primary" /> I miei contatti
+                <span className="text-[10px] text-muted-foreground font-normal">({mieiFiltrati.length})</span>
+              </h2>
+              {mieiFiltrati.length === 0 ? (
+                <p className="text-sm text-muted-foreground italic py-6 text-center bg-secondary/20 rounded-lg">
+                  {search ? "Nessun risultato." : "Nessun contatto. Clicca \"Nuovo\" per aggiungerne uno."}
+                </p>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {mieiFiltrati.map((c) => renderCard(c, false))}
+                </div>
+              )}
+            </section>
+          )}
 
           {/* Rubrica aziendale - Collaboratori (automatico) */}
-          {collabFiltrati.length > 0 && (
+          {showAziendali && collabFiltrati.length > 0 && (
             <section>
               <h2 className="text-sm font-semibold flex items-center gap-2 mb-3">
                 <HardHat className="w-4 h-4 text-primary" /> Collaboratori aziendali
@@ -412,7 +507,7 @@ export default function Contatti() {
           )}
 
           {/* Clienti (solo admin, automatico) */}
-          {isAdmin && clientiFiltrati.length > 0 && (
+          {showAziendali && isAdmin && clientiFiltrati.length > 0 && (
             <section>
               <h2 className="text-sm font-semibold flex items-center gap-2 mb-3">
                 <Users className="w-4 h-4 text-primary" /> Clienti
@@ -425,7 +520,7 @@ export default function Contatti() {
           )}
 
           {/* Rubriche condivise */}
-          {condivisiPerProprietario.length > 0 && (
+          {showAziendali && condivisiPerProprietario.length > 0 && (
             <section>
               <h2 className="text-sm font-semibold flex items-center gap-2 mb-3">
                 <Share2 className="w-4 h-4 text-primary" /> Rubriche condivise
