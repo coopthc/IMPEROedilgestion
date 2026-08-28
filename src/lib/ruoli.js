@@ -26,7 +26,7 @@ export const isCliente = (role) => role === "mssg_cliente";
 // Widget non disponibili per il cliente (solo comunicazione e appuntamenti)
 export const WIDGET_VIETATI_CLIENTE = [
   "cantieri", "pagamenti", "clienti", "collaboratori", "presenze",
-  "settimana", "appuntamenti_domani", "promemoria"
+  "appuntamenti", "appuntamenti_domani", "promemoria"
 ];
 
 // Azioni rapide non disponibili per il cliente
@@ -34,7 +34,7 @@ export const AZIONI_VIETATE_CLIENTE = ["voce", "promemoria", "cliente", "collabo
 
 // Widget predefiniti per il cliente (dashboard fissa)
 export const DEFAULT_WIDGETS_CLIENTE = [
-  "appuntamenti", "lavorazioni"
+  "settimana", "lavorazioni", "chat", "notifiche"
 ];
 
 // Azioni rapide predefinite per il cliente

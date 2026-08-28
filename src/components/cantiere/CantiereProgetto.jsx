@@ -24,7 +24,7 @@ const CATEGORIE_PROGETTO = [
 
 const PROGETTO_VALUES = CATEGORIE_PROGETTO.map((c) => c.value);
 
-export default function CantiereProgetto({ cantiere, soloVisibili = false }) {
+export default function CantiereProgetto({ cantiere, isCliente = false, soloVisibili = false }) {
   const [documenti, setDocumenti] = useState([]);
   const [loading, setLoading] = useState(true);
   const [formOpen, setFormOpen] = useState(false);
@@ -73,9 +73,13 @@ export default function CantiereProgetto({ cantiere, soloVisibili = false }) {
     );
   };
 
-  const visibili = soloVisibili
+  // isCliente: il cliente vede solo i visibili, può caricare ma non modificare/eliminare
+  const viewOnly = soloVisibili && !isCliente;
+  const visibili = (soloVisibili || isCliente)
     ? documenti.filter((d) => d.visibile_cliente)
     : documenti;
+  const canAdd = !viewOnly;
+  const canManage = !soloVisibili && !isCliente;
 
   if (loading) {
     return (
@@ -92,7 +96,7 @@ export default function CantiereProgetto({ cantiere, soloVisibili = false }) {
           <FolderOpen className="w-4 h-4 text-primary" />
           Progetto (contratto, preventivi, fatture)
         </h2>
-        {!soloVisibili && (
+        {canAdd && (
           <Button size="sm" variant="outline" onClick={openNew}>
             <Plus className="w-4 h-4 mr-1" />
             Aggiungi
@@ -134,7 +138,7 @@ export default function CantiereProgetto({ cantiere, soloVisibili = false }) {
                       </span>
                     )}
                   </div>
-                  {!soloVisibili && (
+                  {canManage && (
                     <>
                       <button
                         onClick={() => toggleVisibile(d)}
@@ -171,8 +175,8 @@ export default function CantiereProgetto({ cantiere, soloVisibili = false }) {
 
       {visibili.length === 0 && (
         <p className="text-sm text-muted-foreground py-6 text-center">
-          {soloVisibili
-            ? "Nessun documento disponibile."
+          {isCliente
+            ? "Nessun documento disponibile. Carica un documento usando il pulsante sopra."
             : "Nessun documento. Carica contratto, preventivo o fattura."}
         </p>
       )}
@@ -183,6 +187,7 @@ export default function CantiereProgetto({ cantiere, soloVisibili = false }) {
         cantiere={cantiere}
         documento={editingDoc}
         onSaved={load}
+        isCliente={isCliente}
       />
     </div>
   );

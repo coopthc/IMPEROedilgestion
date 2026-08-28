@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, Target, Gauge } from "lucide-react";
+import { TrendingUp, Target, Wallet } from "lucide-react";
 
 export default function CantiereAvanzamentoRiepilogo({ cantiere }) {
   const [lavorazioni, setLavorazioni] = useState([]);
+  const [pagamenti, setPagamenti] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const modalita = cantiere.modalita_avanzamento || "manuale";
@@ -14,8 +15,14 @@ export default function CantiereAvanzamentoRiepilogo({ cantiere }) {
     let active = true;
     (async () => {
       try {
-        const lavs = await base44.entities.Lavorazione.filter({ cantiere_id: cantiere.id });
-        if (active) setLavorazioni(lavs.sort((a, b) => (a.ordine || 0) - (b.ordine || 0)));
+        const [lavs, pags] = await Promise.all([
+          base44.entities.Lavorazione.filter({ cantiere_id: cantiere.id }),
+          base44.entities.Pagamento.filter({ cantiere_id: cantiere.id }),
+        ]);
+        if (active) {
+          setLavorazioni(lavs.sort((a, b) => (a.ordine || 0) - (b.ordine || 0)));
+          setPagamenti(pags);
+        }
       } finally {
         if (active) setLoading(false);
       }
@@ -28,6 +35,12 @@ export default function CantiereAvanzamentoRiepilogo({ cantiere }) {
     (sum, l) => sum + ((l.percentuale_completata || 0) / 100) * (l.percentuale_prevista || 0),
     0
   );
+
+  const budget = cantiere.budget || 0;
+  const pagato = pagamenti
+    .filter((p) => p.stato === "pagato")
+    .reduce((s, p) => s + (p.importo || 0), 0);
+  const percPagata = budget > 0 ? Math.min(100, Math.round(pagato / budget * 100)) : 0;
 
   if (loading) {
     return (
@@ -46,16 +59,18 @@ export default function CantiereAvanzamentoRiepilogo({ cantiere }) {
       </h2>
 
       {modalita === "manuale" ? (
-        <div>
-          <div className="flex items-baseline gap-2 mb-2">
-            <span className="text-2xl font-bold">{percentuale}%</span>
-            <span className="text-xs text-muted-foreground">Modalità manuale</span>
-          </div>
-          <div className="w-full h-3 bg-secondary rounded-full overflow-hidden">
-            <div
-              className="h-full bg-primary transition-all"
-              style={{ width: `${Math.min(percentuale, 100)}%` }}
-            />
+        <div className="space-y-4">
+          <div>
+            <div className="flex items-baseline gap-2 mb-2">
+              <span className="text-2xl font-bold">{percentuale}%</span>
+              <span className="text-xs text-muted-foreground">Modalità manuale</span>
+            </div>
+            <div className="w-full h-3 bg-secondary rounded-full overflow-hidden">
+              <div
+                className="h-full bg-primary transition-all"
+                style={{ width: `${Math.min(percentuale, 100)}%` }}
+              />
+            </div>
           </div>
         </div>
       ) : (
@@ -99,6 +114,28 @@ export default function CantiereAvanzamentoRiepilogo({ cantiere }) {
           </div>
         </div>
       )}
+
+      {/* Comparazione pagamenti */}
+      <div className="mt-4 pt-4 border-t border-border">
+        <div className="flex items-center gap-2 mb-2">
+          <Wallet className="w-4 h-4 text-primary" />
+          <span className="text-xs font-medium text-muted-foreground">Pagamenti</span>
+        </div>
+        <div className="flex items-baseline gap-2 mb-1.5">
+          <span className="text-2xl font-bold">{percPagata}%</span>
+          {budget > 0 && (
+            <span className="text-xs text-muted-foreground">
+              € {pagato.toLocaleString("it-IT")} / € {budget.toLocaleString("it-IT")}
+            </span>
+          )}
+        </div>
+        <div className="w-full h-3 bg-secondary rounded-full overflow-hidden">
+          <div
+            className={`h-full transition-all ${percPagata >= 100 ? "bg-green-500" : "bg-primary"}`}
+            style={{ width: `${percPagata}%` }}
+          />
+        </div>
+      </div>
     </div>
   );
 }

@@ -27,6 +27,7 @@ import CantierePagamenti from "@/components/cantiere/CantierePagamenti";
 import CantiereChat from "@/components/cantiere/CantiereChat";
 import CantiereProgetto from "@/components/cantiere/CantiereProgetto";
 import CantiereAvanzamentoRiepilogo from "@/components/cantiere/CantiereAvanzamentoRiepilogo";
+import CantiereDocumentiCliente from "@/components/cantiere/CantiereDocumentiCliente";
 import SchedaDialog from "@/components/cantiere/SchedaDialog";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/lib/AuthContext";
@@ -241,10 +242,12 @@ export default function CantiereDetail() {
               Squadra
             </TabsTrigger>
           )}
-          <TabsTrigger value="documenti" className="text-xs gap-1.5">
-            <Images className="w-3.5 h-3.5" />
-            Documenti
-          </TabsTrigger>
+          {!isCliente && (
+            <TabsTrigger value="documenti" className="text-xs gap-1.5">
+              <Images className="w-3.5 h-3.5" />
+              Documenti
+            </TabsTrigger>
+          )}
           <TabsTrigger value="chat" className="text-xs gap-1.5">
             <MessageCircle className="w-3.5 h-3.5" />
             Chat
@@ -304,6 +307,8 @@ export default function CantiereDetail() {
                     >
                       {clienteObj.is_azienda ? clienteObj.azienda || clienteObj.nome : clienteObj.nome}
                     </button>
+                  ) : cantiere.cliente_nome ? (
+                    <div className="text-sm">{cantiere.cliente_nome}</div>
                   ) : (
                     <div className="text-sm text-muted-foreground">—</div>
                   )}
@@ -322,6 +327,8 @@ export default function CantiereDetail() {
                     >
                       {responsabileObj.nome}
                     </button>
+                  ) : cantiere.responsabile_nome ? (
+                    <div className="text-sm">{cantiere.responsabile_nome}</div>
                   ) : (
                     <div className="text-sm text-muted-foreground">—</div>
                   )}
@@ -376,9 +383,11 @@ export default function CantiereDetail() {
         </TabsContent>
         )}
 
-        <TabsContent value="documenti">
-          <CantiereDocumenti cantiere={cantiere} soloVisibili={isCliente} collaboratori={assignedCollabs} />
-        </TabsContent>
+        {!isCliente && (
+          <TabsContent value="documenti">
+            <CantiereDocumenti cantiere={cantiere} soloVisibili={isCliente} collaboratori={assignedCollabs} />
+          </TabsContent>
+        )}
 
         <TabsContent value="chat">
           <CantiereChat cantiere={cantiere} collaboratori={assignedCollabs} canale="cliente" />
@@ -392,7 +401,8 @@ export default function CantiereDetail() {
           <TabsContent value="pagamenti">
             <div className="space-y-4">
               <CantierePagamenti cantiere={cantiere} isCliente={isCliente} />
-              <CantiereProgetto cantiere={cantiere} soloVisibili={isCliente} />
+              <CantiereProgetto cantiere={cantiere} isCliente={isCliente} soloVisibili={isCliente} />
+              {isCliente && <CantiereDocumentiCliente cantiere={cantiere} />}
             </div>
           </TabsContent>
         )}

@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Upload, Camera, Video, Loader2 } from "lucide-react";
+import { creaNotificaCliente } from "@/lib/notifiche";
 
 const CATEGORIE = [
   { value: "foto", label: "Foto" },
@@ -34,7 +35,7 @@ const CATEGORIE = [
   { value: "altro", label: "Altro" },
 ];
 
-export default function DocumentoForm({ open, onClose, cantiere, documento, onSaved }) {
+export default function DocumentoForm({ open, onClose, cantiere, documento, onSaved, isCliente = false }) {
   const { toast } = useToast();
   const fileRef = useRef(null);
   const photoRef = useRef(null);
@@ -49,6 +50,13 @@ export default function DocumentoForm({ open, onClose, cantiere, documento, onSa
   const [saving, setSaving] = useState(false);
 
   const isEdit = !!documento;
+
+  // Il cliente carica sempre documenti visibili a sé stesso
+  useEffect(() => {
+    if (isCliente && !documento) {
+      setForm((prev) => ({ ...prev, visibile_cliente: true }));
+    }
+  }, [isCliente, documento, open]);
 
   useEffect(() => {
     if (documento) {
@@ -108,6 +116,16 @@ export default function DocumentoForm({ open, onClose, cantiere, documento, onSa
           note: form.descrizione,
           visibile_cliente: form.visibile_cliente,
         });
+        // Notifica il cliente se il documento è visibile
+        if (form.visibile_cliente && cantiere.cliente_id) {
+          await creaNotificaCliente({
+            clienteId: cantiere.cliente_id,
+            tipo: "aggiornamento",
+            titolo: `Nuovo documento: ${form.nome || file.name}`,
+            testo: cantiere.nome,
+            url: `/cantieri/${cantiere.id}?tab=pagamenti`,
+          });
+        }
       }
       onSaved?.();
       onClose();
@@ -193,6 +211,7 @@ export default function DocumentoForm({ open, onClose, cantiere, documento, onSa
             />
           </div>
 
+          {!isCliente && (
           <div className="flex items-center justify-between rounded-lg border border-border p-3">
             <div>
               <div className="text-sm font-medium">Visibile al cliente</div>
@@ -205,6 +224,7 @@ export default function DocumentoForm({ open, onClose, cantiere, documento, onSa
               onCheckedChange={(v) => setForm((f) => ({ ...f, visibile_cliente: v }))}
             />
           </div>
+          )}
         </div>
 
         <DialogFooter>

@@ -33,7 +33,7 @@ import {
   Euro,
   Clock,
 } from "lucide-react";
-import { creaNotifiche } from "@/lib/notifiche";
+import { creaNotifiche, creaNotificaCliente } from "@/lib/notifiche";
 import PresenzaQuickDialog from "@/components/cantiere/PresenzaQuickDialog";
 
 const TIPI_AGG = [
@@ -174,6 +174,16 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate, isClie
       testo: nuovoAgg.testo || cantiere.nome,
       url: `/cantieri/${cantiere.id}`,
     });
+    // Notifica il cliente se l'aggiornamento è visibile
+    if (nuovoAgg.visibile_cliente && cantiere.cliente_id) {
+      await creaNotificaCliente({
+        clienteId: cantiere.cliente_id,
+        tipo: "aggiornamento",
+        titolo: `${nuovoAgg.titolo}`,
+        testo: nuovoAgg.testo || cantiere.nome,
+        url: `/cantieri/${cantiere.id}?tab=avanzamento`,
+      });
+    }
     setNuovoAgg({ titolo: "", testo: "", tipo: "aggiornamento", visibile_cliente: false });
     load();
   };
@@ -257,6 +267,16 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate, isClie
       testo: `Cantiere: ${cantiere.nome}`,
       url: `/cantieri/${cantiere.id}`,
     });
+    // Notifica il cliente se la lavorazione è visibile
+    if (nuovaLav.visibile_cliente && cantiere.cliente_id) {
+      await creaNotificaCliente({
+        clienteId: cantiere.cliente_id,
+        tipo: "aggiornamento",
+        titolo: `Nuova lavorazione: ${nuovaLav.titolo}`,
+        testo: cantiere.nome,
+        url: `/cantieri/${cantiere.id}?tab=avanzamento`,
+      });
+    }
     setNuovaLav({ titolo: "", collaboratori_ids: [], ore_previste: "", percentuale_prevista: "", costo: "", crea_pagamento: true, visibile_cliente: false });
     load();
   };
