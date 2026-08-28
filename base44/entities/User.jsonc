@@ -32,6 +32,11 @@
       "default": true,
       "title": "Supervisore: vede tutti i cantieri (o solo quelli abbinati)"
     },
+    "rubrica_condivisa": {
+      "type": "boolean",
+      "default": false,
+      "title": "Rubrica contatti condivisa con l'azienda"
+    },
     "cliente_id": {
       "type": "string",
       "title": "Cliente collegato (per ruolo cliente)"

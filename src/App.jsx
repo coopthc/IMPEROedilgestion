@@ -23,6 +23,7 @@ import Register from '@/pages/Register';
 import ForgotPassword from '@/pages/ForgotPassword';
 import ResetPassword from '@/pages/ResetPassword';
 import Utenti from '@/pages/Utenti';
+import Contatti from '@/pages/Contatti';
 // Add page imports here
 
 const AuthenticatedApp = () => {
@@ -70,6 +71,7 @@ const AuthenticatedApp = () => {
           <Route path="/esporta" element={<Esporta />} />
           <Route path="/backup-cloud" element={<BackupCloud />} />
           <Route path="/utenti" element={<Utenti />} />
+          <Route path="/contatti" element={<Contatti />} />
         </Route>
       </Route>
       <Route path="*" element={<PageNotFound />} />

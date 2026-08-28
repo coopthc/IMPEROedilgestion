@@ -1,0 +1,367 @@
+import React, { useEffect, useState, useMemo, useCallback } from "react";
+import { useAuth } from "@/lib/AuthContext";
+import { base44 } from "@/api/base44Client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/components/ui/use-toast";
+import {
+  Users,
+  Plus,
+  Search,
+  Pencil,
+  Trash2,
+  Mail,
+  Phone,
+  Building,
+  MessageCircle,
+  Download,
+  Loader2,
+  Share2,
+  Lock,
+} from "lucide-react";
+import ContattoForm from "@/components/contatti/ContattoForm";
+
+const waLink = (phone) => "https://wa.me/" + (phone || "").replace(/[^0-9]/g, "");
+
+function escapeVcard(str) {
+  return String(str || "").replace(/([,;\\])/g, "\\$1").replace(/\n/g, "\\n");
+}
+
+function buildVcard(c) {
+  return [
+    "BEGIN:VCARD",
+    "VERSION:3.0",
+    `FN:${escapeVcard(c.nome)}`,
+    c.azienda ? `ORG:${escapeVcard(c.azienda)}` : "",
+    c.telefono ? `TEL;TYPE=CELL:${escapeVcard(c.telefono)}` : "",
+    c.email ? `EMAIL:${escapeVcard(c.email)}` : "",
+    c.ruolo ? `TITLE:${escapeVcard(c.ruolo)}` : "",
+    c.note ? `NOTE:${escapeVcard(c.note)}` : "",
+    "END:VCARD",
+  ].filter(Boolean).join("\n");
+}
+
+function buildCsv(contatti) {
+  const headers = ["Nome", "Azienda", "Telefono", "Email", "Ruolo", "Note"];
+  const rows = contatti.map((c) =>
+    [c.nome, c.azienda, c.telefono, c.email, c.ruolo, c.note]
+      .map((v) => `"${String(v || "").replace(/"/g, '""')}"`)
+      .join(",")
+  );
+  return [headers.join(","), ...rows].join("\n");
+}
+
+function download(filename, content, mime) {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+export default function Contatti() {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const isAdmin = user?.role === "admin";
+  const [contatti, setContatti] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [formOpen, setFormOpen] = useState(false);
+  const [editing, setEditing] = useState(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await base44.entities.Contatto.list("-created_date");
+      setContatti(data);
+    } catch (err) {
+      console.error("Errore caricamento contatti:", err);
+      toast({ title: "Errore caricamento contatti", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  }, [toast]);
+
+  useEffect(() => {
+    load();
+    const unsub = base44.entities.Contatto.subscribe(() => load());
+    return () => unsub?.();
+  }, [load]);
+
+  const miei = useMemo(
+    () => contatti.filter((c) => c.created_by_id === user?.id),
+    [contatti, user]
+  );
+
+  const condivisi = useMemo(
+    () =>
+      contatti
+        .filter((c) => c.created_by_id !== user?.id && c.condivisa === true)
+        .sort((a, b) =>
+          (a.proprietario_nome || "—").localeCompare(b.proprietario_nome || "—")
+        ),
+    [contatti, user]
+  );
+
+  const condivisiPerProprietario = useMemo(() => {
+    const map = {};
+    condivisi.forEach((c) => {
+      const key = c.proprietario_nome || "Altro";
+      if (!map[key]) map[key] = [];
+      map[key].push(c);
+    });
+    return Object.entries(map);
+  }, [condivisi]);
+
+  const filtra = (list) => {
+    if (!search) return list;
+    const q = search.toLowerCase();
+    return list.filter(
+      (c) =>
+        c.nome?.toLowerCase().includes(q) ||
+        c.azienda?.toLowerCase().includes(q) ||
+        c.email?.toLowerCase().includes(q) ||
+        c.telefono?.toLowerCase().includes(q) ||
+        c.ruolo?.toLowerCase().includes(q)
+    );
+  };
+
+  const mieiFiltrati = filtra(miei);
+
+  const handleNew = () => {
+    setEditing(null);
+    setFormOpen(true);
+  };
+
+  const handleEdit = (c) => {
+    setEditing(c);
+    setFormOpen(true);
+  };
+
+  const handleDelete = async (c) => {
+    if (!confirm(`Eliminare il contatto "${c.nome}"?`)) return;
+    try {
+      await base44.entities.Contatto.delete(c.id);
+      toast({ title: "Contatto eliminato" });
+      load();
+    } catch (err) {
+      toast({
+        title: "Eliminazione non consentita",
+        description: "Solo il proprietario o un amministratore possono eliminare questo contatto.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const exportVcard = () => {
+    if (miei.length === 0) {
+      toast({ title: "Nessun contatto da esportare" });
+      return;
+    }
+    const vcf = miei.map(buildVcard).join("\n\n");
+    download(`rubrica-${new Date().toISOString().slice(0, 10)}.vcf`, vcf, "text/vcard");
+    toast({ title: "Rubrica esportata (vCard)" });
+  };
+
+  const exportCsv = () => {
+    if (miei.length === 0) {
+      toast({ title: "Nessun contatto da esportare" });
+      return;
+    }
+    download(`rubrica-${new Date().toISOString().slice(0, 10)}.csv`, buildCsv(miei), "text/csv");
+    toast({ title: "Rubrica esportata (CSV)" });
+  };
+
+  const renderCard = (c, shared = false) => {
+    const canEdit = c.created_by_id === user?.id || isAdmin;
+    return (
+      <div
+        key={c.id}
+        className="bg-card border border-border rounded-[12px] p-4 transition-colors hover:border-primary/50"
+      >
+        <div className="flex items-start gap-3 mb-2">
+          <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center flex-shrink-0">
+            <span className="text-sm font-bold text-primary">
+              {c.nome?.charAt(0).toUpperCase() || "?"}
+            </span>
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="font-semibold text-sm leading-tight truncate">{c.nome}</h3>
+            {c.azienda && (
+              <p className="text-xs text-muted-foreground truncate flex items-center gap-1 mt-0.5">
+                <Building className="w-3 h-3" />
+                {c.azienda}
+              </p>
+            )}
+            {c.ruolo && (
+              <Badge variant="secondary" className="mt-1 text-[10px] px-1.5 py-0">
+                {c.ruolo}
+              </Badge>
+            )}
+          </div>
+          {shared && (
+            <span className="flex items-center gap-1 text-[10px] text-primary bg-primary/10 px-1.5 py-0.5 rounded-full flex-shrink-0">
+              <Share2 className="w-2.5 h-2.5" /> condiviso
+            </span>
+          )}
+        </div>
+
+        <div className="space-y-1.5 mb-3 min-h-[36px]">
+          {c.email && (
+            <a
+              href={`mailto:${c.email}`}
+              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors truncate"
+            >
+              <Mail className="w-3 h-3 flex-shrink-0" />
+              {c.email}
+            </a>
+          )}
+          {c.telefono && (
+            <div className="flex items-center gap-2 text-xs">
+              <a
+                href={`tel:${c.telefono}`}
+                className="flex items-center gap-1.5 text-muted-foreground hover:text-primary transition-colors"
+              >
+                <Phone className="w-3 h-3 flex-shrink-0" />
+                {c.telefono}
+              </a>
+              <a
+                href={waLink(c.telefono)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 text-green-500 hover:text-green-400 transition-colors"
+                title="Scrivi su WhatsApp"
+              >
+                <MessageCircle className="w-3.5 h-3.5" />
+              </a>
+            </div>
+          )}
+          {c.note && (
+            <p className="text-[11px] text-muted-foreground italic truncate">{c.note}</p>
+          )}
+        </div>
+
+        <div className="flex gap-1.5 pt-2 border-t border-border">
+          {canEdit ? (
+            <>
+              <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleEdit(c)} title="Modifica">
+                <Pencil className="w-3.5 h-3.5" />
+              </Button>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-7 w-7 text-destructive hover:text-destructive"
+                onClick={() => handleDelete(c)}
+                title="Elimina"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </Button>
+            </>
+          ) : (
+            <p className="text-[10px] text-muted-foreground flex items-center gap-1 py-1">
+              <Lock className="w-3 h-3" /> Rubrica condivisa in sola lettura
+            </p>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div>
+      <div className="flex items-center justify-between gap-3 mb-5 pb-4 border-b border-border">
+        <div>
+          <h1 className="text-xl font-bold flex items-center gap-2">
+            <Users className="w-5 h-5 text-primary" />
+            Contatti
+          </h1>
+          <p className="text-[13px] text-muted-foreground mt-0.5">
+            La tua rubrica personale + rubriche condivise dall'azienda
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={exportVcard} title="Esporta i tuoi contatti come vCard">
+            <Download className="w-4 h-4 mr-1" /> vCard
+          </Button>
+          <Button variant="outline" size="sm" onClick={exportCsv} title="Esporta i tuoi contatti come CSV">
+            <Download className="w-4 h-4 mr-1" /> CSV
+          </Button>
+          <Button onClick={handleNew} size="sm">
+            <Plus className="w-4 h-4 mr-1" /> Nuovo
+          </Button>
+        </div>
+      </div>
+
+      <div className="relative mb-4">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <Input
+          placeholder="Cerca tra tutti i contatti..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="pl-10"
+        />
+      </div>
+
+      {loading ? (
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="w-6 h-6 text-primary animate-spin" />
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {/* I miei contatti */}
+          <section>
+            <h2 className="text-sm font-semibold flex items-center gap-2 mb-3">
+              <Users className="w-4 h-4 text-primary" /> I miei contatti
+              <span className="text-[10px] text-muted-foreground font-normal">({mieiFiltrati.length})</span>
+            </h2>
+            {mieiFiltrati.length === 0 ? (
+              <p className="text-sm text-muted-foreground italic py-6 text-center bg-secondary/20 rounded-lg">
+                {search ? "Nessun risultato." : "Nessun contatto. Clicca \"Nuovo\" per aggiungerne uno."}
+              </p>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {mieiFiltrati.map((c) => renderCard(c, false))}
+              </div>
+            )}
+          </section>
+
+          {/* Rubriche condivise */}
+          {condivisiPerProprietario.length > 0 && (
+            <section>
+              <h2 className="text-sm font-semibold flex items-center gap-2 mb-3">
+                <Share2 className="w-4 h-4 text-primary" /> Rubriche condivise
+                <span className="text-[10px] text-muted-foreground font-normal">({condivisi.length})</span>
+              </h2>
+              <div className="space-y-4">
+                {condivisiPerProprietario.map(([proprietario, lista]) => {
+                  const filtrati = filtra(lista);
+                  if (filtrati.length === 0 && search) return null;
+                  return (
+                    <div key={proprietario}>
+                      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+                        {proprietario}
+                      </p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                        {filtrati.map((c) => renderCard(c, true))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          )}
+        </div>
+      )}
+
+      <ContattoForm
+        open={formOpen}
+        onOpenChange={setFormOpen}
+        contatto={editing}
+        onSaved={load}
+      />
+    </div>
+  );
+}

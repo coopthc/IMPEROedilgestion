@@ -1,0 +1,131 @@
+{
+  "name": "Contatto",
+  "type": "object",
+  "properties": {
+    "nome": {
+      "type": "string",
+      "title": "Nome"
+    },
+    "azienda": {
+      "type": "string",
+      "title": "Azienda / Ragione sociale"
+    },
+    "telefono": {
+      "type": "string",
+      "title": "Telefono"
+    },
+    "email": {
+      "type": "string",
+      "format": "email",
+      "title": "Email"
+    },
+    "ruolo": {
+      "type": "string",
+      "title": "Ruolo / Qualifica"
+    },
+    "note": {
+      "type": "string",
+      "title": "Note"
+    },
+    "proprietario_nome": {
+      "type": "string",
+      "title": "Nome del proprietario della rubrica"
+    },
+    "condivisa": {
+      "type": "boolean",
+      "default": false,
+      "title": "Appartiene a rubrica condivisa"
+    }
+  },
+  "required": [
+    "nome"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "$and": [
+            {
+              "data.condivisa": true
+            },
+            {
+              "$or": [
+                {
+                  "user_condition": {
+                    "role": "admin"
+                  }
+                },
+                {
+                  "user_condition": {
+                    "role": "mssg_admin"
+                  }
+                },
+                {
+                  "user_condition": {
+                    "role": "mssg_capo"
+                  }
+                },
+                {
+                  "user_condition": {
+                    "role": "mssg_operaio"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "mssg_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "mssg_capo"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "mssg_operaio"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

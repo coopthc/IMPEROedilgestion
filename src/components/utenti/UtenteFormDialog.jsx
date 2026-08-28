@@ -38,6 +38,7 @@ export default function UtenteFormDialog({ open, onOpenChange, utente, onSaved }
   const [supPagamenti, setSupPagamenti] = useState(false);
   const [supChat, setSupChat] = useState(false);
   const [supTuttiCantieri, setSupTuttiCantieri] = useState(true);
+  const [rubricaCondivisa, setRubricaCondivisa] = useState(false);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -49,6 +50,7 @@ export default function UtenteFormDialog({ open, onOpenChange, utente, onSaved }
       setSupPagamenti(!!utente.supervisore_pagamenti);
       setSupChat(!!utente.supervisore_chat);
       setSupTuttiCantieri(utente.supervisore_tutti_cantieri !== false);
+      setRubricaCondivisa(!!utente.rubrica_condivisa);
     } else {
       setEmail("");
       setRole("mssg_admin");
@@ -56,6 +58,7 @@ export default function UtenteFormDialog({ open, onOpenChange, utente, onSaved }
       setSupPagamenti(false);
       setSupChat(false);
       setSupTuttiCantieri(true);
+      setRubricaCondivisa(false);
     }
   }, [open, utente]);
 
@@ -77,6 +80,17 @@ export default function UtenteFormDialog({ open, onOpenChange, utente, onSaved }
 
       if (utente) {
         await base44.functions.invoke("aggiornaUtenteGestionale", { user_id: utente.id, data: { role, ...dataExtra } });
+        // Propaga il flag rubrica condivisa (aggiorna utente + contatti esistenti)
+        if (rubricaCondivisa !== (!!utente.rubrica_condivisa)) {
+          try {
+            await base44.functions.invoke("impostaRubricaCondivisa", {
+              user_id: utente.id,
+              condivisa: rubricaCondivisa,
+            });
+          } catch (e) {
+            console.error("Impostazione rubrica condivisa fallita:", e);
+          }
+        }
         const qualifica = RUOLO_TO_QUALIFICA[role];
         if (qualifica && utente.collaboratore_id) {
           try {
@@ -108,7 +122,7 @@ export default function UtenteFormDialog({ open, onOpenChange, utente, onSaved }
         }
         toast({ title: "Amministratore aggiornato" });
       } else {
-        await invitaUtenteConRuolo(email.trim(), role, dataExtra);
+        await invitaUtenteConRuolo(email.trim(), role, { ...dataExtra, rubrica_condivisa: rubricaCondivisa });
         // Supervisore: crea anche il record Collaboratore
         if (role === "mssg_admin") {
           try {
@@ -226,6 +240,21 @@ export default function UtenteFormDialog({ open, onOpenChange, utente, onSaved }
               onChange={(e) => setRuoloPersonalizzato(e.target.value)}
               placeholder="es. Direttore, Capoarea..."
             />
+          </div>
+
+          <div className="space-y-3 rounded-lg border border-border p-3 bg-secondary/30">
+            <p className="text-xs font-semibold text-primary">Rubrica contatti</p>
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-normal cursor-pointer">
+                Condividi rubrica con l'azienda
+              </Label>
+              <Switch checked={rubricaCondivisa} onCheckedChange={setRubricaCondivisa} />
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              Se attivo, i contatti di questo utente sono visibili (in sola
+              lettura) a tutti i collaboratori e amministratori. L'utente resta
+              libero di modificare ed esportare i propri contatti.
+            </p>
           </div>
 
           {isSupervisore && (

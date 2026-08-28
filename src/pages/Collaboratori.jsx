@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
+import { useAuth } from "@/lib/AuthContext";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,8 +45,11 @@ const QUALIFICA_LABELS = {
 };
 
 export default function Collaboratori() {
+  const { user: me } = useAuth();
   const { toast } = useToast();
   const [collaboratori, setCollaboratori] = useState([]);
+  const [usersMap, setUsersMap] = useState({});
+  const [togglingRubId, setTogglingRubId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filtroAttivo, setFiltroAttivo] = useState("tutti");
@@ -56,14 +60,41 @@ export default function Collaboratori() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await base44.entities.Collaboratore.list("-created_date");
+      const [data, users] = await Promise.all([
+        base44.entities.Collaboratore.list("-created_date"),
+        base44.entities.User.list().catch(() => []),
+      ]);
       setCollaboratori(data);
+      const map = {};
+      users.forEach((u) => { map[u.id] = u; });
+      setUsersMap(map);
     } catch (err) {
       console.error("Errore caricamento collaboratori:", err);
     } finally {
       setLoading(false);
     }
   }, []);
+
+  const toggleRubrica = async (coll) => {
+    if (!coll.user_id) return;
+    const u = usersMap[coll.user_id];
+    const nuovo = !(u?.rubrica_condivisa === true);
+    setTogglingRubId(coll.user_id);
+    try {
+      await base44.functions.invoke("impostaRubricaCondivisa", {
+        user_id: coll.user_id,
+        condivisa: nuovo,
+      });
+      setUsersMap((prev) => ({
+        ...prev,
+        [coll.user_id]: { ...prev[coll.user_id], rubrica_condivisa: nuovo },
+      }));
+    } catch (err) {
+      toast({ title: "Errore aggiornamento rubrica", variant: "destructive" });
+    } finally {
+      setTogglingRubId(null);
+    }
+  };
 
   useEffect(() => {
     load();
@@ -327,6 +358,23 @@ export default function Collaboratori() {
               </div>
 
               <div className="flex gap-1.5 pt-2 border-t border-border">
+                {me?.role === "admin" && c.user_id && (
+                  <button
+                    onClick={() => toggleRubrica(c)}
+                    disabled={togglingRubId === c.user_id}
+                    className={`text-[10px] font-medium px-2.5 py-1 rounded-full border transition-colors mr-auto ${
+                      usersMap[c.user_id]?.rubrica_condivisa
+                        ? "bg-primary/20 border-primary text-primary"
+                        : "bg-transparent border-border text-muted-foreground hover:border-primary/40"
+                    }`}
+                    title="Condividi la rubrica contatti di questo collaboratore con l'azienda"
+                  >
+                    {togglingRubId === c.user_id ? (
+                      <Loader2 className="w-3 h-3 animate-spin inline" />
+                    ) : null}
+                    Rubrica condivisa
+                  </button>
+                )}
                 <Button
                   size="icon"
                   variant="ghost"

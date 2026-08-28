@@ -95,6 +95,23 @@ export default function Utenti() {
     }
   };
 
+  const toggleRubrica = async (u) => {
+    setTogglingId(u.id + "rubrica");
+    try {
+      await base44.functions.invoke("impostaRubricaCondivisa", {
+        user_id: u.id,
+        condivisa: !u.rubrica_condivisa,
+      });
+      setUtenti((prev) =>
+        prev.map((x) => (x.id === u.id ? { ...x, rubrica_condivisa: !u.rubrica_condivisa } : x))
+      );
+    } catch (err) {
+      toast({ title: "Errore aggiornamento rubrica", variant: "destructive" });
+    } finally {
+      setTogglingId(null);
+    }
+  };
+
   const reinvita = async (u) => {
     try {
       await inviaEmailAccesso(u.email, u.full_name || "", "amministratore");
@@ -287,6 +304,23 @@ export default function Utenti() {
                       {etichetta}
                     </Badge>
                   </div>
+                </div>
+
+                <div className="flex items-center gap-2 mb-3">
+                  <button
+                    onClick={() => toggleRubrica(u)}
+                    disabled={togglingId === u.id + "rubrica"}
+                    className={`text-[10px] font-medium px-2.5 py-1 rounded-full border transition-colors ${
+                      u.rubrica_condivisa
+                        ? "bg-primary/20 border-primary text-primary"
+                        : "bg-transparent border-border text-muted-foreground hover:border-primary/40"
+                    }`}
+                  >
+                    {togglingId === u.id + "rubrica" ? (
+                      <Loader2 className="w-3 h-3 animate-spin inline" />
+                    ) : null}
+                    Rubrica condivisa
+                  </button>
                 </div>
 
                 {isSupervisore && (

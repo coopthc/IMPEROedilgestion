@@ -18,6 +18,7 @@ import {
   HardHat,
   Settings,
   UserCog,
+  BookUser,
 } from "lucide-react";
 
 // Voci di navigazione — replicate dal plugin WordPress
@@ -27,6 +28,7 @@ export const NAV_ITEMS = [
   { to: "/clienti", icon: Users, label: "Clienti", group: "gestionale", hideFor: ["mssg_operaio", "mssg_cliente"] },
   { to: "/agenda", icon: Calendar, label: "Agenda", group: "gestionale" },
   { to: "/collaboratori", icon: HardHat, label: "Collaboratori", group: "gestionale", hideFor: ["mssg_operaio", "mssg_cliente"] },
+  { to: "/contatti", icon: BookUser, label: "Contatti", group: "gestionale", hideFor: ["mssg_cliente"] },
   { to: "/presenze", icon: CalendarDays, label: "Presenze", group: "gestionale", hideFor: ["mssg_cliente"] },
   { to: "/esporta", icon: Download, label: "Esporta dati", group: "strumenti", hideFor: ["mssg_operaio", "mssg_cliente"] },
   { to: "/backup-cloud", icon: Cloud, label: "Backup e Cloud", group: "strumenti", hideFor: ["mssg_operaio", "mssg_cliente"] },
@@ -39,7 +41,7 @@ export const MOBILE_TABS = [
   { to: "/", icon: LayoutDashboard, label: "Home", end: true },
   { to: "/cantieri", icon: Building2, label: "Cantieri" },
   { to: "/agenda", icon: Calendar, label: "Agenda" },
-  { to: "/clienti", icon: Users, label: "Clienti" },
+  { to: "/contatti", icon: BookUser, label: "Contatti" },
   { to: "/impostazioni", icon: Settings, label: "Impost." },
 ];
 
@@ -192,6 +194,7 @@ export default function GestionaleLayout() {
               { to: "/", icon: LayoutDashboard, label: "Home", end: true },
               { to: "/cantieri", icon: Building2, label: "Cantieri" },
               { to: "/agenda", icon: Calendar, label: "Agenda" },
+              { to: "/contatti", icon: BookUser, label: "Contatti" },
               { to: "/presenze", icon: CalendarDays, label: "Presenze" },
               { to: "/impostazioni", icon: Settings, label: "Impost." },
             ]
