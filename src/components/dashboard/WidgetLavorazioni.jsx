@@ -13,7 +13,16 @@ export default function WidgetLavorazioni() {
         const inCorso = list.filter((l) => l.stato === "in_corso").length;
         const completate = list.filter((l) => l.stato === "completata").length;
         const bloccate = list.filter((l) => l.stato === "bloccata").length;
-        const avg = list.length > 0 ? list.reduce((s, l) => s + (Number(l.percentuale_completata) || 0), 0) / list.length : 0;
+        // Avanzamento medio: media del completamento effettivo per cantiere
+        // (stessa formula ponderata del dettaglio cantiere: somma(completata/100 * prevista) per cantiere)
+        const byCantiere = {};
+        list.forEach((l) => {
+          const cid = l.cantiere_id || "_senza";
+          if (!byCantiere[cid]) byCantiere[cid] = 0;
+          byCantiere[cid] += (Number(l.percentuale_completata) || 0) / 100 * (Number(l.percentuale_prevista) || 0);
+        });
+        const cantiereVals = Object.values(byCantiere);
+        const avg = cantiereVals.length > 0 ? cantiereVals.reduce((s, v) => s + v, 0) / cantiereVals.length : 0;
         setData({ total: list.length, daFare, inCorso, completate, bloccate, avg });
       } catch { setData({ total: 0, daFare: 0, inCorso: 0, completate: 0, bloccate: 0, avg: 0 }); }
     })();

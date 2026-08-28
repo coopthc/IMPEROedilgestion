@@ -19,6 +19,21 @@ export default function DatiPersonali() {
 
   const isCliente = user?.role === "mssg_cliente";
 
+  const emptyClienteForm = {
+    nome: user?.full_name ?? "",
+    is_azienda: false,
+    azienda: "",
+    email: user?.email ?? "",
+    piva: "",
+    codice_fiscale: "",
+    telefono: "",
+    indirizzo: "",
+    citta: "",
+    cap: "",
+    provincia: "",
+    logo_url: "",
+  };
+
   // Per mssg_cliente: carica il record Cliente tramite funzione backend (bypassa RLS, fallback per email)
   useEffect(() => {
     if (isCliente) {
@@ -26,7 +41,8 @@ export default function DatiPersonali() {
         .then((res) => {
           const c = res?.cliente;
           if (!c) {
-            toast({ title: "Profilo cliente non trovato", variant: "destructive" });
+            toast({ title: "Profilo cliente non ancora abbinato", description: "Contatta l'amministratore per l'abbinamento.", variant: "destructive" });
+            setForm(emptyClienteForm);
             return;
           }
           setCliente(c);
@@ -47,8 +63,10 @@ export default function DatiPersonali() {
         })
         .catch(() => {
           toast({ title: "Errore caricamento dati cliente", variant: "destructive" });
+          setForm(emptyClienteForm);
         });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isCliente]);
 
   // Per altri ruoli: carica dal profilo User
