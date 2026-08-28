@@ -1,13 +1,22 @@
 import React, { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
+import { useAuth } from "@/lib/AuthContext";
+import { useToast } from "@/components/ui/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Calendar, Clock, User, Building2, FileText, MapPin, Tag, Pencil, CheckCircle2, AlertCircle } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Calendar, Clock, User, Building2, FileText, MapPin, Tag, Pencil, CheckCircle2, AlertCircle, Send, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import ShareButton from "./ShareButton";
 
 const TIPO_LABEL = { interno: "Interno", richiesta: "Richiesta", confermato: "Confermato", admin_fissato: "Admin fissato" };
 const STATO_LABEL = { in_attesa: "In attesa", programmato: "Programmato", proposto: "Proposto", completato: "Completato", annullato: "Annullato" };
+const RISPOSTE_LABEL = { presente: "Presente", assente: "Assente", in_forse: "In forse" };
+const RISPOSTE_COLOR = {
+  presente: "bg-green-500/15 text-green-400 border-green-500/30",
+  assente: "bg-red-500/15 text-red-400 border-red-500/30",
+  in_forse: "bg-yellow-500/15 text-yellow-400 border-yellow-500/30",
+};
 
 function Field({ icon: Icon, label, children }) {
   if (!children) return null;
@@ -22,8 +31,21 @@ function Field({ icon: Icon, label, children }) {
   );
 }
 
-export default function AppuntamentoDetailDialog({ app, open, onOpenChange, onEdit, isCliente = false, onConfermaCliente }) {
+export default function AppuntamentoDetailDialog({ app, open, onOpenChange, onEdit, isCliente = false, onConfermaCliente, onSaved }) {
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [cantiere, setCantiere] = useState(null);
+  const [proposeMode, setProposeMode] = useState(false);
+  const [proposeData, setProposeData] = useState("");
+  const [proposeOra, setProposeOra] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [myRisposta, setMyRisposta] = useState(null);
+  const [risposteList, setRisposteList] = useState([]);
+
+  const isSupervisore = user?.role === "mssg_admin";
+  const isCapoOrOperaio = ["mssg_capo", "mssg_operaio"].includes(user?.role);
+  const canPropose = (isSupervisore || isCapoOrOperaio) && !isCliente;
+  const canEdit = onEdit && !isCliente && !isSupervisore && !isCapoOrOperaio;
 
   useEffect(() => {
     if (app?.cantiere_id) {
@@ -32,6 +54,20 @@ export default function AppuntamentoDetailDialog({ app, open, onOpenChange, onEd
       setCantiere(null);
     }
   }, [app]);
+
+  useEffect(() => {
+    if (app) {
+      setProposeMode(false);
+      setProposeData(app.data || "");
+      setProposeOra(app.ora || "");
+      let risposte = {};
+      try { risposte = app.risposte_json ? JSON.parse(app.risposte_json) : {}; } catch { risposte = {}; }
+      const list = Object.entries(risposte).map(([uid, val]) => ({ uid, ...val }));
+      setRisposteList(list);
+      const mine = risposte[user?.id];
+      setMyRisposta(mine?.risposta || null);
+    }
+  }, [app, user?.id]);
 
   if (!app) return null;
 
@@ -50,9 +86,50 @@ export default function AppuntamentoDetailDialog({ app, open, onOpenChange, onEd
     app.note && `Note: ${app.note}`,
   ].filter(Boolean).join("\n");
 
+  const handlePropose = async () => {
+    setSaving(true);
+    try {
+      await base44.functions.invoke("azioneAppuntamento", {
+        appuntamento_id: app.id,
+        azione: "proponi",
+        data: proposeData,
+        ora: proposeOra,
+      });
+      toast({ title: "Proposta inviata", description: "L'amministratore riceverà la richiesta di spostamento." });
+      setProposeMode(false);
+      onSaved?.();
+      onOpenChange(false);
+    } catch {
+      toast({ title: "Errore", variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleRispondi = async (risposta) => {
+    setSaving(true);
+    try {
+      await base44.functions.invoke("azioneAppuntamento", {
+        appuntamento_id: app.id,
+        azione: "rispondi",
+        risposta,
+      });
+      setMyRisposta(risposta);
+      setRisposteList((prev) => {
+        const filtered = prev.filter((r) => r.uid !== user.id);
+        return [...filtered, { uid: user.id, risposta, nome: user.full_name || user.email || "", data: new Date().toISOString() }];
+      });
+      toast({ title: "Risposta registrata", description: RISPOSTE_LABEL[risposta] });
+    } catch {
+      toast({ title: "Errore", variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Calendar className="w-5 h-5 text-primary" />
@@ -100,8 +177,74 @@ export default function AppuntamentoDetailDialog({ app, open, onOpenChange, onEd
           </Button>
         )}
 
+        {/* Risposte partecipazione (presente/assente/in forse) — per supervisore, capo, operaio */}
+        {canPropose && (
+          <div className="space-y-2 rounded-lg border border-border p-3 bg-secondary/30">
+            <p className="text-xs font-semibold flex items-center gap-1.5">
+              <Users className="w-3.5 h-3.5 text-primary" /> La tua partecipazione
+            </p>
+            <div className="grid grid-cols-3 gap-2">
+              {["presente", "assente", "in_forse"].map((r) => (
+                <button
+                  key={r}
+                  type="button"
+                  disabled={saving}
+                  onClick={() => handleRispondi(r)}
+                  className={`px-2 py-2 rounded-lg text-xs font-medium transition-colors border ${
+                    myRisposta === r
+                      ? RISPOSTE_COLOR[r]
+                      : "bg-secondary border-border text-muted-foreground hover:bg-secondary/70"
+                  }`}
+                >
+                  {RISPOSTE_LABEL[r]}
+                </button>
+              ))}
+            </div>
+            {risposteList.length > 0 && (
+              <div className="space-y-1 mt-2">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Risposte</p>
+                {risposteList.map((r) => (
+                  <div key={r.uid} className="flex items-center justify-between text-xs">
+                    <span>{r.nome}</span>
+                    <span className={`px-1.5 py-0.5 rounded text-[10px] border ${RISPOSTE_COLOR[r.risposta] || ""}`}>
+                      {RISPOSTE_LABEL[r.risposta] || r.risposta}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Proposta spostamento — per supervisore, capo, operaio */}
+        {canPropose && (
+          <div className="rounded-lg border border-border p-3 bg-secondary/30">
+            {!proposeMode ? (
+              <Button variant="outline" className="w-full" onClick={() => setProposeMode(true)}>
+                <Send className="w-4 h-4 mr-1" /> Proponi spostamento
+              </Button>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-xs font-semibold">Proponi nuovo orario</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <Input type="date" value={proposeData} onChange={(e) => setProposeData(e.target.value)} />
+                  <Input type="time" value={proposeOra} onChange={(e) => setProposeOra(e.target.value)} />
+                </div>
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={handlePropose} disabled={saving || !proposeData || !proposeOra}>
+                    {saving ? "Invio..." : "Invia proposta"}
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => setProposeMode(false)} disabled={saving}>
+                    Annulla
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="flex gap-2">
-          {onEdit && !isCliente && (
+          {canEdit && (
             <Button onClick={() => onEdit(app)} className="flex-1">
               <Pencil className="w-4 h-4 mr-1" /> Modifica
             </Button>

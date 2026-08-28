@@ -12,7 +12,7 @@ import ListaAppuntamenti from "@/components/agenda/ListaAppuntamenti";
 import PromemoriaManager from "@/components/agenda/PromemoriaManager";
 import AppuntamentoDetailDialog from "@/components/dashboard/AppuntamentoDetailDialog";
 import PromemoriaDetailDialog from "@/components/agenda/PromemoriaDetailDialog";
-import { Plus, Calendar, Clock, Inbox, Bell, Eye, EyeOff } from "lucide-react";
+import { Plus, Calendar, Clock, Inbox, Bell } from "lucide-react";
 import { filtraAppuntamentiPersonali } from "@/lib/appuntamentiUtils";
 
 export default function Agenda() {
@@ -28,13 +28,17 @@ export default function Agenda() {
   const [defaultData, setDefaultData] = useState("");
   const [detailApp, setDetailApp] = useState(null);
   const [detailProm, setDetailProm] = useState(null);
-  const [showAll, setShowAll] = useState(false);
+  const [vista, setVista] = useState("miei"); // "miei" | "azienda" | "tutti"
 
-  // Vista personale: ogni utente vede solo i propri appuntamenti.
-  // L'admin può attivare "vedi tutti" per oversight globale.
-  const visibleAppuntamenti = isAdmin && showAll
-    ? appuntamenti
-    : filtraAppuntamentiPersonali(appuntamenti, user);
+  // Vista "Miei": solo i propri appuntamenti (personali + dove sono partecipante).
+  // Vista "Azienda": tutti gli appuntamenti lavorativi (relativi ai cantieri).
+  // Vista "Tutti": tutto (solo admin, oversight globale).
+  const visibleAppuntamenti = useMemo(() => {
+    if (!isAdmin) return filtraAppuntamentiPersonali(appuntamenti, user);
+    if (vista === "tutti") return appuntamenti;
+    if (vista === "azienda") return appuntamenti.filter((a) => a.categoria !== "personale");
+    return filtraAppuntamentiPersonali(appuntamenti, user);
+  }, [isAdmin, vista, appuntamenti, user]);
 
   const load = async () => {
     setLoading(true);
@@ -142,15 +146,25 @@ export default function Agenda() {
         </div>
         <div className="flex items-center gap-2">
           {isAdmin && (
-            <Button
-              variant={showAll ? "default" : "outline"}
-              size="sm"
-              onClick={() => setShowAll((v) => !v)}
-              title={showAll ? "Vista globale" : "Vista personale"}
-            >
-              {showAll ? <Eye className="w-4 h-4 mr-1" /> : <EyeOff className="w-4 h-4 mr-1" />}
-              {showAll ? "Tutti" : "Miei"}
-            </Button>
+            <div className="flex items-center gap-1 p-1 bg-secondary/50 rounded-lg">
+              {[
+                { key: "miei", label: "Miei" },
+                { key: "azienda", label: "Azienda" },
+                { key: "tutti", label: "Tutti" },
+              ].map((opt) => (
+                <button
+                  key={opt.key}
+                  onClick={() => setVista(opt.key)}
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                    vista === opt.key
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
           )}
           <Button onClick={() => handleNew()}>
             <Plus className="w-4 h-4 mr-1" /> Nuovo appuntamento
@@ -240,6 +254,7 @@ export default function Agenda() {
         onEdit={handleEditFromDetail}
         isCliente={isClienteRole}
         onConfermaCliente={confermaCliente}
+        onSaved={load}
       />
 
       <PromemoriaDetailDialog
