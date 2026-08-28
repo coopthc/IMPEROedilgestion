@@ -66,9 +66,39 @@
           }
         },
         {
-          "user_condition": {
-            "role": "mssg_admin"
-          }
+          "$and": [
+            {
+              "user_condition": {
+                "role": "mssg_admin"
+              }
+            },
+            {
+              "user_condition": {
+                "data.supervisore_tutti_cantieri": true
+              }
+            }
+          ]
+        },
+        {
+          "$and": [
+            {
+              "user_condition": {
+                "role": "mssg_admin"
+              }
+            },
+            {
+              "$or": [
+                {
+                  "data.cantiere_id": {
+                    "$in": "{{user.data.cantieri_ids}}"
+                  }
+                },
+                {
+                  "data.collaboratore_id": "{{user.data.collaboratore_id}}"
+                }
+              ]
+            }
+          ]
         },
         {
           "$and": [
