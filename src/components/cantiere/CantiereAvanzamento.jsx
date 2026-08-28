@@ -97,6 +97,17 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate, isClie
     load();
   }, [cantiere.id]);
 
+  // Subscription realtime: ricarica quando cambiano lavorazioni o aggiornamenti
+  useEffect(() => {
+    const unsubLav = base44.entities.Lavorazione.subscribe((event) => {
+      if (event.data?.cantiere_id === cantiere.id) load();
+    });
+    const unsubAgg = base44.entities.Aggiornamento.subscribe((event) => {
+      if (event.data?.cantiere_id === cantiere.id) load();
+    });
+    return () => { unsubLav(); unsubAgg(); };
+  }, [cantiere.id]);
+
   // Calcoli barre
   const pronosticoTotale = lavorazioni.reduce((sum, l) => sum + (l.percentuale_prevista || 0), 0);
   // effettivoTotale è già la percentuale reale di completamento del progetto (somma dei contributi)
@@ -106,9 +117,7 @@ export default function CantiereAvanzamento({ cantiere, onCantiereUpdate, isClie
   );
   const totaleCosti = lavorazioni.reduce((sum, l) => sum + (l.costo || 0), 0);
   const totaleAggiunte = lavorazioni.filter((l) => l.aggiunta_al_budget).reduce((sum, l) => sum + (l.costo || 0), 0);
-  const lavorazioniVisibili = isCliente
-    ? lavorazioni.filter((l) => l.visibile_cliente)
-    : isOperaio
+  const lavorazioniVisibili = isOperaio
     ? lavorazioni.filter((l) => l.stato === "da_fare")
     : lavorazioni;
 

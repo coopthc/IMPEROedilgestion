@@ -66,6 +66,14 @@ export default function CantierePagamenti({ cantiere, isCliente = false }) {
     load();
   }, [cantiere.id]);
 
+  // Subscription realtime: ricarica quando cambiano i pagamenti
+  useEffect(() => {
+    const unsubscribe = base44.entities.Pagamento.subscribe((event) => {
+      if (event.data?.cantiere_id === cantiere.id) load();
+    });
+    return unsubscribe;
+  }, [cantiere.id]);
+
   const openNew = () => {
     setEditing(null);
     setForm(emptyForm);
