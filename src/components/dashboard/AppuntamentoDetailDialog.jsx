@@ -45,7 +45,7 @@ export default function AppuntamentoDetailDialog({ app, open, onOpenChange, onEd
   const isSupervisore = user?.role === "mssg_admin";
   const isCapoOrOperaio = ["mssg_capo", "mssg_operaio"].includes(user?.role);
   const canPropose = (isSupervisore || isCapoOrOperaio) && !isCliente;
-  const canRespond = !isCliente; // tutti gli utenti interni possono rispondere
+  const canRespond = !isCliente && app?.richiedi_conferma === true && app?.categoria !== "personale";
   const canEdit = onEdit && !isCliente && !isSupervisore && !isCapoOrOperaio;
 
   // Stato conferme: confronta utenti_ids con risposte ricevute

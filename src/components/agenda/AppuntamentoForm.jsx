@@ -89,6 +89,7 @@ export default function AppuntamentoForm({
   const { user } = useAuth();
   const isAdmin = ["admin", "mssg_admin"].includes(user?.role);
   const isClienteRole = user?.role === "mssg_cliente";
+  const isOperaio = user?.role === "mssg_operaio";
   const [form, setForm] = useState(emptyForm);
   const [loading, setLoading] = useState(false);
   const [sendingEmail, setSendingEmail] = useState(false);
@@ -121,7 +122,9 @@ export default function AppuntamentoForm({
       setPillole(durataToPillole(appuntamento.durata_minuti));
     } else {
       const myClienteId = user?.cliente_id || user?.data?.cliente_id || "";
-      setForm(isClienteRole
+      setForm(isOperaio
+        ? { ...emptyForm, data: defaultData || "", categoria: "personale", richiedi_conferma: false }
+        : isClienteRole
         ? { ...emptyForm, data: defaultData || "", categoria: "lavorativo", tipo: "richiesta", stato: "in_attesa", cliente_id: myClienteId }
         : { ...emptyForm, data: defaultData || "" });
       setPartecipantiIds([]);
@@ -204,7 +207,7 @@ export default function AppuntamentoForm({
         utentiIds.push(clienteObj.user_id);
       }
     }
-    if (user?.id && !utentiIds.includes(user.id)) {
+    if (user?.id && !utentiIds.includes(user.id) && !isAdmin) {
       utentiIds.push(user.id);
     }
 
@@ -309,8 +312,8 @@ export default function AppuntamentoForm({
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 pt-2">
-          {/* Categoria: Lavorativo / Personale (nascosto per cliente) */}
-          {!isClienteRole && (
+          {/* Categoria: Lavorativo / Personale (nascosto per cliente e operaio) */}
+          {!isClienteRole && !isOperaio && (
             <div className="grid grid-cols-2 gap-2 p-1 bg-secondary/50 rounded-lg">
               <button
                 type="button"
@@ -425,7 +428,7 @@ export default function AppuntamentoForm({
             )}
           </div>
 
-          {!isClienteRole && (
+          {!isClienteRole && !isOperaio && form.categoria !== "personale" && (
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Tipo</Label>
@@ -460,7 +463,7 @@ export default function AppuntamentoForm({
           </div>
           )}
 
-          {!isClienteRole && (
+          {!isClienteRole && !isOperaio && form.categoria !== "personale" && (
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Cliente</Label>
@@ -485,7 +488,7 @@ export default function AppuntamentoForm({
           )}
 
           {/* Crea cantiere in bozza per sopralluogo */}
-          {!isClienteRole && form.cliente_id && !form.cantiere_id && (
+          {!isClienteRole && !isOperaio && form.categoria !== "personale" && form.cliente_id && !form.cantiere_id && (
             <label className="flex items-center gap-2.5 p-3 rounded-lg border border-border cursor-pointer hover:bg-secondary/30 transition-colors">
               <Switch
                 checked={creaCantiereBozza}
@@ -502,7 +505,7 @@ export default function AppuntamentoForm({
           )}
 
           {/* Collaboratori partecipanti — tutti gli attivi */}
-          {!isClienteRole && collaboratori.length > 0 && (
+          {!isClienteRole && !isOperaio && form.categoria !== "personale" && collaboratori.length > 0 && (
             <div className="rounded-lg border border-border p-3">
               <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2 block">
                 Collaboratori partecipanti
@@ -586,7 +589,7 @@ export default function AppuntamentoForm({
             />
           </div>
 
-          {!isClienteRole && (
+          {!isClienteRole && !isOperaio && form.categoria !== "personale" && (
             <label className="flex items-center gap-2.5 p-3 rounded-lg border border-border cursor-pointer hover:bg-secondary/30 transition-colors">
               <Switch
                 checked={form.richiedi_conferma || false}

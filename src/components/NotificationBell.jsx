@@ -105,16 +105,21 @@ export default function NotificationBell() {
                 }`}
               >
                 <div
-                  className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${
+                  className={`mt-1.5 flex-shrink-0 ${
                     n.letto
-                      ? "bg-transparent"
+                      ? "w-2 h-2 rounded-full bg-transparent"
                       : n.urgente
-                      ? "bg-red-500 animate-pulse"
-                      : "bg-primary"
+                      ? "w-3 h-3 rounded-full bg-red-500 ring-2 ring-red-500/40 animate-pulse shadow-[0_0_6px_rgba(239,68,68,0.6)]"
+                      : "w-2 h-2 rounded-full bg-primary"
                   }`}
                 />
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium truncate">{n.titolo}</div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-sm font-medium truncate">{n.titolo}</span>
+                    {!n.letto && n.urgente && (
+                      <span className="text-[9px] font-bold uppercase bg-red-500 text-white px-1 py-0.5 rounded flex-shrink-0">Urgente</span>
+                    )}
+                  </div>
                   {n.testo && (
                     <div className="text-xs text-muted-foreground truncate">
                       {n.testo}

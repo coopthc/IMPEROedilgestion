@@ -37,7 +37,15 @@ export default function Agenda() {
     if (!isAdmin) return filtraAppuntamentiPersonali(appuntamenti, user);
     if (vista === "tutti") return appuntamenti;
     if (vista === "azienda") return appuntamenti.filter((a) => a.categoria !== "personale");
-    return filtraAppuntamentiPersonali(appuntamenti, user);
+    // "miei" per admin/supervisore: personali propri + lavorativi dove sono partecipante ma NON creatore
+    return appuntamenti.filter((a) => {
+      if (a.categoria === "personale") return a.created_by_id === user.id;
+      if (a.created_by_id === user.id) return false;
+      const raw = a.utenti_ids;
+      if (!raw) return false;
+      if (Array.isArray(raw)) return raw.includes(user.id);
+      return String(raw).split(",").map((s) => s.trim()).includes(user.id);
+    });
   }, [isAdmin, vista, appuntamenti, user]);
 
   const load = async () => {
