@@ -48,7 +48,7 @@ export default function NotificationBell() {
       }
     }
     if (n.url) navigate(n.url);
-    else if (n.tipo === "appuntamento") navigate("/agenda");
+    else navigate("/agenda");
   };
 
   const markAllRead = async () => {
