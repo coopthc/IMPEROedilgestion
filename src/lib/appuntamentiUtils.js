@@ -20,11 +20,13 @@ export function filtraAppuntamentiPersonali(appuntamenti, user) {
   return appuntamenti.filter((a) => isMioAppuntamento(a, user.id));
 }
 
-// Verifica se tutte le conferme presenza sono state raccolte:
-// il pallino è verde quando tutti i partecipanti (utenti_ids) hanno risposto
-// e anche l'utente corrente (se è tra i partecipanti) ha risposto.
-export function confermaCompletata(app, user) {
-  if (!app?.richiedi_conferma || !user) return false;
+// Stato conferma presenza — 3 livelli:
+//   - "rosso"      => manca ancora la risposta di almeno un partecipante
+//   - "arancione"  => tutti hanno risposto ma non tutti sono presenti
+//   - "verde"      => tutti i partecipanti hanno risposto "presente"
+//   - null         => conferma non richiesta o nessun partecipante
+export function statoConferma(app, user) {
+  if (!app?.richiedi_conferma) return null;
 
   let risposte = {};
   try {
@@ -39,6 +41,28 @@ export function confermaCompletata(app, user) {
       ? String(app.utenti_ids).split(",").map((s) => s.trim()).filter(Boolean)
       : [];
 
-  if (utentiIds.length === 0) return true;
-  return utentiIds.every((uid) => risposte[uid]);
+  if (utentiIds.length === 0) return null;
+
+  const tuttiRisposto = utentiIds.every((uid) => risposte[uid]);
+  if (!tuttiRisposto) return "rosso";
+
+  const tuttiPresenti = utentiIds.every((uid) => risposte[uid]?.risposta === "presente");
+  return tuttiPresenti ? "verde" : "arancione";
 }
+
+// @deprecated usare statoConferma; mantenuto per compatibilità
+export function confermaCompletata(app, user) {
+  return statoConferma(app, user) === "verde";
+}
+
+export const STATO_CONFERMA_STYLE = {
+  rosso: "bg-red-500 animate-pulse ring-red-500/30",
+  arancione: "bg-orange-500 ring-orange-500/30",
+  verde: "bg-green-500 ring-green-500/30",
+};
+
+export const STATO_CONFERMA_TITLE = {
+  rosso: "Conferma presenza richiesta",
+  arancione: "Tutti hanno risposto, non tutti presenti",
+  verde: "Tutti i partecipanti presenti",
+};

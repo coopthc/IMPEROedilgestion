@@ -94,16 +94,19 @@ export default function Dashboard() {
     }
   };
 
+  const forbiddenWidgets = operaio ? WIDGET_VIETATI_OPERAIO : cliente ? WIDGET_VIETATI_CLIENTE : [];
+  const displayWidgets = widgets.filter((w) => !forbiddenWidgets.includes(w));
+
   const moveWidget = (i, dir) => {
     const j = i + dir;
-    if (j < 0 || j >= widgets.length) return;
-    const arr = [...widgets];
+    if (j < 0 || j >= displayWidgets.length) return;
+    const arr = [...displayWidgets];
     [arr[i], arr[j]] = [arr[j], arr[i]];
     saveWidgets(arr);
   };
 
-  const removeWidget = (i) => saveWidgets(widgets.filter((_, idx) => idx !== i));
-  const addWidget = (type) => { saveWidgets([...widgets, type]); setShowAdd(false); };
+  const removeWidget = (i) => saveWidgets(displayWidgets.filter((_, idx) => idx !== i));
+  const addWidget = (type) => { saveWidgets([...displayWidgets, type]); setShowAdd(false); };
 
   const saveQuickActions = async (newQA) => {
     setQuickActions(newQA);
@@ -165,7 +168,7 @@ export default function Dashboard() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {widgets.map((type, i) => {
+          {displayWidgets.map((type, i) => {
             const entry = WIDGET_REGISTRY[type];
             if (!entry) return null;
             const Widget = entry.component;
@@ -176,7 +179,7 @@ export default function Dashboard() {
                     <button onClick={() => moveWidget(i, -1)} disabled={i === 0} className="p-1 rounded hover:bg-secondary text-muted-foreground disabled:opacity-30">
                       <ArrowUp className="w-3.5 h-3.5" />
                     </button>
-                    <button onClick={() => moveWidget(i, 1)} disabled={i === widgets.length - 1} className="p-1 rounded hover:bg-secondary text-muted-foreground disabled:opacity-30">
+                    <button onClick={() => moveWidget(i, 1)} disabled={i === displayWidgets.length - 1} className="p-1 rounded hover:bg-secondary text-muted-foreground disabled:opacity-30">
                       <ArrowDown className="w-3.5 h-3.5" />
                     </button>
                     <button onClick={() => removeWidget(i)} className="p-1 rounded hover:bg-red-500/15 text-red-500">
@@ -200,7 +203,7 @@ export default function Dashboard() {
         </div>
       )}
 
-      <AddWidgetDialog open={showAdd} onOpenChange={setShowAdd} onAdd={addWidget} existing={widgets} disabledWidgets={operaio ? WIDGET_VIETATI_OPERAIO : cliente ? WIDGET_VIETATI_CLIENTE : []} />
+      <AddWidgetDialog open={showAdd} onOpenChange={setShowAdd} onAdd={addWidget} existing={displayWidgets} disabledWidgets={operaio ? WIDGET_VIETATI_OPERAIO : cliente ? WIDGET_VIETATI_CLIENTE : []} />
     </div>
   );
 }

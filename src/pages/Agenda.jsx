@@ -68,6 +68,16 @@ export default function Agenda() {
     load();
   }, []);
 
+  // Aggiornamento realtime: ricarica quando cambia un appuntamento o un promemoria
+  useEffect(() => {
+    const unsubApp = base44.entities.Appuntamento.subscribe(() => load());
+    const unsubProm = base44.entities.Promemoria.subscribe(() => load());
+    return () => {
+      unsubApp?.();
+      unsubProm?.();
+    };
+  }, []);
+
   const handleNew = (data) => {
     setEditing(null);
     setDefaultData(data || "");

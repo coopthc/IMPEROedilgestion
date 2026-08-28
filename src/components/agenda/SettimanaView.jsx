@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Plus, Loader2, MapPin, Bell } from "lucide-react";
-import { confermaCompletata } from "@/lib/appuntamentiUtils";
+import { statoConferma, STATO_CONFERMA_STYLE, STATO_CONFERMA_TITLE } from "@/lib/appuntamentiUtils";
 
 const GIORNI = ["Lun", "Mar", "Mer", "Gio", "Ven", "Sab", "Dom"];
 const MESI = ["gen", "feb", "mar", "apr", "mag", "giu", "lug", "ago", "set", "ott", "nov", "dic"];
@@ -162,12 +162,16 @@ export default function SettimanaView({ appuntamenti, promemoria = [], loading, 
                             <div className="flex items-center gap-1 font-semibold">
                               <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${TIPO_DOT[a.tipo] || "bg-muted-foreground"}`} />
                               {a.ora || "—"}
-                              {a.richiedi_conferma && (
-                                <span
-                                  className={`ml-auto w-2 h-2 rounded-full flex-shrink-0 ring-2 ${confermaCompletata(a, user) ? "bg-green-500 ring-green-500/30" : "bg-red-500 animate-pulse ring-red-500/30"}`}
-                                  title={confermaCompletata(a, user) ? "Tutti hanno confermato" : "Conferma presenza richiesta"}
-                                />
-                              )}
+                              {(() => {
+                                const s = statoConferma(a, user);
+                                if (!s) return null;
+                                return (
+                                  <span
+                                    className={`ml-auto w-2 h-2 rounded-full flex-shrink-0 ring-2 ${STATO_CONFERMA_STYLE[s]}`}
+                                    title={STATO_CONFERMA_TITLE[s]}
+                                  />
+                                );
+                              })()}
                             </div>
                             <div className="truncate mt-0.5">{a.titolo}</div>
                             {a.cliente_nome && (
@@ -267,12 +271,16 @@ export default function SettimanaView({ appuntamenti, promemoria = [], loading, 
                       <div className="flex-1 min-w-0">
                         <div className="text-sm font-medium truncate flex items-center gap-1.5">
                           {a.titolo}
-                          {a.richiedi_conferma && (
-                            <span
-                              className={`w-2 h-2 rounded-full flex-shrink-0 ring-2 ${confermaCompletata(a, user) ? "bg-green-500 ring-green-500/30" : "bg-red-500 animate-pulse ring-red-500/30"}`}
-                              title={confermaCompletata(a, user) ? "Tutti hanno confermato" : "Conferma presenza richiesta"}
-                            />
-                          )}
+                          {(() => {
+                            const s = statoConferma(a, user);
+                            if (!s) return null;
+                            return (
+                              <span
+                                className={`w-2 h-2 rounded-full flex-shrink-0 ring-2 ${STATO_CONFERMA_STYLE[s]}`}
+                                title={STATO_CONFERMA_TITLE[s]}
+                              />
+                            );
+                          })()}
                         </div>
                         {a.cliente_nome && (
                           <div className="text-xs opacity-70 truncate">{a.cliente_nome}</div>
