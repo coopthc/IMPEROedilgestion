@@ -97,6 +97,11 @@
           }
         },
         {
+          "user_condition": {
+            "role": "mssg_operaio"
+          }
+        },
+        {
           "data.user_id": "{{user.id}}"
         }
       ]
