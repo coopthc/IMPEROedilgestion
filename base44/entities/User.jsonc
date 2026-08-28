@@ -27,6 +27,11 @@
       "default": false,
       "title": "Supervisore: chat cliente visibile"
     },
+    "supervisore_tutti_cantieri": {
+      "type": "boolean",
+      "default": true,
+      "title": "Supervisore: vede tutti i cantieri (o solo quelli abbinati)"
+    },
     "cliente_id": {
       "type": "string",
       "title": "Cliente collegato (per ruolo cliente)"

@@ -37,6 +37,7 @@ export default function UtenteFormDialog({ open, onOpenChange, utente, onSaved }
   const [ruoloPersonalizzato, setRuoloPersonalizzato] = useState("");
   const [supPagamenti, setSupPagamenti] = useState(false);
   const [supChat, setSupChat] = useState(false);
+  const [supTuttiCantieri, setSupTuttiCantieri] = useState(true);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -47,12 +48,14 @@ export default function UtenteFormDialog({ open, onOpenChange, utente, onSaved }
       setRuoloPersonalizzato(utente.ruolo_personalizzato || "");
       setSupPagamenti(!!utente.supervisore_pagamenti);
       setSupChat(!!utente.supervisore_chat);
+      setSupTuttiCantieri(utente.supervisore_tutti_cantieri !== false);
     } else {
       setEmail("");
       setRole("mssg_admin");
       setRuoloPersonalizzato("");
       setSupPagamenti(false);
       setSupChat(false);
+      setSupTuttiCantieri(true);
     }
   }, [open, utente]);
 
@@ -69,6 +72,7 @@ export default function UtenteFormDialog({ open, onOpenChange, utente, onSaved }
         ruolo_personalizzato: ruoloPersonalizzato.trim() || undefined,
         supervisore_pagamenti: isSupervisore ? supPagamenti : false,
         supervisore_chat: isSupervisore ? supChat : false,
+        supervisore_tutti_cantieri: isSupervisore ? supTuttiCantieri : true,
       };
 
       if (utente) {
@@ -240,6 +244,33 @@ export default function UtenteFormDialog({ open, onOpenChange, utente, onSaved }
                   Chat cliente visibili
                 </Label>
                 <Switch checked={supChat} onCheckedChange={setSupChat} />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-sm font-normal">Visibilità cantieri</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSupTuttiCantieri(true)}
+                    className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors text-left ${
+                      supTuttiCantieri ? "bg-primary text-primary-foreground" : "bg-secondary hover:bg-secondary/70"
+                    }`}
+                  >
+                    Tutti i cantieri
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSupTuttiCantieri(false)}
+                    className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors text-left ${
+                      !supTuttiCantieri ? "bg-primary text-primary-foreground" : "bg-secondary hover:bg-secondary/70"
+                    }`}
+                  >
+                    Solo cantieri abbinati
+                  </button>
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  Se &quot;Solo cantieri abbinati&quot;, il supervisore vede
+                  esclusivamente i cantieri assegnatigli.
+                </p>
               </div>
               <p className="text-[11px] text-muted-foreground">
                 Se attivi, il supervisore può vedere, scrivere nella chat e

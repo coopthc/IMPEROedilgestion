@@ -2,7 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 
 const ADMIN_FIELDS = new Set([
   'role', 'ruolo_personalizzato', 'supervisore_pagamenti', 'supervisore_chat',
-  'collaboratore_id', 'cliente_id', 'cantieri_ids',
+  'supervisore_tutti_cantieri', 'collaboratore_id', 'cliente_id', 'cantieri_ids',
 ]);
 
 // mssg_capo puo' impostare solo role, collaboratore_id, cliente_id (serve per invitare clienti/collaboratori)
