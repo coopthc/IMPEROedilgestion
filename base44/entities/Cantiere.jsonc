@@ -141,6 +141,9 @@
           }
         },
         {
+          "data.utenti_ids": "{{user.id}}"
+        },
+        {
           "data.cliente_id": "{{user.data.cliente_id}}"
         }
       ]
