@@ -104,6 +104,11 @@
       "type": "string",
       "title": "Nome richiedente"
     },
+    "richiedi_conferma": {
+      "type": "boolean",
+      "default": false,
+      "title": "Richiedi conferma presenza"
+    },
     "risposte_json": {
       "type": "string",
       "title": "Risposte partecipanti (JSON user_id -> {risposta, nome, data})"

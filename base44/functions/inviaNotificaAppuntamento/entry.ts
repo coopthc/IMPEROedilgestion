@@ -16,8 +16,11 @@ export default async function(req: Request): Promise<Response> {
     if (!appuntamento) return Response.json({ error: 'Appuntamento non trovato' }, { status: 404 });
 
     // Raccogli destinatari: cliente + collaboratori partecipanti
+    const richiediConferma = appuntamento.richiedi_conferma === true;
     const destinatari: { email: string; nome: string }[] = [];
-    const notificheInApp: { user_id: string; tipo: string; titolo: string; testo: string; url: string; letto: boolean }[] = [];
+    const notificheInApp: { user_id: string; tipo: string; titolo: string; testo: string; url: string; letto: boolean; urgente: boolean }[] = [];
+
+    const testoBase = `${appuntamento.data || ''} alle ${appuntamento.ora || ''}${appuntamento.cantiere_nome ? ' — ' + appuntamento.cantiere_nome : ''}${richiediConferma ? ' — Conferma la tua presenza' : ''}`;
 
     if (appuntamento.cliente_id) {
       const cliente = await base44.asServiceRole.entities.Cliente.get(appuntamento.cliente_id);
@@ -30,9 +33,10 @@ export default async function(req: Request): Promise<Response> {
           user_id: cliente.user_id,
           tipo: 'appuntamento',
           titolo: `Appuntamento: ${appuntamento.titolo || ''}`,
-          testo: `${appuntamento.data || ''} alle ${appuntamento.ora || ''}${appuntamento.cantiere_nome ? ' — ' + appuntamento.cantiere_nome : ''}`,
+          testo: testoBase,
           url: '/agenda',
           letto: false,
+          urgente: richiediConferma,
         });
       }
     }
@@ -50,9 +54,10 @@ export default async function(req: Request): Promise<Response> {
             user_id: c.user_id,
             tipo: 'appuntamento',
             titolo: `Appuntamento: ${appuntamento.titolo || ''}`,
-            testo: `${appuntamento.data || ''} alle ${appuntamento.ora || ''}${appuntamento.cantiere_nome ? ' — ' + appuntamento.cantiere_nome : ''}`,
+            testo: testoBase,
             url: '/agenda',
             letto: false,
+            urgente: richiediConferma,
           });
         }
       }

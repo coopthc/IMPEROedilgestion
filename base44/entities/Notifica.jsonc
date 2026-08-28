@@ -30,6 +30,11 @@
       "type": "boolean",
       "default": false,
       "title": "Letto"
+    },
+    "urgente": {
+      "type": "boolean",
+      "default": false,
+      "title": "Urgente (richiede azione)"
     }
   },
   "required": [

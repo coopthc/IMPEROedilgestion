@@ -45,7 +45,14 @@ export default function AppuntamentoDetailDialog({ app, open, onOpenChange, onEd
   const isSupervisore = user?.role === "mssg_admin";
   const isCapoOrOperaio = ["mssg_capo", "mssg_operaio"].includes(user?.role);
   const canPropose = (isSupervisore || isCapoOrOperaio) && !isCliente;
+  const canRespond = !isCliente; // tutti gli utenti interni possono rispondere
   const canEdit = onEdit && !isCliente && !isSupervisore && !isCapoOrOperaio;
+
+  // Stato conferme: confronta utenti_ids con risposte ricevute
+  const utentiAttesi = Array.isArray(app?.utenti_ids) ? app.utenti_ids.length : 0;
+  const risposteCount = risposteList.length;
+  const mancanti = Math.max(0, utentiAttesi - risposteCount);
+  const tuttiHannoRisposto = utentiAttesi > 0 && risposteCount >= utentiAttesi;
 
   useEffect(() => {
     if (app?.cantiere_id) {
@@ -177,11 +184,26 @@ export default function AppuntamentoDetailDialog({ app, open, onOpenChange, onEd
           </Button>
         )}
 
-        {/* Risposte partecipazione (presente/assente/in forse) — per supervisore, capo, operaio */}
-        {canPropose && (
+        {/* Stato conferme — visibile a tutti */}
+        {app.richiedi_conferma && (
+          <div className={`rounded-lg p-2.5 text-xs font-medium flex items-center gap-2 ${
+            tuttiHannoRisposto
+              ? "bg-green-500/10 text-green-400 border border-green-500/20"
+              : "bg-yellow-500/10 text-yellow-400 border border-yellow-500/20"
+          }`}>
+            <Users className="w-3.5 h-3.5 flex-shrink-0" />
+            {tuttiHannoRisposto
+              ? "Confermata da tutti i partecipanti"
+              : `In attesa di ${mancanti} conferma/e su ${utentiAttesi} partecipanti`}
+          </div>
+        )}
+
+        {/* Risposte partecipazione (presente/assente/in forse) — per tutti gli utenti interni */}
+        {canRespond && (
           <div className="space-y-2 rounded-lg border border-border p-3 bg-secondary/30">
             <p className="text-xs font-semibold flex items-center gap-1.5">
               <Users className="w-3.5 h-3.5 text-primary" /> La tua partecipazione
+              {app.richiedi_conferma && <span className="text-red-400">• conferma richiesta</span>}
             </p>
             <div className="grid grid-cols-3 gap-2">
               {["presente", "assente", "in_forse"].map((r) => (

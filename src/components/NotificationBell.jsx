@@ -36,6 +36,7 @@ export default function NotificationBell() {
   }, [load]);
 
   const nonLette = notifiche.filter((n) => !n.letto);
+  const urgentiNonLette = nonLette.filter((n) => n.urgente);
 
   const markAsRead = async (n) => {
     setOpen(false);
@@ -47,6 +48,7 @@ export default function NotificationBell() {
       }
     }
     if (n.url) navigate(n.url);
+    else if (n.tipo === "appuntamento") navigate("/agenda");
   };
 
   const markAllRead = async () => {
@@ -66,7 +68,11 @@ export default function NotificationBell() {
         <button className="relative p-2 rounded-lg hover:bg-secondary/50 transition-colors">
           <Bell className="w-5 h-5" />
           {nonLette.length > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 bg-primary text-primary-foreground text-[10px] font-bold rounded-full flex items-center justify-center">
+            <span className={`absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 text-[10px] font-bold rounded-full flex items-center justify-center ${
+              urgentiNonLette.length > 0
+                ? "bg-red-500 text-white animate-pulse"
+                : "bg-primary text-primary-foreground"
+            }`}>
               {nonLette.length > 9 ? "9+" : nonLette.length}
             </span>
           )}
@@ -100,7 +106,11 @@ export default function NotificationBell() {
               >
                 <div
                   className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${
-                    n.letto ? "bg-transparent" : "bg-primary"
+                    n.letto
+                      ? "bg-transparent"
+                      : n.urgente
+                      ? "bg-red-500 animate-pulse"
+                      : "bg-primary"
                   }`}
                 />
                 <div className="flex-1 min-w-0">

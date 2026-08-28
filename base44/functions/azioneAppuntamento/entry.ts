@@ -21,6 +21,18 @@ export default async function(req: Request): Promise<Response> {
       if (data) updateData.data = data;
       if (ora) updateData.ora = ora;
       await base44.asServiceRole.entities.Appuntamento.update(appuntamento_id, updateData);
+      // Notifica il creatore della proposta
+      if (app.created_by_id && app.created_by_id !== user.id) {
+        await base44.asServiceRole.entities.Notifica.create({
+          user_id: app.created_by_id,
+          tipo: 'appuntamento',
+          titolo: `Proposta spostamento: ${app.titolo || ''}`,
+          testo: `${user.full_name || user.email || ''} propone ${data || app.data} alle ${ora || app.ora}`,
+          url: '/agenda',
+          letto: false,
+          urgente: true,
+        });
+      }
       return Response.json({ ok: true });
     }
 
@@ -39,6 +51,20 @@ export default async function(req: Request): Promise<Response> {
       await base44.asServiceRole.entities.Appuntamento.update(appuntamento_id, {
         risposte_json: JSON.stringify(risposte),
       });
+
+      // Notifica il creatore dell'appuntamento della risposta ricevuta
+      if (app.created_by_id && app.created_by_id !== user.id) {
+        const rispLabel = risposta === 'presente' ? 'Presente' : risposta === 'assente' ? 'Assente' : 'In forse';
+        await base44.asServiceRole.entities.Notifica.create({
+          user_id: app.created_by_id,
+          tipo: 'appuntamento',
+          titolo: `Risposta: ${user.full_name || user.email || ''} — ${rispLabel}`,
+          testo: `Appuntamento: ${app.titolo || ''} — ${app.data || ''} alle ${app.ora || ''}`,
+          url: '/agenda',
+          letto: false,
+          urgente: false,
+        });
+      }
       return Response.json({ ok: true, risposte });
     }
 

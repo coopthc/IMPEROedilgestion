@@ -60,6 +60,7 @@ const emptyForm = {
   cantiere_id: "",
   note: "",
   stato: "programmato",
+  richiedi_conferma: false,
 };
 
 function durataToPillole(durata) {
@@ -112,6 +113,7 @@ export default function AppuntamentoForm({
         cantiere_id: appuntamento.cantiere_id || "",
         note: appuntamento.note || "",
         stato: appuntamento.stato || "programmato",
+        richiedi_conferma: appuntamento.richiedi_conferma || false,
       });
       setPartecipantiIds(
         (appuntamento.partecipanti_ids || "").split(",").filter(Boolean)
@@ -583,6 +585,21 @@ export default function AppuntamentoForm({
               onChange={(e) => update("note", e.target.value)}
             />
           </div>
+
+          {!isClienteRole && (
+            <label className="flex items-center gap-2.5 p-3 rounded-lg border border-border cursor-pointer hover:bg-secondary/30 transition-colors">
+              <Switch
+                checked={form.richiedi_conferma || false}
+                onCheckedChange={(v) => update("richiedi_conferma", v)}
+              />
+              <div>
+                <span className="text-sm font-medium">Chiedi conferma presenza</span>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  I partecipanti riceveranno una notifica urgente per confermare la loro presenza (Presente / Assente / In forse).
+                </p>
+              </div>
+            </label>
+          )}
 
           <div className="flex justify-between gap-2 pt-2">
             {appuntamento ? (
