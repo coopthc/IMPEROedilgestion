@@ -30,6 +30,15 @@ function parseRuoli(str) {
   }
 }
 
+const QUALIFICHE_LABEL = {
+  capo_cantiere: "Capo cantiere",
+  operaio: "Operaio",
+  amministrazione: "Amministrazione",
+  supervisore: "Supervisore",
+  amministratore: "Amministratore",
+  altro: "Altro",
+};
+
 export default function CantiereSquadra({ cantiere, clienti = [], onSaved, onOpenScheda }) {
   const { toast } = useToast();
   const [collaboratori, setCollaboratori] = useState([]);
@@ -292,6 +301,9 @@ export default function CantiereSquadra({ cantiere, clienti = [], onSaved, onOpe
                         </span>
                       )}
                     </button>
+                    <span className="text-[10px] text-muted-foreground">
+                      {QUALIFICHE_LABEL[c.qualifica] || c.qualifica || "—"}
+                    </span>
                   </div>
                   <Input
                     placeholder="Ruolo / nota (opzionale)"
@@ -341,7 +353,6 @@ export default function CantiereSquadra({ cantiere, clienti = [], onSaved, onOpe
               <SelectItem value="all">Tutte le qualifiche</SelectItem>
               <SelectItem value="capo_cantiere">Capo cantiere</SelectItem>
               <SelectItem value="operaio">Operaio</SelectItem>
-              <SelectItem value="tecnico">Tecnico</SelectItem>
               <SelectItem value="amministrazione">Amministrazione</SelectItem>
               <SelectItem value="altro">Altro</SelectItem>
             </SelectContent>
@@ -376,7 +387,7 @@ export default function CantiereSquadra({ cantiere, clienti = [], onSaved, onOpe
                       {c.nome}
                     </button>
                     <span className="text-[10px] text-muted-foreground">
-                      {c.qualifica}
+                      {QUALIFICHE_LABEL[c.qualifica] || c.qualifica || "—"}
                     </span>
                   </div>
                 </div>

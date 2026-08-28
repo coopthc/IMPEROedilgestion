@@ -26,7 +26,6 @@ const QUALIFICHE = [
   { value: "amministratore", label: "Amministratore" },
   { value: "capo_cantiere", label: "Capo cantiere" },
   { value: "operaio", label: "Operaio" },
-  { value: "tecnico", label: "Tecnico" },
   { value: "supervisore", label: "Supervisore" },
 ];
 
@@ -34,7 +33,6 @@ const RUOLO_MAP = {
   amministratore: "admin",
   capo_cantiere: "mssg_capo",
   operaio: "mssg_operaio",
-  tecnico: "mssg_operaio",
   supervisore: "mssg_admin",
   amministrazione: "mssg_admin",
   altro: "mssg_operaio",

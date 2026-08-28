@@ -20,7 +20,6 @@
       "enum": [
         "capo_cantiere",
         "operaio",
-        "tecnico",
         "amministrazione",
         "supervisore",
         "amministratore",
