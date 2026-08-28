@@ -56,6 +56,37 @@
               }
             },
             {
+              "user_condition": {
+                "data.supervisore_tutti_cantieri": true
+              }
+            },
+            {
+              "$or": [
+                {
+                  "data.canale": "squadra"
+                },
+                {
+                  "user_condition": {
+                    "data.supervisore_chat": true
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "$and": [
+            {
+              "user_condition": {
+                "role": "mssg_admin"
+              }
+            },
+            {
+              "data.cantiere_id": {
+                "$in": "{{user.data.cantieri_ids}}"
+              }
+            },
+            {
               "$or": [
                 {
                   "data.canale": "squadra"
