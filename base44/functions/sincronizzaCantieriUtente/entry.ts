@@ -15,10 +15,14 @@ export default async function(req) {
       base44.asServiceRole.entities.User.list(),
     ]);
 
-    // Mappa collaboratore_id -> user_id
+    // Mappa collaboratore_id -> user_id (bidirezionale: dal collaboratore.user_id E dal user.collaboratore_id)
     const collabToUser = {};
     for (const c of collaboratori) {
       if (c.user_id) collabToUser[c.id] = c.user_id;
+    }
+    for (const u of users) {
+      const cid = u.collaboratore_id || (u.data && u.data.collaboratore_id);
+      if (cid && !collabToUser[cid]) collabToUser[cid] = u.id;
     }
 
     const affectedUserIds = new Set();
