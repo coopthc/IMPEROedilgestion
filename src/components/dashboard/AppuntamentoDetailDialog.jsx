@@ -157,6 +157,9 @@ export default function AppuntamentoDetailDialog({ app, open, onOpenChange, onEd
               <Link to={`/cantieri/${app.cantiere_id}`} className="text-primary hover:underline">{app.cantiere_nome}</Link>
             </Field>
           )}
+          {app.partecipanti_nomi && (
+            <Field icon={Users} label="Partecipanti">{app.partecipanti_nomi}</Field>
+          )}
           {cantiere?.indirizzo && <Field icon={MapPin} label="Indirizzo">{cantiere.indirizzo}, {cantiere.citta}</Field>}
           {app.note && <Field icon={FileText} label="Note">{app.note}</Field>}
           {app.motivo && (
