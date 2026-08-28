@@ -60,6 +60,16 @@
       "type": "string",
       "format": "uri",
       "title": "Logo / Foto profilo"
+    },
+    "stato": {
+      "type": "string",
+      "enum": [
+        "attivo",
+        "disattivo",
+        "negativo"
+      ],
+      "default": "attivo",
+      "title": "Stato cliente"
     }
   },
   "required": [
