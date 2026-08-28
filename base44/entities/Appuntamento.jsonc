@@ -235,7 +235,16 @@
                       ]
                     },
                     {
-                      "data.utenti_ids": "{{user.id}}"
+                      "$or": [
+                        {
+                          "data.utenti_ids": "{{user.id}}"
+                        },
+                        {
+                          "data.cantiere_id": {
+                            "$in": "{{user.data.cantieri_ids}}"
+                          }
+                        }
+                      ]
                     }
                   ]
                 },
