@@ -24,6 +24,20 @@ export default async function(req) {
       const cid = u.collaboratore_id || (u.data && u.data.collaboratore_id);
       if (cid && !collabToUser[cid]) collabToUser[cid] = u.id;
     }
+    // Fallback: matching per email (collaboratore.email -> user.email)
+    const userEmailMap = {};
+    for (const u of users) {
+      if (u.email) userEmailMap[u.email.toLowerCase()] = u.id;
+    }
+    for (const c of collaboratori) {
+      if (!collabToUser[c.id] && c.email && userEmailMap[c.email.toLowerCase()]) {
+        collabToUser[c.id] = userEmailMap[c.email.toLowerCase()];
+        // Backfill user_id sul collaboratore se mancante
+        try {
+          await base44.asServiceRole.entities.Collaboratore.update(c.id, { user_id: userEmailMap[c.email.toLowerCase()] });
+        } catch (e) { /* ignora */ }
+      }
+    }
 
     const affectedUserIds = new Set();
     if (cantiereId) {
@@ -68,14 +82,8 @@ export default async function(req) {
     }
 
     // Sincronizza anche utenti_ids su ogni cantiere (membership basata su user.id, robusta per RLS)
-    const collabToUserMap = {};
-    for (const u of users) {
-      const cid = u.collaboratore_id || (u.data && u.data.collaboratore_id);
-      if (cid) collabToUserMap[cid] = u.id;
-    }
-    for (const c of collaboratori) {
-      if (c.user_id && !collabToUserMap[c.id]) collabToUserMap[c.id] = c.user_id;
-    }
+    // Riusa collabToUser (include già matching per email + backfill user_id)
+    const collabToUserMap = collabToUser;
     const clienteToUserMap = {};
     for (const u of users) {
       const cid = u.cliente_id || (u.data && u.data.cliente_id);
