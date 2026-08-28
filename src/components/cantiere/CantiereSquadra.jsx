@@ -239,7 +239,13 @@ export default function CantiereSquadra({ cantiere, clienti = [], onSaved, onOpe
             <SelectContent>
               <SelectItem value="__none__">— Nessuno —</SelectItem>
               {collaboratori
-                .filter((c) => c.attivo !== false && c.qualifica === "capo_cantiere")
+                .filter(
+                  (c) =>
+                    c.attivo !== false &&
+                    ["capo_cantiere", "supervisore", "amministratore"].includes(
+                      c.qualifica
+                    )
+                )
                 .map((c) => (
                   <SelectItem key={c.id} value={c.id}>
                     {c.nome}
@@ -301,7 +307,7 @@ export default function CantiereSquadra({ cantiere, clienti = [], onSaved, onOpe
                         </span>
                       )}
                     </button>
-                    <span className="text-[10px] text-muted-foreground">
+                    <span className="block mt-0.5 text-[10px] text-muted-foreground">
                       {QUALIFICHE_LABEL[c.qualifica] || c.qualifica || "—"}
                     </span>
                   </div>
@@ -386,7 +392,7 @@ export default function CantiereSquadra({ cantiere, clienti = [], onSaved, onOpe
                     >
                       {c.nome}
                     </button>
-                    <span className="text-[10px] text-muted-foreground">
+                    <span className="block mt-0.5 text-[10px] text-muted-foreground">
                       {QUALIFICHE_LABEL[c.qualifica] || c.qualifica || "—"}
                     </span>
                   </div>
