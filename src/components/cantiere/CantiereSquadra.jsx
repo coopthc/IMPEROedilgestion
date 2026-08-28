@@ -230,7 +230,7 @@ export default function CantiereSquadra({ cantiere, clienti = [], onSaved, onOpe
             <SelectContent>
               <SelectItem value="__none__">— Nessuno —</SelectItem>
               {collaboratori
-                .filter((c) => c.attivo !== false)
+                .filter((c) => c.attivo !== false && c.qualifica === "capo_cantiere")
                 .map((c) => (
                   <SelectItem key={c.id} value={c.id}>
                     {c.nome}
