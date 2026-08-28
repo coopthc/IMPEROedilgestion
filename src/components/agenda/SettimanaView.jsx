@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Plus, Loader2, MapPin, Bell } from "lucide-react";
+import { confermaCompletata } from "@/lib/appuntamentiUtils";
 
 const GIORNI = ["Lun", "Mar", "Mer", "Gio", "Ven", "Sab", "Dom"];
 const MESI = ["gen", "feb", "mar", "apr", "mag", "giu", "lug", "ago", "set", "ott", "nov", "dic"];
@@ -38,7 +39,7 @@ const TIPO_DOT = {
 
 const CATEGORIA_PERSONALE = "bg-teal-500/15 text-teal-400 border-teal-500/40";
 
-export default function SettimanaView({ appuntamenti, promemoria = [], loading, onDayClick, onAppuntamentoClick, onPromemoriaClick }) {
+export default function SettimanaView({ appuntamenti, promemoria = [], loading, onDayClick, onAppuntamentoClick, onPromemoriaClick, user }) {
   const [weekStart, setWeekStart] = useState(() => getMonday(new Date()));
   const [selectedDay, setSelectedDay] = useState(() => toISODate(new Date()));
 
@@ -162,7 +163,10 @@ export default function SettimanaView({ appuntamenti, promemoria = [], loading, 
                               <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${TIPO_DOT[a.tipo] || "bg-muted-foreground"}`} />
                               {a.ora || "—"}
                               {a.richiedi_conferma && (
-                                <span className="ml-auto w-2 h-2 rounded-full bg-red-500 animate-pulse flex-shrink-0 ring-2 ring-red-500/30" title="Conferma presenza richiesta" />
+                                <span
+                                  className={`ml-auto w-2 h-2 rounded-full flex-shrink-0 ring-2 ${confermaCompletata(a, user) ? "bg-green-500 ring-green-500/30" : "bg-red-500 animate-pulse ring-red-500/30"}`}
+                                  title={confermaCompletata(a, user) ? "Tutti hanno confermato" : "Conferma presenza richiesta"}
+                                />
                               )}
                             </div>
                             <div className="truncate mt-0.5">{a.titolo}</div>
@@ -264,7 +268,10 @@ export default function SettimanaView({ appuntamenti, promemoria = [], loading, 
                         <div className="text-sm font-medium truncate flex items-center gap-1.5">
                           {a.titolo}
                           {a.richiedi_conferma && (
-                            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse flex-shrink-0 ring-2 ring-red-500/30" title="Conferma presenza richiesta" />
+                            <span
+                              className={`w-2 h-2 rounded-full flex-shrink-0 ring-2 ${confermaCompletata(a, user) ? "bg-green-500 ring-green-500/30" : "bg-red-500 animate-pulse ring-red-500/30"}`}
+                              title={confermaCompletata(a, user) ? "Tutti hanno confermato" : "Conferma presenza richiesta"}
+                            />
                           )}
                         </div>
                         {a.cliente_nome && (

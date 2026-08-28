@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { Calendar, MapPin, Clock, CheckCircle2, AlertCircle } from "lucide-react";
+import { confermaCompletata } from "@/lib/appuntamentiUtils";
 
 const STATO_COLORS = {
   in_attesa: "bg-yellow-500/15 text-yellow-400 border-yellow-500/40",
@@ -19,7 +20,7 @@ const STATO_LABEL = {
   annullato: "Annullato",
 };
 
-export default function ListaAppuntamenti({ appuntamenti, onAppuntamentoClick, isCliente = false, onConfermaCliente }) {
+export default function ListaAppuntamenti({ appuntamenti, onAppuntamentoClick, isCliente = false, onConfermaCliente, user }) {
   const [filtro, setFiltro] = useState("tutti");
 
   const filtrati = useMemo(() => {
@@ -116,7 +117,10 @@ export default function ListaAppuntamenti({ appuntamenti, onAppuntamentoClick, i
                         <div className="font-medium truncate flex items-center gap-1.5">
                           {a.titolo}
                           {a.richiedi_conferma && (
-                            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse flex-shrink-0 ring-2 ring-red-500/30" title="Conferma presenza richiesta" />
+                            <span
+                              className={`w-2 h-2 rounded-full flex-shrink-0 ring-2 ${confermaCompletata(a, user) ? "bg-green-500 ring-green-500/30" : "bg-red-500 animate-pulse ring-red-500/30"}`}
+                              title={confermaCompletata(a, user) ? "Tutti hanno confermato" : "Conferma presenza richiesta"}
+                            />
                           )}
                         </div>
                         <div className="text-[10px] opacity-70 truncate flex items-center gap-1">

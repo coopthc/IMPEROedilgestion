@@ -213,12 +213,14 @@ export default function Agenda() {
             onDayClick={handleNew}
             onAppuntamentoClick={handleAppuntamentoClick}
             onPromemoriaClick={handlePromemoriaClick}
+            user={user}
           />
           <ListaAppuntamenti
             appuntamenti={visibleAppuntamenti}
             onAppuntamentoClick={handleAppuntamentoClick}
             isCliente={isClienteRole}
             onConfermaCliente={confermaCliente}
+            user={user}
           />
         </TabsContent>
 
