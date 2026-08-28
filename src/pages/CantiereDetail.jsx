@@ -56,6 +56,9 @@ export default function CantiereDetail() {
   const { user } = useAuth();
   const isCliente = user?.role === "mssg_cliente";
   const isAdmin = user?.role === "admin" || user?.role === "mssg_admin";
+  const canManageCantiere =
+    user?.role === "admin" ||
+    (user?.role === "mssg_admin" && user?.data?.supervisore_tutti_cantieri === true);
   const [cantiere, setCantiere] = useState(null);
   const [clienti, setClienti] = useState([]);
   const [collaboratori, setCollaboratori] = useState([]);
@@ -164,7 +167,7 @@ export default function CantiereDetail() {
           <ArrowLeft className="w-4 h-4 mr-1" />
           Cantieri
         </Button>
-        {!isCliente && (
+        {canManageCantiere && (
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={() => setFormOpen(true)}>
               <Pencil className="w-4 h-4 mr-1" />
@@ -265,7 +268,7 @@ export default function CantiereDetail() {
                 <FileText className="w-4 h-4 text-primary" />
                 Dettagli
               </h2>
-              {!isCliente && (
+              {canManageCantiere && (
                 <Button variant="outline" size="sm" onClick={() => setFormOpen(true)}>
                   <Pencil className="w-3.5 h-3.5 mr-1" />
                   Modifica dati cantiere
