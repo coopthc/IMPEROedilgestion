@@ -161,6 +161,9 @@ export default function SettimanaView({ appuntamenti, promemoria = [], loading, 
                             <div className="flex items-center gap-1 font-semibold">
                               <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${TIPO_DOT[a.tipo] || "bg-muted-foreground"}`} />
                               {a.ora || "—"}
+                              {a.richiedi_conferma && (
+                                <span className="ml-auto w-2 h-2 rounded-full bg-red-500 animate-pulse flex-shrink-0 ring-2 ring-red-500/30" title="Conferma presenza richiesta" />
+                              )}
                             </div>
                             <div className="truncate mt-0.5">{a.titolo}</div>
                             {a.cliente_nome && (
@@ -258,7 +261,12 @@ export default function SettimanaView({ appuntamenti, promemoria = [], loading, 
                         <span className="text-[10px] opacity-60">{a.durata_minuti || 60}min</span>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium truncate">{a.titolo}</div>
+                        <div className="text-sm font-medium truncate flex items-center gap-1.5">
+                          {a.titolo}
+                          {a.richiedi_conferma && (
+                            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse flex-shrink-0 ring-2 ring-red-500/30" title="Conferma presenza richiesta" />
+                          )}
+                        </div>
                         {a.cliente_nome && (
                           <div className="text-xs opacity-70 truncate">{a.cliente_nome}</div>
                         )}

@@ -505,7 +505,7 @@ export default function AppuntamentoForm({
           )}
 
           {/* Collaboratori partecipanti — tutti gli attivi */}
-          {!isClienteRole && !isOperaio && form.categoria !== "personale" && collaboratori.length > 0 && (
+          {!isClienteRole && !isOperaio && collaboratori.length > 0 && (
             <div className="rounded-lg border border-border p-3">
               <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2 block">
                 Collaboratori partecipanti
@@ -589,7 +589,7 @@ export default function AppuntamentoForm({
             />
           </div>
 
-          {!isClienteRole && !isOperaio && form.categoria !== "personale" && (
+          {!isClienteRole && !isOperaio && (
             <label className="flex items-center gap-2.5 p-3 rounded-lg border border-border cursor-pointer hover:bg-secondary/30 transition-colors">
               <Switch
                 checked={form.richiedi_conferma || false}

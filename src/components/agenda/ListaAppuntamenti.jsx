@@ -113,7 +113,12 @@ export default function ListaAppuntamenti({ appuntamenti, onAppuntamentoClick, i
                         {a.ora || "—"}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="font-medium truncate">{a.titolo}</div>
+                        <div className="font-medium truncate flex items-center gap-1.5">
+                          {a.titolo}
+                          {a.richiedi_conferma && (
+                            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse flex-shrink-0 ring-2 ring-red-500/30" title="Conferma presenza richiesta" />
+                          )}
+                        </div>
                         <div className="text-[10px] opacity-70 truncate flex items-center gap-1">
                           {a.cantiere_nome ? (
                             <>

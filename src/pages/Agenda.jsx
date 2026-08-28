@@ -37,10 +37,10 @@ export default function Agenda() {
     if (!isAdmin) return filtraAppuntamentiPersonali(appuntamenti, user);
     if (vista === "tutti") return appuntamenti;
     if (vista === "azienda") return appuntamenti.filter((a) => a.categoria !== "personale");
-    // "miei" per admin/supervisore: personali propri + lavorativi dove sono partecipante ma NON creatore
+    // "miei" per admin/supervisore: personali propri + lavorativi creati da me o dove sono partecipante
     return appuntamenti.filter((a) => {
       if (a.categoria === "personale") return a.created_by_id === user.id;
-      if (a.created_by_id === user.id) return false;
+      if (a.created_by_id === user.id) return true;
       const raw = a.utenti_ids;
       if (!raw) return false;
       if (Array.isArray(raw)) return raw.includes(user.id);
