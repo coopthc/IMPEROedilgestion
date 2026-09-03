@@ -4,7 +4,7 @@ services:
     working_dir: /app
     env_file:
       - ./.env.base44-defaults
-      - /run/base44/app.env
+      # - /run/base44/app.env  # temporarily disabled: VITE_BASE44_APP_BASE_URL was set to the app ID, not a URL — fix the value then re-enable
     environment:
       - BASE44_PUBLIC_HOST_SUFFIX=${BASE44_PUBLIC_HOST_SUFFIX}
       - CHOKIDAR_USEPOLLING=true
